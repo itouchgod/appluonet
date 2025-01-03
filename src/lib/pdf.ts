@@ -9,6 +9,10 @@ interface StyleDefinition {
   };
 }
 
+interface AutoTableResult {
+  finalY: number;
+}
+
 export const styles = StyleSheet.create<StyleDefinition>({
   page: {
     padding: 50,
@@ -107,7 +111,8 @@ export function generatePDF(data: QuotationData): jsPDF {
   });
 
   // 添加总计
-  const finalY = (doc as any).lastAutoTable.finalY || 150;
+  const result = (doc as unknown as { lastAutoTable: AutoTableResult }).lastAutoTable;
+  const finalY = result.finalY || 150;
   doc.text(`总计：${data.total}`, 150, finalY + 10);
 
   // 添加备注

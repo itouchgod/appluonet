@@ -1,6 +1,7 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import type { AuthOptions, Session } from "next-auth";
 import type { JWT } from "next-auth/jwt";
+import type { Adapter } from "next-auth/adapters";
 import { prisma } from "@/lib/prisma";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
@@ -88,7 +89,7 @@ export const authOptions: AuthOptions = {
       }
     })
   ],
-  adapter: PrismaAdapter(prisma) as any,
+  adapter: PrismaAdapter(prisma) as Adapter,
   session: {
     strategy: "jwt"
   },

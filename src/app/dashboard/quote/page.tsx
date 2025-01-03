@@ -62,10 +62,10 @@ export default function QuotationPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const updatedData = await generatePDF(activeTab as 'quotation' | 'confirmation');
+      const updatedData = await generatePDF();
       switch (activeTab) {
         case 'quotation':
-          await generateQuotationPDF(updatedData, activeTab);
+          await generateQuotationPDF(updatedData);
           break;
         case 'confirmation':
           await generateOrderConfirmationPDF(updatedData);
