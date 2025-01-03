@@ -1,11 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { AuthCard } from '@/components/ui/auth/AuthCard';
-import { AuthInput } from '@/components/ui/auth/AuthInput';
-import { AuthButton } from '@/components/ui/auth/AuthButton';
+import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 
 export default function RegisterPage() {
@@ -70,73 +67,93 @@ export default function RegisterPage() {
   };
 
   return (
-    <AuthCard
-      title="注册 LC App 账号"
-      description="创建您的账号以使用所有功能"
-    >
-      <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-        <div className="rounded-md shadow-sm space-y-4">
-          <AuthInput
-            id="name"
-            name="name"
-            type="text"
-            autoComplete="name"
-            required
-            label="姓名"
-            placeholder="请输入您的姓名"
-          />
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex flex-col justify-center items-center p-4">
+      <div className="apple-card w-full max-w-md">
+        <h1 className="apple-title text-center">注册 LC App</h1>
+        <p className="apple-subtitle text-center">创建您的账户以开始使用</p>
 
-          <AuthInput
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            label="邮箱地址"
-            placeholder="请输入邮箱地址"
-          />
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label htmlFor="name" className="apple-label">
+              姓名
+            </label>
+            <input
+              id="name"
+              name="name"
+              type="text"
+              className="apple-input"
+              placeholder="请输入姓名"
+              required
+            />
+          </div>
 
-          <AuthInput
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            required
-            label="密码"
-            placeholder="请输入密码（至少8位，包含数字和字母）"
-          />
+          <div>
+            <label htmlFor="email" className="apple-label">
+              邮箱地址
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              className="apple-input"
+              placeholder="请输入邮箱地址"
+              required
+            />
+          </div>
 
-          <AuthInput
-            id="confirmPassword"
-            name="confirmPassword"
-            type="password"
-            autoComplete="new-password"
-            required
-            label="确认密码"
-            placeholder="请再次输入密码"
-          />
-        </div>
+          <div>
+            <label htmlFor="password" className="apple-label">
+              密码
+            </label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              className="apple-input"
+              placeholder="请输入密码（至少6位）"
+              required
+            />
+          </div>
 
-        {error && (
-          <div className="text-red-600 text-sm text-center">{error}</div>
-        )}
+          <div>
+            <label htmlFor="confirmPassword" className="apple-label">
+              确认密码
+            </label>
+            <input
+              id="confirmPassword"
+              name="confirmPassword"
+              type="password"
+              className="apple-input"
+              placeholder="请再次输入密码"
+              required
+            />
+          </div>
 
-        <AuthButton type="submit" isLoading={isLoading}>
-          注册
-        </AuthButton>
+          {error && (
+            <div className="text-red-600 text-sm text-center">{error}</div>
+          )}
 
-        <div className="text-center">
-          <span className="text-sm text-gray-600">
-            已有账号？{' '}
-            <Link
-              href="/auth/login"
-              className="font-medium text-primary-600 hover:text-primary-500"
-            >
-              立即登录
-            </Link>
-          </span>
-        </div>
-      </form>
-    </AuthCard>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="apple-button w-full"
+          >
+            {isLoading ? '注册中...' : '注册'}
+          </button>
+
+          <div className="text-center">
+            <span className="text-sm text-gray-600">
+              已有账号？{' '}
+              <Link
+                href="/auth/login"
+                className="font-medium text-primary-600 hover:text-primary-500"
+              >
+                立即登录
+              </Link>
+            </span>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 } 

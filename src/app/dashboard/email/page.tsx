@@ -1,259 +1,303 @@
 'use client';
 
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useState, useEffect, ChangeEvent } from 'react';
+import { ChevronDown, Copy } from 'lucide-react';
 
-const formSchema = z.object({
-  recipient: z.string().email('请输入有效的邮箱地址'),
-  subject: z.string().min(1, '请输入邮件主题'),
-  content: z.string().min(1, '请输入邮件内容要点'),
-  tone: z.enum(['professional', 'friendly', 'formal'], {
-    required_error: '请选择邮件语气',
-  }),
-  language: z.enum(['zh', 'en', 'zh-en'], {
-    required_error: '请选择邮件语言',
-  }),
-});
+const styles = [
+  { icon: '📝', name: 'Formal', value: 'formal' },
+  { icon: '💼', name: 'Professional', value: 'professional' },
+  { icon: '👋', name: 'Friendly', value: 'friendly' },
+  { icon: '⚡️', name: 'Concise', value: 'concise' },
+  { icon: '📋', name: 'Detailed', value: 'detailed' },
+  { icon: '😊', name: 'Informal', value: 'informal' },
+  { icon: '✨', name: 'Inspirational', value: 'inspirational' }
+];
 
 export default function EmailAssistantPage() {
-  const [generatedEmail, setGeneratedEmail] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      recipient: '',
-      subject: '',
-      content: '',
-      tone: 'professional',
-      language: 'zh',
-    },
+  const [activeTab, setActiveTab] = useState('mail');
+  const [mailType, setMailType] = useState('formal');
+  const [userInput, setUserInput] = useState({
+    topic: '',
+    language: 'both English and Chinese',
+    mail: '',
+    replyTo: '',
+    reply: '',
+    replyLanguage: 'both English and Chinese',
+    replyType: 'formal'
   });
+  const [generatedContent, setGeneratedContent] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [copySuccess, setCopySuccess] = useState(false);
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsGenerating(true);
+  const handleGenerate = async () => {
     try {
+      setError('');
+      setIsLoading(true);
+      
+      const requestData = {
+        topic: activeTab === 'mail' ? userInput.topic : '',
+        language: activeTab === 'mail' ? userInput.language : userInput.replyLanguage,
+        type: activeTab === 'mail' ? mailType : userInput.replyType,
+        content: activeTab === 'mail' ? userInput.mail : userInput.reply,
+        originalMail: activeTab === 'mail' ? '' : userInput.replyTo,
+        mode: activeTab
+      };
+      
+      console.log('Request Data:', requestData);
+
       const response = await fetch('/api/email/generate', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(values),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestData)
       });
 
       if (!response.ok) {
-        throw new Error('邮件生成失败');
+        const errorData = await response.json();
+        throw new Error(errorData.error || '生成失败');
       }
 
       const data = await response.json();
-      setGeneratedEmail(data.email);
-    } catch (error) {
-      console.error('邮件生成错误:', error);
-      // TODO: 添加错误提示
+      setGeneratedContent(data.result);
+
+    } catch (error: any) {
+      console.error('Generate Error:', error);
+      setError(error.message || '生成失败，请稍后重试');
     } finally {
-      setIsGenerating(false);
+      setIsLoading(false);
     }
-  }
+  };
+
+  const handleCopy = async (content: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (!isLoading && generatedContent) {
+      const previewBox = document.querySelector('.preview-box') as HTMLElement;
+      if (previewBox) {
+        previewBox.style.height = 'auto';
+        const contentHeight = previewBox.scrollHeight;
+        previewBox.style.height = `${contentHeight}px`;
+      }
+    }
+  }, [generatedContent, isLoading]);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900">邮件助手</h2>
-        <p className="mt-1 text-sm text-gray-500">
-          输入关键信息，快速生成专业邮件
-        </p>
-      </div>
+    <div className="flex flex-1 flex-col">
+      <div className="w-full max-w-6xl mx-auto px-6 py-6 flex-grow">
+        <div className="flex flex-col md:flex-row gap-6">
+          {/* 控制区 */}
+          <div className="w-full md:w-1/2 order-1">
+            <div className="flex justify-center gap-3 mb-6">
+              <button 
+                onClick={() => setActiveTab('mail')}
+                className={`px-8 py-2.5 rounded-full text-sm font-medium transition-all ${
+                  activeTab === 'mail' 
+                    ? 'bg-blue-500 text-white' 
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                Mail
+              </button>
+              <button 
+                onClick={() => setActiveTab('reply')}
+                className={`px-8 py-2.5 rounded-full text-sm font-medium transition-all ${
+                  activeTab === 'reply' 
+                    ? 'bg-blue-500 text-white' 
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                Reply
+              </button>
+            </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="space-y-6">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="recipient"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>收件人邮箱</FormLabel>
-                    <FormControl>
-                      <Input placeholder="example@company.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <div className="bg-white shadow-sm border border-gray-200 rounded-xl p-6">
+              {activeTab === 'mail' ? (
+                <div className="space-y-6">
+                  {/* 主题输入框 */}
+                  <div className="space-y-2">
+                    <label className="flex items-center text-sm text-gray-600">
+                      <span className="text-red-500 mr-1">*</span>
+                      Write your email content
+                    </label>
+                    <textarea 
+                      value={userInput.mail}
+                      onChange={(e) => setUserInput({ ...userInput, mail: e.target.value })}
+                      placeholder="请在这里输入邮件内容... / Type your email content here..."
+                      className="w-full h-[300px] p-4 rounded-xl bg-gray-50 border border-gray-200 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all resize-y text-sm font-['.SFNSText-Regular', 'SF Pro Text', 'Helvetica Neue', 'Arial', sans-serif] placeholder:text-gray-400"
+                    />
+                  </div>
 
-              <FormField
-                control={form.control}
-                name="subject"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>邮件主题</FormLabel>
-                    <FormControl>
-                      <Input placeholder="请输入邮件主题" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="content"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>邮件内容要点</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="请输入邮件内容的关键点，每行一个要点"
-                        className="h-32"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="tone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>邮件语气</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
+                  {/* 语言选择 */}
+                  <div className="space-y-2">
+                    <label className="text-sm text-gray-600">
+                      Output language
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={userInput.language}
+                        onChange={(e) => setUserInput({ ...userInput, language: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all text-sm font-medium appearance-none"
                       >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="选择邮件语气" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="professional">专业</SelectItem>
-                          <SelectItem value="friendly">友好</SelectItem>
-                          <SelectItem value="formal">正式</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <option value="both English and Chinese">Both EN & CN</option>
+                        <option value="English">English</option>
+                        <option value="Chinese">Chinese</option>
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    </div>
+                  </div>
 
-                <FormField
-                  control={form.control}
-                  name="language"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>邮件语言</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
+                  {/* 风格选择 */}
+                  <div className="space-y-2">
+                    <label className="text-sm text-gray-600">
+                      Reply Tone
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={mailType}
+                        onChange={(e) => setMailType(e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all text-sm font-medium appearance-none"
                       >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="选择邮件语言" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="zh">中文</SelectItem>
-                          <SelectItem value="en">英文</SelectItem>
-                          <SelectItem value="zh-en">中英双语</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                        {styles.map((style) => (
+                          <option key={style.value} value={style.value}>
+                            {style.icon} {style.name}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    </div>
+                  </div>
 
-              <Button type="submit" className="w-full" disabled={isGenerating}>
-                {isGenerating ? '生成中...' : '生成邮件'}
-              </Button>
-            </form>
-          </Form>
-        </div>
-
-        <div className="space-y-4">
-          <div className="bg-white rounded-lg border shadow-sm">
-            <Tabs defaultValue="preview" className="w-full">
-              <TabsList className="w-full">
-                <TabsTrigger value="preview" className="flex-1">
-                  预览
-                </TabsTrigger>
-                <TabsTrigger value="html" className="flex-1">
-                  HTML
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="preview" className="p-4">
-                {generatedEmail ? (
-                  <div
-                    className="prose max-w-none"
-                    dangerouslySetInnerHTML={{ __html: generatedEmail }}
+                  {/* 生成按钮 */}
+                  <button 
+                    onClick={handleGenerate}
+                    disabled={isLoading || !userInput.mail?.trim()}
+                    className="w-full py-3 rounded-xl bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-all disabled:opacity-50 disabled:hover:bg-blue-500 shadow-sm"
+                  >
+                    {isLoading ? (
+                      <span className="flex items-center justify-center space-x-2">
+                        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        <span>Generating...</span>
+                      </span>
+                    ) : (
+                      'Generate Optimized Mail'
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <textarea 
+                    value={userInput.replyTo}
+                    onChange={(e) => setUserInput({ ...userInput, replyTo: e.target.value })}
+                    className="w-full h-[200px] p-4 rounded-xl bg-gray-50 border border-gray-200 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all resize-y text-sm placeholder:text-gray-400 font-['.SFNSText-Regular', 'SF Pro Text', 'Helvetica Neue', 'Arial', sans-serif]"
+                    placeholder="请粘贴需要回复的邮件内容... / Paste the email content you need to reply to..."
                   />
-                ) : (
-                  <div className="text-center text-gray-500 py-12">
-                    生成的邮件将在这里显示
-                  </div>
-                )}
-              </TabsContent>
-              <TabsContent value="html" className="p-4">
-                {generatedEmail ? (
-                  <pre className="bg-gray-50 p-4 rounded-lg overflow-x-auto">
-                    <code>{generatedEmail}</code>
-                  </pre>
-                ) : (
-                  <div className="text-center text-gray-500 py-12">
-                    生成的邮件 HTML 将在这里显示
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
+                  <textarea 
+                    value={userInput.reply}
+                    onChange={(e) => setUserInput({ ...userInput, reply: e.target.value })}
+                    className="w-full h-[200px] p-4 rounded-xl bg-gray-50 border border-gray-200 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all resize-y text-sm placeholder:text-gray-400 font-['.SFNSText-Regular', 'SF Pro Text', 'Helvetica Neue', 'Arial', sans-serif]"
+                    placeholder="请输入您的回复草稿... / Enter your reply draft..."
+                  />
+                  <button 
+                    onClick={handleGenerate}
+                    disabled={isLoading || !userInput.replyTo.trim() || !userInput.reply.trim()}
+                    className="w-full py-3 rounded-xl bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-all disabled:opacity-50 disabled:hover:bg-blue-500 shadow-sm"
+                  >
+                    {isLoading ? 'Generating...' : 'Generate Optimized Reply'}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="flex justify-end space-x-4">
-            <Button
-              variant="outline"
-              onClick={() => {
-                // TODO: 复制到剪贴板
-              }}
-              disabled={!generatedEmail}
-            >
-              复制
-            </Button>
-            <Button
-              onClick={() => {
-                // TODO: 发送邮件
-              }}
-              disabled={!generatedEmail}
-            >
-              发送
-            </Button>
+          {/* 预览区 */}
+          <div className="w-full md:w-1/2 order-2">
+            <div className="bg-white shadow-sm border border-gray-200 rounded-xl p-6 preview-box">
+              <div className="flex justify-end mb-4">
+                <button
+                  onClick={() => handleCopy(generatedContent)}
+                  className="relative p-1.5 hover:bg-gray-100 rounded-md transition-colors"
+                  disabled={!generatedContent || isLoading}
+                >
+                  {copySuccess && (
+                    <span className="absolute -top-8 -left-2 bg-black/75 text-white text-xs py-1 px-2 rounded whitespace-nowrap">
+                      Copied!
+                    </span>
+                  )}
+                  <Copy className={`w-4 h-4 ${!generatedContent || isLoading ? 'text-gray-300' : 'text-gray-600'}`} />
+                </button>
+              </div>
+              <div className="h-[calc(100%-2rem)] overflow-y-auto font-['.SFNSText-Regular','SF Pro Text','Helvetica Neue','Arial',sans-serif] text-[15px] leading-7 tracking-[-0.003em] text-gray-800 selection:bg-blue-500/20 whitespace-pre-wrap px-1">
+                {!isLoading && generatedContent && (
+                  <div className="space-y-4">
+                    {generatedContent.split('\n\n').map((paragraph, index) => (
+                      <div key={index} className={`
+                        ${paragraph.startsWith('[Subject]') || paragraph.startsWith('[主题]') 
+                          ? 'text-base font-medium text-gray-900 tracking-tight' 
+                          : paragraph.startsWith('[English]') || paragraph.startsWith('[中文]')
+                            ? 'text-sm font-medium text-blue-500 border-b border-gray-100'
+                            : paragraph.trim().length === 0
+                              ? 'hidden'
+                              : 'text-[15px] leading-relaxed'
+                        }
+                        ${(paragraph.startsWith('[English]') || paragraph.startsWith('[中文]')) 
+                          ? 'mt-4 first:mt-0' 
+                          : ''
+                        }
+                        ${paragraph.includes('Dear') || paragraph.includes('尊敬的')
+                          ? 'text-[15px] font-normal mt-2'
+                          : ''
+                        }
+                      `}>
+                        {paragraph.startsWith('[') && paragraph.endsWith(']') 
+                          ? paragraph.slice(1, -1)
+                          : paragraph
+                        }
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {isLoading && (
+                  <div className="flex items-center justify-center h-full text-gray-400">
+                    <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    <span>Generating content...</span>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
+        {error && (
+          <div className="mt-4 p-3 bg-red-50 text-red-500 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
       </div>
+      <style jsx>{`
+        .preview-box {
+          height: 710px;
+        }
+
+        @media (max-width: 768px) {
+          .preview-box {
+            height: auto;
+            min-height: 200px;
+          }
+        }
+      `}</style>
     </div>
   );
 } 
