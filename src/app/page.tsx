@@ -14,7 +14,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const result = await signIn('credentials', {
+      await signIn('credentials', {
         email,
         password,
         redirect: true,

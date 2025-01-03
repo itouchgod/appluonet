@@ -20,10 +20,11 @@ export async function POST(req: Request) {
         name: user.name,
       }
     });
-  } catch (error: any) {
+  } catch (error: Error | unknown) {
     console.error('Registration error:', error);
+    const errorMessage = error instanceof Error ? error.message : '注册失败';
     return NextResponse.json(
-      { error: error.message || '注册失败' },
+      { error: errorMessage },
       { status: 400 }
     );
   }

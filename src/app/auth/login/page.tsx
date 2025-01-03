@@ -21,7 +21,6 @@ export default function LoginPage() {
     const formData = new FormData(e.currentTarget);
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
-    const rememberMe = formData.get('remember-me') === 'on';
 
     try {
       const result = await signIn('credentials', {
@@ -37,7 +36,7 @@ export default function LoginPage() {
 
       router.push('/dashboard');
       router.refresh();
-    } catch (err) {
+    } catch {
       setError('登录失败，请检查邮箱和密码是否正确');
     } finally {
       setIsLoading(false);

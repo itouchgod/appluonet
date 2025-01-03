@@ -28,10 +28,11 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ result });
-  } catch (error: any) {
+  } catch (error: Error | unknown) {
     console.error('Email generation error:', error);
+    const errorMessage = error instanceof Error ? error.message : '邮件生成失败';
     return NextResponse.json(
-      { error: error.message || '邮件生成失败' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

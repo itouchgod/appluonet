@@ -4,8 +4,6 @@ import { useState } from 'react';
 import { Download, ArrowLeft, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { generateQuotationPDF, generateOrderConfirmationPDF } from '@/lib/pdf';
-import { QuotationData, LineItem, SettingsData } from '@/types/quote';
-import { formatCurrency } from '@/lib/utils';
 import { useQuotation } from '@/hooks/useQuotation';
 
 interface DocumentHeader {

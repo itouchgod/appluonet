@@ -24,7 +24,7 @@ export default function ForgotPasswordPage() {
       // TODO: 实现发送重置密码邮件的逻辑
       console.log('Password reset request for:', email);
       setSuccess(true);
-    } catch (err) {
+    } catch {
       setError('发送重置密码邮件失败，请稍后重试');
     } finally {
       setIsLoading(false);

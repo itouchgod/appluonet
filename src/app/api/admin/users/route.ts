@@ -6,7 +6,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 // 获取用户列表
-export async function GET(req: Request) {
+export async function GET() {
   try {
     // 验证用户是否是管理员
     const session = await getServerSession(authOptions);

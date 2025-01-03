@@ -59,8 +59,9 @@ export default function RegisterPage() {
 
       router.push('/dashboard');
       router.refresh();
-    } catch (err: any) {
-      setError(err.message || '注册失败，请稍后重试');
+    } catch (err: Error | unknown) {
+      const errorMessage = err instanceof Error ? err.message : '注册失败，请稍后重试';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

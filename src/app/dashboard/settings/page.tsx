@@ -54,7 +54,6 @@ export default function SettingsPage() {
     email: '',
   });
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
   // 获取用户列表
   const fetchUsers = async () => {
@@ -65,19 +64,6 @@ export default function SettingsPage() {
       setUsers(data.users);
     } catch (error) {
       console.error('获取用户列表错误:', error);
-      // TODO: 添加错误提示
-    }
-  };
-
-  // 获取公司信息
-  const fetchCompanyInfo = async () => {
-    try {
-      const response = await fetch('/api/admin/company-info');
-      if (!response.ok) throw new Error('获取公司信息失败');
-      const data = await response.json();
-      setCompanyInfo(data);
-    } catch (error) {
-      console.error('获取公司信息错误:', error);
       // TODO: 添加错误提示
     }
   };

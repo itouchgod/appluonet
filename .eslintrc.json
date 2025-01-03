@@ -1,0 +1,17 @@
+{
+  "extends": "next/core-web-vitals",
+  "rules": {
+    "jsx-a11y/alt-text": ["error", {
+      "elements": ["img"],
+      "img": ["Image"]
+    }]
+  },
+  "overrides": [
+    {
+      "files": ["src/components/pdf/**/*.{ts,tsx}"],
+      "rules": {
+        "jsx-a11y/alt-text": "off"
+      }
+    }
+  ]
+} 

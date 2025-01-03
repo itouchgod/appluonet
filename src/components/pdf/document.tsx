@@ -158,7 +158,10 @@ export function PDFDocument({ type, data, stamp }: PDFDocumentProps) {
     <Document>
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
-          <Image src="/images/logo.png" style={styles.logo} />
+          <Image 
+            src="/dochead.jpg" 
+            style={styles.logo}
+          />
           <Text style={{ fontSize: 10, color: '#666666' }}>
             {new Date(data.date).toLocaleDateString()}
           </Text>

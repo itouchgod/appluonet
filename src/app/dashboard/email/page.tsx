@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, ChangeEvent } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronDown, Copy } from 'lucide-react';
 
 const styles = [
@@ -60,9 +60,10 @@ export default function EmailAssistantPage() {
       const data = await response.json();
       setGeneratedContent(data.result);
 
-    } catch (error: any) {
+    } catch (error: Error | unknown) {
       console.error('Generate Error:', error);
-      setError(error.message || '生成失败，请稍后重试');
+      const errorMessage = error instanceof Error ? error.message : '生成失败，请稍后重试';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
