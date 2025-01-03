@@ -725,7 +725,7 @@ export default function InvoicePage() {
                     </div>
                   </div>
 
-                  <div className="text-sm text-gray-600 dark:text-gray-400 pl-6">
+                  <div className="text-right text-sm text-gray-900 dark:text-gray-100">
                     Please state our invoice no. &quot;{invoiceData.invoiceNo}&quot; on your payment documents.
                   </div>
                 </div>
