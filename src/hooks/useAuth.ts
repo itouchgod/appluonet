@@ -3,24 +3,19 @@
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { Role } from '@prisma/client';
 
-export function useAuth(requireAuth = true) {
+export function useAuth() {
   const { data: session, status } = useSession();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (requireAuth && status === "unauthenticated") {
-      router.push("/auth/login");
-    }
-  }, [requireAuth, status, router]);
+  const isLoading = status === 'loading';
+  const isAuthenticated = status === 'authenticated';
+  const isAdmin = session?.user?.role === Role.ADMIN;
 
   return {
-    session,
-    status,
-    isAuthenticated: status === "authenticated",
-    isLoading: status === "loading",
     user: session?.user,
-    isAdmin: session?.user?.role === "ADMIN",
+    isLoading,
+    isAuthenticated,
+    isAdmin,
   };
 }
 
