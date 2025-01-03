@@ -33,11 +33,11 @@ export async function POST(request: Request) {
       showRemarks: data.showRemarks || false
     };
 
-    // TODO: Save quotation to database
+    // TODO: Save order confirmation to database
     
     return NextResponse.json(quotationData);
   } catch (error) {
-    console.error('Error generating quotation:', error);
+    console.error('Error generating order confirmation:', error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 } 

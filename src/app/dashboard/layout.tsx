@@ -16,6 +16,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { signOut } from 'next-auth/react';
 import Image from 'next/image';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 const navigation = [
   { name: '首页', href: '/dashboard', icon: HomeIcon },
@@ -174,12 +175,13 @@ export default function DashboardLayout({
             </button>
             <div className="flex items-center">
               <div className="ml-4 flex items-center space-x-4">
-                <span className="text-sm text-gray-600">
+                <ThemeToggle />
+                <span className="text-sm text-gray-500">
                   {user?.name || user?.email}
                 </span>
                 <button
                   onClick={() => signOut()}
-                  className="flex items-center text-sm text-gray-600 hover:text-gray-900"
+                  className="flex items-center text-sm text-gray-500 hover:text-gray-700"
                 >
                   <ArrowLeftOnRectangleIcon className="h-5 w-5 mr-1" />
                   退出

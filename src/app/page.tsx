@@ -34,8 +34,8 @@ export default function LoginPage() {
           <Image
             src="/images/logo.png"
             alt="Logo"
-            width={120}
-            height={120}
+            width={100}
+            height={100}
             className="mx-auto"
           />
           <h2 className="apple-title">欢迎使用 LC App</h2>

@@ -1,449 +1,754 @@
 'use client';
 
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  RadioGroup,
-  RadioGroupItem,
-} from '@/components/ui/radio-group';
-import { exportPDF } from '@/lib/pdf';
+import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
+import { Download, ArrowLeft, Settings } from 'lucide-react';
+import { generateInvoicePDF } from '@/lib/pdf';
 
-const formSchema = z.object({
-  type: z.enum(['proforma', 'commercial'], {
-    required_error: '请选择发票类型',
-  }),
-  invoiceNumber: z.string().min(1, '请输入发票号码'),
-  date: z.string().min(1, '请选择发票日期'),
-  customerName: z.string().min(1, '请输入客户名称'),
-  customerAddress: z.string().min(1, '请输入客户地址'),
-  amount: z.number().min(0.01, '金额必须大于0'),
-  currency: z.string().min(1, '请选择货币'),
-  description: z.string().min(1, '请输入商品或服务描述'),
-  letterhead: z.string().min(1, '请选择发票抬头'),
-  seal: z.string().min(1, '请选择印章'),
-});
+interface LineItem {
+  lineNo: number;
+  hsCode: string;
+  description: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  amount: number;
+}
 
-const currencyOptions = [
-  { value: 'CNY', label: '人民币 (CNY)' },
-  { value: 'USD', label: '美元 (USD)' },
-  { value: 'EUR', label: '欧元 (EUR)' },
-];
+interface AmountInWords {
+  dollars: string;
+  cents: string;
+  hasDecimals: boolean;
+}
 
-// 模拟数据，实际应该从数据库获取
-const letterheadOptions = [
-  { value: 'company1', label: '公司抬头 1' },
-  { value: 'company2', label: '公司抬头 2' },
-];
+interface InvoiceData {
+  invoiceNo: string;
+  date: string;
+  to: string;
+  from: string;
+  inquiryNo: string;
+  currency: string;
+  items: LineItem[];
+  bankInfo: string;
+  paymentDate: string;
+  amountInWords: AmountInWords;
+  remarks?: string;
+  showPaymentDate: boolean;
+  showRemarks: boolean;
+  showHsCode: boolean;
+}
 
-const sealOptions = [
-  { value: 'seal1', label: '公章 1' },
-  { value: 'seal2', label: '财务章' },
-];
+interface SettingsData {
+  date: string;
+  currency: string;
+  showHsCode: boolean;
+}
+
+const inputClassName = `w-full px-4 py-2.5 rounded-2xl
+  bg-white/95 dark:bg-[#1c1c1e]/95
+  border border-[#007AFF]/10 dark:border-[#0A84FF]/10
+  focus:outline-none focus:ring-2 focus:ring-[#007AFF]/30 dark:focus:ring-[#0A84FF]/30
+  placeholder:text-gray-400/60 dark:placeholder:text-gray-500/60
+  text-[15px] leading-relaxed text-gray-800 dark:text-gray-100
+  transition-all duration-300 ease-out
+  hover:border-[#007AFF]/20 dark:hover:border-[#0A84FF]/20
+  shadow-sm hover:shadow-md`;
+
+const tableInputClassName = `w-full px-3 py-2 rounded-xl
+  bg-transparent backdrop-blur-sm
+  border border-transparent
+  focus:outline-none focus:ring-2 focus:ring-[#007AFF]/20 dark:focus:ring-[#0A84FF]/20
+  text-[14px] leading-relaxed text-gray-800 dark:text-gray-100
+  placeholder:text-gray-400/60 dark:placeholder:text-gray-500/60
+  transition-all duration-300 ease-out
+  hover:bg-[#007AFF]/5 dark:hover:bg-[#0A84FF]/5
+  text-center`;
+
+const numberInputClassName = `${tableInputClassName}
+  [appearance:textfield] 
+  [&::-webkit-outer-spin-button]:appearance-none 
+  [&::-webkit-inner-spin-button]:appearance-none
+  text-center`;
+
+const settingsPanelClassName = `bg-[#007AFF]/5 dark:bg-[#0A84FF]/5 backdrop-blur-xl
+  border border-[#007AFF]/10 dark:border-[#0A84FF]/10
+  rounded-2xl overflow-hidden
+  shadow-lg shadow-[#007AFF]/5
+  p-4`;
+
+const radioGroupClassName = `flex p-0.5 gap-1
+  bg-[#007AFF]/5 dark:bg-[#0A84FF]/5
+  rounded-lg
+  border border-[#007AFF]/10 dark:border-[#0A84FF]/10`;
+
+const radioButtonClassName = `flex items-center justify-center px-3 py-1.5
+  rounded-md
+  text-xs font-medium
+  transition-all duration-200
+  cursor-pointer`;
+
+const radioButtonActiveClassName = `bg-[#007AFF] dark:bg-[#0A84FF]
+  text-white
+  shadow-sm`;
 
 export default function InvoicePage() {
-  const [generatedInvoice, setGeneratedInvoice] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
+  const getDefaultPaymentDate = (invoiceDate: string) => {
+    const date = new Date(invoiceDate);
+    date.setMonth(date.getMonth() + 1);
+    return date.toISOString().split('T')[0];
+  };
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      type: 'proforma',
-      invoiceNumber: `INV${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}${String(new Date().getDate()).padStart(2, '0')}`,
-      date: new Date().toISOString().split('T')[0],
-      customerName: '',
-      customerAddress: '',
-      amount: 0,
-      currency: 'CNY',
+  const [invoiceData, setInvoiceData] = useState<InvoiceData>({
+    invoiceNo: '',
+    date: new Date().toISOString().split('T')[0],
+    to: '',
+    from: '',
+    inquiryNo: '',
+    currency: 'USD',
+    items: [{
+      lineNo: 1,
+      hsCode: '',
       description: '',
-      letterhead: 'company1',
-      seal: 'seal1',
+      quantity: 0,
+      unit: 'pc',
+      unitPrice: 0,
+      amount: 0,
+    }],
+    bankInfo: '',
+    paymentDate: getDefaultPaymentDate(new Date().toISOString().split('T')[0]),
+    amountInWords: {
+      dollars: '',
+      cents: '',
+      hasDecimals: false
     },
+    showPaymentDate: true,
+    showRemarks: false,
+    showHsCode: false,
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsGenerating(true);
-    try {
-      const response = await fetch('/api/invoice/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(values),
-      });
+  const [editingUnitPriceIndex, setEditingUnitPriceIndex] = useState<number | null>(null);
+  const [editingUnitPrice, setEditingUnitPrice] = useState<string>('');
+  const [editingQuantityIndex, setEditingQuantityIndex] = useState<number | null>(null);
+  const [editingQuantity, setEditingQuantity] = useState<string>('');
 
-      if (!response.ok) {
-        throw new Error('发票生成失败');
+  const [showSettings, setShowSettings] = useState(false);
+  const [settings, setSettings] = useState<SettingsData>({
+    date: new Date().toISOString().split('T')[0],
+    currency: 'USD',
+    showHsCode: false,
+  });
+
+  const addLineItem = () => {
+    setInvoiceData(prev => ({
+      ...prev,
+      items: [...prev.items, {
+        lineNo: prev.items.length + 1,
+        hsCode: '',
+        description: '',
+        quantity: 0,
+        unit: 'pc',
+        unitPrice: 0,
+        amount: 0,
+      }]
+    }));
+  };
+
+  const updateLineItem = (index: number, field: keyof LineItem, value: LineItem[keyof LineItem]) => {
+    setInvoiceData(prev => {
+      const newItems = [...prev.items];
+      const currentItem = { ...newItems[index] };
+      
+      (currentItem[field] as LineItem[keyof LineItem]) = value;
+      
+      if (field === 'quantity') {
+        const quantity = Number(value);
+        if (!currentItem.unit) {
+          currentItem.unit = quantity <= 1 ? 'pc' : 'pcs';
+        } else {
+          const unitBase = currentItem.unit.replace(/s$/, '');
+          currentItem.unit = quantity <= 1 ? unitBase : `${unitBase}s`;
+        }
       }
+      
+      if (field === 'quantity' || field === 'unitPrice') {
+        currentItem.amount = Number(currentItem.quantity) * Number(currentItem.unitPrice);
+      }
+      
+      newItems[index] = currentItem;
+      return {
+        ...prev,
+        items: newItems
+      };
+    });
+  };
 
-      const data = await response.json();
-      setGeneratedInvoice(data.invoice);
-    } catch (error) {
-      console.error('发票生成错误:', error);
-      // TODO: 添加错误提示
-    } finally {
-      setIsGenerating(false);
+  const getTotalAmount = () => {
+    return invoiceData.items.reduce((sum, item) => sum + item.amount, 0);
+  };
+
+  const numberToWords = (num: number) => {
+    const getCurrencyPrefix = () => {
+      switch(invoiceData.currency) {
+        case 'USD': return 'SAY TOTAL US DOLLARS ';
+        case 'CNY': return 'SAY TOTAL CHINESE YUAN ';
+        default: return 'SAY TOTAL ';
+      }
+    };
+
+    const ones = ['', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE'];
+    const tens = ['', '', 'TWENTY', 'THIRTY', 'FORTY', 'FIFTY', 'SIXTY', 'SEVENTY', 'EIGHTY', 'NINETY'];
+    const teens = ['TEN', 'ELEVEN', 'TWELVE', 'THIRTEEN', 'FOURTEEN', 'FIFTEEN', 'SIXTEEN', 'SEVENTEEN', 'EIGHTEEN', 'NINETEEN'];
+    
+    const convertLessThanThousand = (n: number): string => {
+      if (n === 0) return '';
+      
+      if (n < 10) return ones[n];
+      
+      if (n < 20) return teens[n - 10];
+      
+      if (n < 100) {
+        return tens[Math.floor(n / 10)] + (n % 10 !== 0 ? '-' + ones[n % 10] : '');
+      }
+      
+      const hundred = ones[Math.floor(n / 100)] + ' HUNDRED';
+      const remainder = n % 100;
+      if (remainder === 0) return hundred;
+      return hundred + ' AND ' + convertLessThanThousand(remainder);
+    };
+
+    const convert = (n: number): string => {
+      if (n === 0) return 'ZERO';
+      
+      const billion = Math.floor(n / 1000000000);
+      const million = Math.floor((n % 1000000000) / 1000000);
+      const thousand = Math.floor((n % 1000000) / 1000);
+      const remainder = n % 1000;
+      
+      let result = '';
+      
+      if (billion) result += convertLessThanThousand(billion) + ' BILLION ';
+      if (million) result += convertLessThanThousand(million) + ' MILLION ';
+      if (thousand) result += convertLessThanThousand(thousand) + ' THOUSAND ';
+      if (remainder) result += convertLessThanThousand(remainder);
+      
+      return result.trim();
+    };
+
+    const dollars = Math.floor(num);
+    const cents = Math.round((num - dollars) * 100);
+    
+    let result = getCurrencyPrefix();
+    result += convert(dollars);
+    
+    if (cents > 0) {
+      return {
+        dollars: result,
+        cents: `${convert(cents)} CENT${cents === 1 ? '' : 'S'}`,
+        hasDecimals: true
+      };
+    } else {
+      return {
+        dollars: result + ' ONLY',
+        cents: '',
+        hasDecimals: false
+      };
     }
-  }
+  };
 
-  const handleExportPDF = async () => {
+  const total = useMemo(() => getTotalAmount(), [invoiceData.items]);
+
+  useEffect(() => {
+    setInvoiceData(prev => ({
+      ...prev,
+      amountInWords: numberToWords(total)
+    }));
+  }, [total, invoiceData.currency]);
+
+  useEffect(() => {
+    setInvoiceData(prev => ({
+      ...prev,
+      paymentDate: getDefaultPaymentDate(prev.date)
+    }));
+  }, [invoiceData.date]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     try {
-      const data = {
-        number: form.getValues('number'),
-        date: form.getValues('date'),
-        customer: form.getValues('customer'),
-        items: form.getValues('items'),
-        total: calculateTotal(form.getValues('items')),
-        remarks: form.getValues('remarks'),
+      const pdfData = {
+        invoiceNo: invoiceData.invoiceNo,
+        quotationNo: invoiceData.invoiceNo,
+        date: invoiceData.date,
+        to: invoiceData.to,
+        from: invoiceData.from,
+        inquiryNo: invoiceData.inquiryNo,
+        currency: invoiceData.currency,
+        items: invoiceData.items.map(item => ({
+          lineNo: item.lineNo,
+          partName: item.hsCode,
+          description: item.description,
+          quantity: item.quantity,
+          unit: item.unit,
+          unitPrice: item.unitPrice,
+          amount: item.amount,
+          remarks: ''
+        })),
+        notes: [
+          `Bank Information:`,
+          invoiceData.bankInfo,
+          `Payment Date: ${invoiceData.paymentDate}`,
+        ],
+        paymentDate: invoiceData.paymentDate,
+        amountInWords: invoiceData.amountInWords,
+        showDescription: true,
+        showHsCode: settings.showHsCode,
+        showPaymentTerms: invoiceData.showPaymentDate,
+        showRemarks: invoiceData.showRemarks,
+        remarks: invoiceData.remarks,
+        bankInfo: invoiceData.bankInfo,
       };
 
-      // 获取选中的印章
-      const stamp = form.getValues('stamp');
-      
-      await exportPDF('invoice', data, stamp);
-      // TODO: 添加成功提示
+      generateInvoicePDF(pdfData);
     } catch (error) {
-      console.error('导出PDF失败:', error);
-      // TODO: 添加错误提示
+      console.error('Error generating PDF:', error);
     }
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900">发票助手</h2>
-        <p className="mt-1 text-sm text-gray-500">
-          生成形式发票或商业发票
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="space-y-6">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="type"
-                render={({ field }) => (
-                  <FormItem className="space-y-3">
-                    <FormLabel>发票类型</FormLabel>
-                    <FormControl>
-                      <RadioGroup
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        className="flex space-x-4"
-                      >
-                        <FormItem className="flex items-center space-x-2">
-                          <FormControl>
-                            <RadioGroupItem value="proforma" />
-                          </FormControl>
-                          <FormLabel className="font-normal">
-                            形式发票
-                          </FormLabel>
-                        </FormItem>
-                        <FormItem className="flex items-center space-x-2">
-                          <FormControl>
-                            <RadioGroupItem value="commercial" />
-                          </FormControl>
-                          <FormLabel className="font-normal">
-                            商业发票
-                          </FormLabel>
-                        </FormItem>
-                      </RadioGroup>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="invoiceNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>发票号码</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="date"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>发票日期</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="customerName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>客户名称</FormLabel>
-                    <FormControl>
-                      <Input placeholder="请输入客户名称" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="customerAddress"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>客户地址</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="请输入客户详细地址"
-                        className="h-20"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="amount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>金额</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="0.01"
-                          step="0.01"
-                          {...field}
-                          onChange={(e) =>
-                            field.onChange(parseFloat(e.target.value))
-                          }
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="currency"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>货币</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="选择货币" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {currencyOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>商品或服务描述</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="请输入商品或服务的详细描述"
-                        className="h-32"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="letterhead"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>发票抬头</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="选择发票抬头" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {letterheadOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="seal"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>印章选择</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="选择印章" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {sealOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <Button type="submit" className="w-full" disabled={isGenerating}>
-                {isGenerating ? '生成中...' : '生成发票'}
-              </Button>
-            </form>
-          </Form>
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50/90 via-white/60 to-gray-100/90 
+                    dark:from-gray-900 dark:via-gray-800/80 dark:to-gray-900/90">
+      <main className="flex-1 container mx-auto px-4 py-8 max-w-6xl">
+        <div className="flex items-center mb-8">
+          <Link 
+            href="/dashboard" 
+            className="group inline-flex items-center px-4 py-2 rounded-full 
+                      bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg 
+                      border border-gray-200/50 dark:border-gray-700/50 
+                      text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 
+                      transition-all hover:shadow-lg hover:scale-[1.02]"
+          >
+            <ArrowLeft className="h-4 w-4 mr-1.5 transition-transform group-hover:-translate-x-0.5" />
+            <span className="text-sm font-medium">Back</span>
+          </Link>
         </div>
 
-        <div className="space-y-4">
-          <div className="bg-white rounded-lg border shadow-sm">
-            <Tabs defaultValue="preview" className="w-full">
-              <TabsList className="w-full">
-                <TabsTrigger value="preview" className="flex-1">
-                  预览
-                </TabsTrigger>
-                <TabsTrigger value="pdf" className="flex-1">
-                  PDF
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="preview" className="p-4">
-                {generatedInvoice ? (
-                  <div
-                    className="prose max-w-none"
-                    dangerouslySetInnerHTML={{ __html: generatedInvoice }}
+        <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-2xl 
+                      rounded-[2rem] shadow-xl p-8
+                      border border-gray-200/50 dark:border-gray-700/50 
+                      hover:shadow-2xl transition-all duration-500">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-2xl font-bold">Invoice Generator</h1>
+            <div className="flex items-center gap-4">
+              <div className="space-y-0">
+                <input
+                  type="text"
+                  value={invoiceData.invoiceNo}
+                  onChange={e => setInvoiceData(prev => ({ ...prev, invoiceNo: e.target.value }))}
+                  className={`${inputClassName} !py-2`}
+                  placeholder="Invoice No."
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSettings(prev => !prev)}
+                className="inline-flex items-center justify-center p-2 
+                          rounded-xl border border-gray-200/50 dark:border-gray-700/50
+                          bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg
+                          text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100
+                          transition-all hover:shadow-lg hover:scale-[1.02]
+                          group"
+                title="Settings"
+              >
+                <Settings className="h-5 w-5 transition-transform group-hover:rotate-45" />
+              </button>
+            </div>
+          </div>
+
+          <div className={`mb-4 overflow-hidden transition-all duration-300 ease-in-out
+                          ${showSettings ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
+            <div className={settingsPanelClassName}>
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={settings.date}
+                    onChange={e => {
+                      setSettings(prev => ({ ...prev, date: e.target.value }));
+                      setInvoiceData(prev => ({ ...prev, date: e.target.value }));
+                    }}
+                    className={`${inputClassName} !py-1.5`}
                   />
-                ) : (
-                  <div className="text-center text-gray-500 py-12">
-                    生成的发票将在这里显示
-                  </div>
-                )}
-              </TabsContent>
-              <TabsContent value="pdf" className="p-4">
-                {generatedInvoice ? (
-                  <div className="text-center">
-                    <Button
-                      onClick={() => {
-                        // TODO: 下载 PDF
-                      }}
+                </div>
+
+                <div className={`${radioGroupClassName} h-[38px]`}>
+                  {['USD', 'CNY'].map((currency) => (
+                    <label
+                      key={currency}
+                      className={`${radioButtonClassName} flex-1 ${
+                        settings.currency === currency ? radioButtonActiveClassName : 
+                        'text-gray-600 dark:text-gray-400'
+                      }`}
                     >
-                      下载 PDF
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="text-center text-gray-500 py-12">
-                    生成发票后可下载 PDF 版本
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
+                      <input
+                        type="radio"
+                        name="currency"
+                        value={currency}
+                        checked={settings.currency === currency}
+                        onChange={e => {
+                          setSettings(prev => ({ ...prev, currency: e.target.value }));
+                          setInvoiceData(prev => ({ ...prev, currency: e.target.value }));
+                        }}
+                        className="sr-only"
+                      />
+                      <span>{currency === 'USD' ? '$' : '¥'}</span>
+                    </label>
+                  ))}
+                </div>
+
+                <label
+                  className={`px-4 py-1.5 rounded-lg cursor-pointer
+                    transition-all duration-200
+                    ${settings.showHsCode 
+                      ? 'bg-[#007AFF] dark:bg-[#0A84FF] text-white shadow-sm border-transparent' 
+                      : 'bg-transparent text-gray-600 dark:text-gray-400 border-[#007AFF]/30 dark:border-[#0A84FF]/30'
+                    }
+                    border
+                    hover:bg-[#007AFF] dark:hover:bg-[#0A84FF] hover:text-white hover:border-transparent
+                    text-xs font-medium`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={settings.showHsCode}
+                    onChange={e => setSettings(prev => ({ 
+                      ...prev, 
+                      showHsCode: e.target.checked 
+                    }))}
+                    className="sr-only"
+                  />
+                  HS Code
+                </label>
+              </div>
+            </div>
           </div>
 
-          <div className="flex justify-end space-x-4">
-            <Button
-              variant="outline"
-              onClick={() => {
-                // TODO: 复制到剪贴板
-              }}
-              disabled={!generatedInvoice}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div>
+                <textarea
+                  value={invoiceData.to}
+                  onChange={e => setInvoiceData(prev => ({ ...prev, to: e.target.value }))}
+                  className={`${inputClassName} min-h-[60px] resize
+                    hover:border-gray-300 dark:hover:border-gray-600
+                    focus:border-blue-500 dark:focus:border-blue-500`}
+                  placeholder="Enter customer name and address"
+                  rows={2}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium">Customer P/O No.</label>
+                <input
+                  type="text"
+                  value={invoiceData.inquiryNo}
+                  onChange={e => setInvoiceData(prev => ({ ...prev, inquiryNo: e.target.value }))}
+                  className={inputClassName}
+                  placeholder="Enter customer P/O number"
+                />
+              </div>
+            </div>
+
+            <div className="overflow-x-auto rounded-2xl border border-gray-200/30 dark:border-gray-700/30
+                  bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl shadow-lg">
+              <table className="w-full min-w-[800px]">
+                <thead>
+                  <tr className="border-b border-[#007AFF]/10 dark:border-[#0A84FF]/10
+                       bg-[#007AFF]/5 dark:bg-[#0A84FF]/5">
+                    <th className="py-2 px-1 text-center text-xs font-bold opacity-90" style={{ width: '40px' }}>No.</th>
+                    <th className={`py-2 px-1 text-center text-xs font-bold opacity-90 ${
+                      !settings.showHsCode && 'hidden'
+                    }`} style={{ width: '120px' }}>
+                      HS Code
+                    </th>
+                    <th className="py-2 px-1 text-center text-xs font-bold opacity-90">Description</th>
+                    <th className="py-2 px-1 text-center text-xs font-bold opacity-90" style={{ width: '100px' }}>Q'TY</th>
+                    <th className="py-2 px-1 text-center text-xs font-bold opacity-90" style={{ width: '100px' }}>Unit</th>
+                    <th className="py-2 px-1 text-center text-xs font-bold opacity-90" style={{ width: '100px' }}>U/Price</th>
+                    <th className="py-2 px-1 text-center text-xs font-bold opacity-90" style={{ width: '100px' }}>Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {invoiceData.items.map((item, index) => (
+                    <tr key={item.lineNo} 
+                        className="border-b border-[#007AFF]/10 dark:border-[#0A84FF]/10 
+                                  hover:bg-[#007AFF]/5 dark:hover:bg-[#0A84FF]/5">
+                      <td className="py-1 px-1 text-sm">
+                        <span className="flex items-center justify-center w-6 h-6 rounded-full 
+                                       hover:bg-red-100 hover:text-red-600 cursor-pointer transition-colors"
+                              onClick={() => {
+                                setInvoiceData(prev => ({
+                                  ...prev,
+                                  items: prev.items.filter((_, i) => i !== index)
+                                }));
+                              }}>
+                                {index + 1}
+                              </span>
+                      </td>
+                      <td className={`py-1.5 px-1 ${!settings.showHsCode && 'hidden'}`}>
+                        <input
+                          type="text"
+                          value={item.hsCode}
+                          onChange={e => updateLineItem(index, 'hsCode', e.target.value)}
+                          className={tableInputClassName}
+                          placeholder="HS Code"
+                        />
+                      </td>
+                      <td className="py-1 px-1">
+                        <textarea
+                          value={item.description}
+                          onChange={e => updateLineItem(index, 'description', e.target.value)}
+                          rows={1}
+                          className={`${tableInputClassName} resize min-h-[28px]`}
+                          placeholder="Enter description"
+                        />
+                      </td>
+                      <td className="py-1.5 px-1">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={editingQuantityIndex === index ? editingQuantity : (item.quantity || '')}
+                          onChange={e => {
+                            const inputValue = e.target.value;
+                            if (/^\d*$/.test(inputValue)) {
+                              setEditingQuantity(inputValue);
+                              const value = parseInt(inputValue);
+                              if (!isNaN(value) || inputValue === '') {
+                                updateLineItem(index, 'quantity', value || 0);
+                              }
+                            }
+                          }}
+                          onFocus={(e) => {
+                            setEditingQuantityIndex(index);
+                            setEditingQuantity(item.quantity === 0 ? '' : item.quantity.toString());
+                            e.target.select();
+                          }}
+                          onBlur={() => {
+                            setEditingQuantityIndex(null);
+                            setEditingQuantity('');
+                          }}
+                          className={numberInputClassName}
+                        />
+                      </td>
+                      <td className="py-1.5 px-1">
+                        <select
+                          value={item.unit ? item.unit.replace(/s$/, '') : 'pc'}
+                          onChange={e => {
+                            const baseUnit = e.target.value;
+                            const unit = item.quantity <= 1 ? baseUnit : `${baseUnit}s`;
+                            updateLineItem(index, 'unit', unit);
+                          }}
+                          className={`${tableInputClassName} pr-8`}
+                        >
+                          <option value="pc">pc{item.quantity > 1 ? 's' : ''}</option>
+                          <option value="set">set{item.quantity > 1 ? 's' : ''}</option>
+                          <option value="length">length{item.quantity > 1 ? 's' : ''}</option>
+                        </select>
+                      </td>
+                      <td className="py-1 px-1">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={editingUnitPriceIndex === index ? editingUnitPrice : (item.unitPrice ? item.unitPrice.toFixed(2) : '')}
+                          onChange={e => {
+                            const inputValue = e.target.value;
+                            if (/^\d*\.?\d{0,2}$/.test(inputValue) || inputValue === '') {
+                              setEditingUnitPrice(inputValue);
+                              const value = parseFloat(inputValue);
+                              if (!isNaN(value)) {
+                                updateLineItem(index, 'unitPrice', value);
+                              }
+                            }
+                          }}
+                          onFocus={(e) => {
+                            setEditingUnitPriceIndex(index);
+                            setEditingUnitPrice(item.unitPrice === 0 ? '' : item.unitPrice.toString());
+                            e.target.select();
+                          }}
+                          onBlur={() => {
+                            setEditingUnitPriceIndex(null);
+                            setEditingUnitPrice('');
+                          }}
+                          className={numberInputClassName}
+                        />
+                      </td>
+                      <td className="py-1 px-1">
+                        <input
+                          type="text"
+                          value={item.amount.toFixed(2)}
+                          readOnly
+                          className={numberInputClassName}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex items-center justify-between gap-4">
+              <button
+                type="button"
+                onClick={addLineItem}
+                className="px-5 py-2.5 rounded-xl
+                          bg-blue-500/10 text-blue-600 dark:text-blue-400
+                          hover:bg-blue-500/15 transition-all duration-300
+                          text-sm font-medium flex items-center gap-2"
+              >
+                <span className="text-lg leading-none">+</span>
+                Add Line
+              </button>
+              
+              <div className="flex items-center gap-3" style={{ marginRight: '8.33%' }}>
+                <span className="text-sm font-medium text-gray-500">Total Amount</span>
+                <div className="w-[100px] text-right">
+                  <span className="text-xl font-semibold tracking-tight">
+                    {invoiceData.currency === 'USD' ? '$' : invoiceData.currency === 'CNY' ? '¥' : '¥'}
+                    {getTotalAmount().toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <div className="flex flex-wrap gap-1 text-sm">
+                <span className="text-gray-600 dark:text-gray-400">SAY</span>
+                <span className="text-gray-600 dark:text-gray-400">TOTAL</span>
+                <span className="text-blue-500">US</span>
+                <span className="text-blue-500">DOLLARS</span>
+                {invoiceData.amountInWords.dollars.split(' ').map((word, index) => (
+                  word !== 'SAY' && word !== 'TOTAL' && word !== 'US' && word !== 'DOLLARS' && (
+                    <span key={index} className="text-gray-600 dark:text-gray-400">
+                      {word}
+                    </span>
+                  )
+                ))}
+                {invoiceData.amountInWords.hasDecimals && (
+                  <>
+                    <span className="text-red-500">AND</span>
+                    <span className="text-gray-600 dark:text-gray-400">
+                      {invoiceData.amountInWords.cents}
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium">Bank Information:</label>
+              <textarea
+                value={invoiceData.bankInfo}
+                onChange={e => setInvoiceData(prev => ({ ...prev, bankInfo: e.target.value }))}
+                className={`${inputClassName} min-h-[60px]`}
+                placeholder="Enter bank information"
+                rows={2}
+              />
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-blue-50/80 dark:bg-blue-900/10 
+                              border border-blue-200/50 dark:border-blue-700/30
+                              rounded-2xl p-4">
+                <label className="block text-sm font-medium mb-3">Payment Terms:</label>
+                
+                <div className="space-y-4">
+                  <div className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      checked={invoiceData.showPaymentDate}
+                      onChange={e => setInvoiceData(prev => ({ 
+                        ...prev, 
+                        showPaymentDate: e.target.checked 
+                      }))}
+                      className="w-4 h-4 mt-1 rounded border-gray-300 text-blue-500 
+                                focus:ring-blue-500/40"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center flex-wrap gap-2">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          Full paid not later than
+                        </span>
+                        <input
+                          type="date"
+                          value={invoiceData.paymentDate}
+                          onChange={e => setInvoiceData(prev => ({ 
+                            ...prev, 
+                            paymentDate: e.target.value 
+                          }))}
+                          className={`${inputClassName} !py-1 !px-2`}
+                          style={{ 
+                            colorScheme: 'light dark',
+                            paddingRight: '8px',
+                            width: '130px',
+                            minWidth: '130px',
+                            maxWidth: '130px',
+                            flexShrink: 0,  // 防止在 flex 容器中被压缩
+                            flexGrow: 0     // 防止在 flex 容器中被拉伸
+                          }}
+                        />
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          by telegraphic transfer.
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      checked={invoiceData.showRemarks}
+                      onChange={e => setInvoiceData(prev => ({ 
+                        ...prev, 
+                        showRemarks: e.target.checked 
+                      }))}
+                      className="w-4 h-4 mt-2 rounded border-gray-300 text-blue-500 
+                                focus:ring-blue-500/40"
+                    />
+                    <div className="flex-1">
+                      <textarea
+                        value={invoiceData.remarks || ''}
+                        onChange={e => setInvoiceData(prev => ({ 
+                          ...prev, 
+                          remarks: e.target.value 
+                        }))}
+                        className={`${inputClassName} min-h-[32px]`}
+                        placeholder="Enter additional remarks"
+                        rows={1}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="text-sm text-gray-600 dark:text-gray-400 pl-6">
+                    Please state our invoice no. "{invoiceData.invoiceNo}" on your payment documents.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full px-6 py-3.5 rounded-xl
+                        bg-[#007AFF] hover:bg-[#0A84FF]
+                        text-white font-medium text-sm
+                        transition-all duration-300
+                        shadow-lg shadow-[#007AFF]/25
+                        hover:shadow-xl hover:shadow-[#0A84FF]/30
+                        active:scale-[0.98]
+                        flex items-center justify-center gap-2"
             >
-              复制
-            </Button>
-            <Button
-              variant="outline"
-              onClick={handleExportPDF}
-              disabled={!generatedInvoice}
-            >
-              导出PDF
-            </Button>
-            <Button
-              onClick={() => {
-                // TODO: 发送邮件
-              }}
-              disabled={!generatedInvoice}
-            >
-              发送
-            </Button>
-          </div>
+              <Download className="h-4 w-4" />
+              Generate Invoice
+            </button>
+          </form>
         </div>
-      </div>
+      </main>
     </div>
   );
 } 

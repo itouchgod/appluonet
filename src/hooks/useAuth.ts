@@ -9,7 +9,7 @@ export function useAuth() {
   const { data: session, status } = useSession();
   const isLoading = status === 'loading';
   const isAuthenticated = status === 'authenticated';
-  const isAdmin = session?.user?.role === Role.ADMIN;
+  const isAdmin = session?.user?.role === 'admin';
 
   return {
     user: session?.user,
