@@ -124,7 +124,7 @@ export function useQuotation() {
     }));
   };
 
-  const generatePDF = async (type: 'quotation' | 'confirmation') => {
+  const generatePDF = async () => {
     const totalAmount = getTotalAmount();
     const amountInWords = numberToChinese(totalAmount);
     return {

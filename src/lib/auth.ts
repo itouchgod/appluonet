@@ -1,5 +1,5 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import type { AuthOptions, Session, User } from "next-auth";
+import type { AuthOptions, Session } from "next-auth";
 import type { JWT } from "next-auth/jwt";
 import { prisma } from "@/lib/prisma";
 import CredentialsProvider from "next-auth/providers/credentials";
@@ -104,7 +104,7 @@ export const authOptions: AuthOptions = {
     },
     async session({ session, token }: { session: Session; token: JWT }): Promise<Session> {
       if (session.user) {
-        (session.user as any).role = token.role;
+        session.user.role = token.role as string;
       }
       return session;
     }

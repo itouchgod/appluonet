@@ -161,7 +161,6 @@ export function PDFDocument({ type, data, stamp }: PDFDocumentProps) {
           <Image 
             src="/dochead.jpg" 
             style={styles.logo}
-            alt="Company Logo"
           />
           <Text style={{ fontSize: 10, color: '#666666' }}>
             {new Date(data.date).toLocaleDateString()}
@@ -259,7 +258,6 @@ export function PDFDocument({ type, data, stamp }: PDFDocumentProps) {
           <Image 
             src={stamp} 
             style={styles.stamp}
-            alt="Company Stamp"
           />
         )}
 
