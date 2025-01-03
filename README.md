@@ -1,36 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LC App - 公司内部协同办公系统
 
-## Getting Started
+## 项目简介
+LC App 是一个现代化的企业内部协同办公系统，集成了智能邮件助手、报价订单生成、发票制作等功能，旨在提高员工的工作效率。
 
-First, run the development server:
+## 技术栈
+- Next.js 14
+- TypeScript
+- Tailwind CSS
+- Prisma
+- NextAuth.js
+- Headless UI
 
+## 功能特点
+- 智能邮件助手（中英文）
+- 报价订单自动生成
+- 发票制作系统
+- 用户认证与授权
+- 管理员控制面板
+
+## 本地开发
+1. 安装依赖：
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. 启动开发服务器：
+```bash
+npm run dev
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. 打开浏览器访问 http://localhost:3000
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 部署
+本项目使用Vercel进行部署，直接连接GitHub仓库即可自动部署。
 
-## Learn More
+## 环境变量
+请在项目根目录创建 `.env.local` 文件，并配置以下环境变量：
+```
+DATABASE_URL="你的数据库URL"
+NEXTAUTH_SECRET="你的NextAuth密钥"
+NEXTAUTH_URL="http://localhost:3000"
+```
 
-To learn more about Next.js, take a look at the following resources:
+## 贡献指南
+1. Fork 本仓库
+2. 创建新的功能分支
+3. 提交更改
+4. 发起 Pull Request
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 许可证
+MIT License
