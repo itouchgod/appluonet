@@ -11,7 +11,9 @@ interface TableOptions<T> {
   defaultPageSize?: number;
 }
 
-export function useTable<T extends { [key: string]: any }>({
+type TableValue = string | number | boolean | null | undefined;
+
+export function useTable<T extends Record<string, TableValue>>({
   data,
   defaultSort,
   defaultPageSize = 10

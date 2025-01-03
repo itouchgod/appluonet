@@ -1,43 +1,26 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import { QuotationData } from '@/types/quote';
+import { generatePDF } from '@/lib/pdf';
 
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return new NextResponse('Unauthorized', { status: 401 });
-    }
-
-    const data = await request.json();
-    const quotationData: QuotationData = {
-      ...data,
-      date: data.date || new Date().toISOString().split('T')[0],
-      from: data.from || session.user?.name || '',
-      items: data.items || [],
-      notes: data.notes || [
-        'Delivery time: 30 days',
-        'Price based on EXW-Shanghai, Mill TC',
-        'Delivery terms: as mentioned above, subj to unsold',
-        'Payment term: 50% deposit, the balance paid before delivery',
-        'Validity: 5 days'
-      ],
-      amountInWords: {
-        dollars: 'ZERO',
-        cents: '',
-        hasDecimals: false
-      },
-      bankInfo: data.bankInfo || '',
-      showDescription: data.showDescription || false,
-      showRemarks: data.showRemarks || false
-    };
-
-    // TODO: Save quotation to database
+    const data: QuotationData = await request.json();
+    const doc = generatePDF(data);
+    const pdfBytes = doc.output('arraybuffer');
     
-    return NextResponse.json(quotationData);
+    return new NextResponse(pdfBytes, {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="quotation_${data.quoteNo}.pdf"`,
+      },
+    });
   } catch (error) {
-    console.error('Error generating quotation:', error);
-    return new NextResponse('Internal Server Error', { status: 500 });
+    console.error('Error generating PDF:', error);
+    return new NextResponse(JSON.stringify({ error: 'Failed to generate PDF' }), {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
   }
 } 

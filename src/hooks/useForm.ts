@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 
 interface FormState {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface FormErrors {
@@ -24,7 +24,7 @@ export function useForm<T extends FormState>({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [touched, setTouched] = useState<{ [key: string]: boolean }>({});
 
-  const handleChange = useCallback((field: keyof T, value: any) => {
+  const handleChange = useCallback((field: keyof T, value: unknown) => {
     setValues(prev => ({
       ...prev,
       [field]: value
