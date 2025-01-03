@@ -1,6 +1,3 @@
-import React from 'react';
-import { pdf } from '@react-pdf/renderer';
-import { PDFDocument } from '@/components/pdf/document';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { QuotationData, LineItem } from '@/types/quote';
@@ -179,7 +176,7 @@ export const generateInvoicePDF = async (data: QuotationData) => {
   });
   
   // 获取表格结束位置
-  const finalY = (doc as any).lastAutoTable.finalY;
+  const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY;
   
   // 设置字体和样式
   doc.setFontSize(10);
@@ -198,7 +195,7 @@ export const generateInvoicePDF = async (data: QuotationData) => {
   // 分割文本为单词数组
   const words = amountText.split(' ');
   let currentLine = '';
-  let lines = [];
+  const lines: string[] = [];
   
   // 根据宽度限制组织行
   for (const word of words) {
@@ -222,7 +219,7 @@ export const generateInvoicePDF = async (data: QuotationData) => {
   });
 
   // 修改银行信息显示部分
-  const contentStartY = (doc as any).lastAutoTable.finalY + 15;
+  const contentStartY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 15;
 
   // 只在银行信息不为空时显示标题和内容
   if (data.bankInfo && data.bankInfo.trim()) {
@@ -251,7 +248,6 @@ export const generateInvoicePDF = async (data: QuotationData) => {
   
   currentY = paymentY + 5;  // 直接更新现有的 currentY 变量
   
-  let termNumber = 1; // 初始化序号计数器
   const terms: { content: string; isDate?: boolean; isInvoiceNo?: boolean }[] = [];
 
   // 收集需要显示的条款
@@ -292,9 +288,7 @@ export const generateInvoicePDF = async (data: QuotationData) => {
     const isSingleInvoiceTerm = terms.length === 1 && terms[0].isInvoiceNo;
     
     if (isSingleInvoiceTerm) {
-      const leftMargin = 15;  // 添加这行
       // 单行显示模式，不显示标题和序号
-      const parts = terms[0].content.split(`"${data.invoiceNo}"`);
       const firstPart = 'Payment Term: Please state our invoice no. "';
       
       // 绘制第一部分
@@ -516,7 +510,7 @@ export const generateQuotationPDF = async (data: QuotationData, type: 'quotation
 
   const words = amountText.split(' ');
   let currentLine = '';
-  let lines = [];
+  const lines = [];
 
   for (const word of words) {
     const testLine = currentLine ? `${currentLine} ${word}` : word;

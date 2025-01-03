@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { Download, ArrowLeft, Settings } from 'lucide-react';
 import { generateInvoicePDF } from '@/lib/pdf';
@@ -182,11 +182,13 @@ export default function InvoicePage() {
     });
   };
 
-  const getTotalAmount = () => {
+  const getTotalAmount = useCallback(() => {
     return invoiceData.items.reduce((sum, item) => sum + item.amount, 0);
-  };
+  }, [invoiceData.items]);
 
-  const numberToWords = (num: number) => {
+  const total = useMemo(() => getTotalAmount(), [getTotalAmount]);
+
+  const numberToWords = useCallback((num: number) => {
     const getCurrencyPrefix = () => {
       switch(invoiceData.currency) {
         case 'USD': return 'SAY TOTAL US DOLLARS ';
@@ -253,16 +255,14 @@ export default function InvoicePage() {
         hasDecimals: false
       };
     }
-  };
-
-  const total = useMemo(() => getTotalAmount(), [invoiceData.items]);
+  }, [invoiceData.currency]);
 
   useEffect(() => {
     setInvoiceData(prev => ({
       ...prev,
       amountInWords: numberToWords(total)
     }));
-  }, [total, invoiceData.currency]);
+  }, [total, invoiceData.currency, numberToWords]);
 
   useEffect(() => {
     setInvoiceData(prev => ({
@@ -726,7 +726,7 @@ export default function InvoicePage() {
                   </div>
 
                   <div className="text-sm text-gray-600 dark:text-gray-400 pl-6">
-                    Please state our invoice no. "{invoiceData.invoiceNo}" on your payment documents.
+                    Please state our invoice no. &quot;{invoiceData.invoiceNo}&quot; on your payment documents.
                   </div>
                 </div>
               </div>
