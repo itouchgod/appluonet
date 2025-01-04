@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import { Header } from '@/components/Header';
 
 interface Permission {
   id: string;
@@ -69,6 +69,20 @@ export default function ToolsPage() {
     fetchUser();
   }, [session, status, router]);
 
+  const handleLogout = async () => {
+    // 处理退出登录逻辑
+    try {
+      const response = await fetch('/api/auth/signout', {
+        method: 'POST',
+      });
+      if (response.ok) {
+        router.push('/auth/signin');
+      }
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -88,41 +102,38 @@ export default function ToolsPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <div className="flex items-center">
-            <Image
-              src="/images/logo.png"
-              alt="Logo"
-              width={40}
-              height={40}
-              className="mr-2"
-            />
-            <h1 className="text-2xl font-bold">工具箱</h1>
-          </div>
-          {user?.isAdmin && (
-            <button
-              onClick={() => router.push('/admin')}
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
-            >
-              系统管理
-            </button>
-          )}
-        </div>
+    <div className="min-h-screen bg-gray-100 dark:bg-black">
+      {user && (
+        <Header 
+          user={{
+            name: user.username,
+            isAdmin: user.isAdmin
+          }}
+          onLogout={handleLogout}
+        />
+      )}
 
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {availableModules.map((module) => (
             <div
               key={module.id}
-              className="bg-white shadow rounded-lg overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+              className="bg-white dark:bg-[#1c1c1e] shadow rounded-lg overflow-hidden 
+                       hover:shadow-lg transition-shadow cursor-pointer
+                       border border-gray-200/30 dark:border-gray-800/30"
               onClick={() => router.push(module.path)}
             >
               <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{module.name}</h3>
-                <p className="text-sm text-gray-500">{module.description}</p>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                  {module.name}
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {module.description}
+                </p>
                 <div className="mt-4">
-                  <span className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-500">
+                  <span className="inline-flex items-center text-sm font-medium 
+                                text-blue-600 hover:text-blue-500 
+                                dark:text-blue-400 dark:hover:text-blue-300">
                     开始使用
                     <svg className="ml-1 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />

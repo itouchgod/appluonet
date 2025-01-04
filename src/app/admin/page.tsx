@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import { AdminHeader } from '@/components/admin/AdminHeader';
 
 interface User {
   id: string;
@@ -50,6 +50,19 @@ export default function AdminPage() {
       setError(error instanceof Error ? error.message : '获取用户列表失败');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/auth/signout', {
+        method: 'POST',
+      });
+      if (response.ok) {
+        router.push('/auth/signin');
+      }
+    } catch (error) {
+      console.error('Logout failed:', error);
     }
   };
 
@@ -134,122 +147,86 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => router.push('/tools')}
-              className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
-                />
-              </svg>
-              <span className="ml-2">返回</span>
-            </button>
-            <div className="flex items-center">
-              <Image
-                src="/images/logo.png"
-                alt="Logo"
-                width={40}
-                height={40}
-                className="mr-2"
-              />
-              <h1 className="text-2xl font-bold">系统管理</h1>
-            </div>
-          </div>
-          <button
-            onClick={() => router.push('/admin/users/new')}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
-          >
-            添加用户
-          </button>
-        </div>
+    <div className="min-h-screen bg-gray-100 dark:bg-black">
+      <AdminHeader 
+        username={session.user.name || 'Admin'}
+        onLogout={handleLogout}
+      />
 
-        <div className="bg-white shadow rounded-lg">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-white dark:bg-[#1c1c1e] shadow rounded-lg">
           <div className="px-4 py-5 sm:p-6">
-            <h2 className="text-lg font-medium mb-4">用户管理</h2>
+            <h2 className="text-lg font-medium mb-4 text-gray-900 dark:text-white">用户管理</h2>
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead>
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+                <thead className="bg-gray-50 dark:bg-[#2c2c2e]">
                   <tr>
-                    <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       用户名
                     </th>
-                    <th className="hidden lg:table-cell px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       邮箱
                     </th>
-                    <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       状态
                     </th>
-                    <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       管理员
                     </th>
-                    <th className="hidden md:table-cell px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       最后登录
                     </th>
-                    <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       操作
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white dark:bg-[#1c1c1e] divide-y divide-gray-200 dark:divide-gray-800">
                   {users.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-[#2c2c2e]">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                         {user.username}
                       </td>
-                      <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                         {user.email || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                         <button
                           onClick={() => handleToggleStatus(user.id, user.status)}
                           className={`px-3 py-1 inline-flex items-center text-xs leading-5 font-semibold rounded-full transition-colors cursor-pointer hover:opacity-80 ${
                             user.status 
-                              ? 'bg-green-100 text-green-800 hover:bg-green-200' 
-                              : 'bg-red-100 text-red-800 hover:bg-red-200'
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                              : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                           }`}
                         >
                           {user.status ? '启用' : '禁用'}
                         </button>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                         <button
                           onClick={() => handleToggleAdmin(user.id, user.isAdmin)}
                           className={`px-3 py-1 inline-flex items-center text-xs leading-5 font-semibold rounded-full transition-colors cursor-pointer hover:opacity-80 ${
                             user.isAdmin 
-                              ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' 
-                              : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' 
+                              : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
                           }`}
                         >
                           {user.isAdmin ? '是' : '否'}
                         </button>
                       </td>
-                      <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                         {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString() : '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 space-x-2">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 space-x-2">
                         <button
                           onClick={() => router.push(`/admin/users/${user.id}`)}
-                          className="text-blue-600 hover:text-blue-900"
+                          className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                         >
                           编辑
                         </button>
                         <button
                           onClick={() => handleResetPassword(user.id)}
-                          className="hidden md:inline-block text-yellow-600 hover:text-yellow-900"
+                          className="hidden md:inline-block text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300"
                         >
                           重置密码
                         </button>
