@@ -137,15 +137,37 @@ export default function AdminPage() {
     <div className="min-h-screen bg-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-8">
-          <div className="flex items-center">
-            <Image
-              src="/images/logo.svg"
-              alt="Logo"
-              width={40}
-              height={40}
-              className="mr-2"
-            />
-            <h1 className="text-2xl font-bold">系统管理</h1>
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => router.push('/tools')}
+              className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                />
+              </svg>
+              <span className="ml-2">返回</span>
+            </button>
+            <div className="flex items-center">
+              <Image
+                src="/images/logo.svg"
+                alt="Logo"
+                width={40}
+                height={40}
+                className="mr-2"
+              />
+              <h1 className="text-2xl font-bold">系统管理</h1>
+            </div>
           </div>
           <button
             onClick={() => router.push('/admin/users/new')}

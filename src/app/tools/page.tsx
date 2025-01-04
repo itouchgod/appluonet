@@ -22,9 +22,9 @@ interface User {
 
 // 定义所有可用的模块
 const MODULES = [
-  { id: 'ai-email', name: 'AI邮件助手', description: '智能生成商务邮件', path: '/tools/ai-email' },
-  { id: 'quotation', name: '报价及确认', description: '生成报价单和销售确认单', path: '/tools/quotation' },
-  { id: 'invoice', name: '发票管理', description: '生成和管理发票', path: '/tools/invoice' },
+  { id: 'ai-email', name: 'AI邮件助手', description: '智能生成商务邮件', path: '/mail' },
+  { id: 'quotation', name: '报价及确认', description: '生成报价单和销售确认单', path: '/quotation' },
+  { id: 'invoice', name: '发票助手', description: '生成和管理发票', path: '/invoice' },
   { id: 'feature1', name: '功能1', description: '待开发功能', path: '/tools/feature1' },
   { id: 'feature2', name: '功能2', description: '待开发功能', path: '/tools/feature2' },
   { id: 'feature3', name: '功能3', description: '待开发功能', path: '/tools/feature3' },
@@ -93,7 +93,7 @@ export default function ToolsPage() {
         <div className="flex justify-between items-center mb-8">
           <div className="flex items-center">
             <Image
-              src="/images/logo.svg"
+              src="/images/logo.png"
               alt="Logo"
               width={40}
               height={40}

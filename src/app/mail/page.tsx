@@ -1,1 +1,327 @@
 'use client';
+
+import { useState } from 'react';
+import { Copy } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+
+export default function MailPage() {
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState('mail');
+  const [mailType, setMailType] = useState('formal');
+  const [userInput, setUserInput] = useState({
+    mail: '',
+    language: 'both English and Chinese',
+    replyTo: '',
+    reply: '',
+    replyLanguage: 'both English and Chinese',
+    replyType: 'formal'
+  });
+  const [generatedContent, setGeneratedContent] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [copySuccess, setCopySuccess] = useState(false);
+
+  const handleGenerate = async () => {
+    try {
+      setError('');
+      setIsLoading(true);
+      
+      const requestData = {
+        language: activeTab === 'mail' ? userInput.language : userInput.replyLanguage,
+        type: activeTab === 'mail' ? mailType : userInput.replyType,
+        content: activeTab === 'mail' ? userInput.mail : userInput.reply,
+        originalMail: activeTab === 'mail' ? '' : userInput.replyTo,
+        mode: activeTab
+      };
+
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '生成失败');
+      }
+
+      const data = await response.json();
+      setGeneratedContent(data.result);
+
+    } catch (error: unknown) {
+      console.error('Generate Error:', error);
+      setError(error instanceof Error ? error.message : '生成失败，请稍后重试');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCopy = async (content: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  return (
+    <div className="flex flex-1 flex-col bg-[var(--background)]">
+      <div className="w-full max-w-6xl mx-auto px-6 py-10 flex-grow">
+        <div className="flex items-center mb-8">
+          <button
+            onClick={() => router.push('/tools')}
+            className="flex items-center text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 19l-7-7m0 0l7-7m-7 7h18"
+              />
+            </svg>
+            <span className="ml-2">返回</span>
+          </button>
+        </div>
+        <div className="flex flex-col md:flex-row gap-6">
+          {/* 左侧编辑区 */}
+          <div className="w-full md:w-1/2 order-1">
+            <div className="flex justify-center gap-3 mb-6">
+              <button 
+                onClick={() => setActiveTab('mail')}
+                className={`px-8 py-2.5 rounded-full text-sm font-medium transition-all ${
+                  activeTab === 'mail' 
+                    ? 'bg-[var(--blue-accent)] text-white' 
+                    : 'text-[var(--foreground)] hover:bg-black/5 dark:hover:bg-white/5'
+                }`}
+              >
+                Mail
+              </button>
+              <button 
+                onClick={() => setActiveTab('reply')}
+                className={`px-8 py-2.5 rounded-full text-sm font-medium transition-all ${
+                  activeTab === 'reply' 
+                    ? 'bg-[var(--blue-accent)] text-white' 
+                    : 'text-[var(--foreground)] hover:bg-black/5 dark:hover:bg-white/5'
+                }`}
+              >
+                Reply
+              </button>
+            </div>
+
+            <div className="bg-[var(--card-bg)] shadow-sm border border-[var(--card-border)] rounded-xl p-6">
+              {activeTab === 'mail' ? (
+                <div className="space-y-6">
+                  {/* 邮件内容输入框 */}
+                  <div className="space-y-2">
+                    <label className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                      <span className="text-red-500 mr-1">*</span>
+                      Write your email content
+                    </label>
+                    <textarea 
+                      value={userInput.mail}
+                      onChange={(e) => setUserInput({ ...userInput, mail: e.target.value })}
+                      placeholder="请在这里输入邮件内容... / Type your email content here..."
+                      className="w-full h-[200px] md:h-[300px] p-4 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200/50 dark:border-gray-800/50 focus:ring-1 focus:ring-[var(--blue-accent)] focus:outline-none transition-all resize-y text-sm font-['.SFNSText-Regular', 'SF Pro Text', 'SF Pro Icons', 'Helvetica Neue', 'Arial', sans-serif] placeholder:text-gray-400/80"
+                    />
+                  </div>
+
+                  {/* 语言选择 */}
+                  <div className="space-y-2">
+                    <label htmlFor="language-select" className="text-sm text-gray-600 dark:text-gray-400">
+                      Output language
+                    </label>
+                    <div className="relative">
+                      <select
+                        id="language-select"
+                        value={userInput.language}
+                        onChange={(e) => setUserInput({ ...userInput, language: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200/50 dark:border-gray-800/50 focus:ring-1 focus:ring-[var(--blue-accent)] focus:outline-none transition-all text-sm font-medium appearance-none"
+                      >
+                        <option value="both English and Chinese">Both EN & CN</option>
+                        <option value="English">English</option>
+                        <option value="Chinese">Chinese</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* 风格选择 */}
+                  <div className="space-y-2">
+                    <label htmlFor="style-select" className="text-sm text-gray-600 dark:text-gray-400">
+                      Reply Tone
+                    </label>
+                    <div className="relative">
+                      <select
+                        id="style-select"
+                        value={mailType}
+                        onChange={(e) => setMailType(e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200/50 dark:border-gray-800/50 focus:ring-1 focus:ring-[var(--blue-accent)] focus:outline-none transition-all text-sm font-medium appearance-none"
+                      >
+                        <option value="formal">📝 Formal</option>
+                        <option value="professional">💼 Professional</option>
+                        <option value="friendly">👋 Friendly</option>
+                        <option value="concise">⚡️ Concise</option>
+                        <option value="detailed">📋 Detailed</option>
+                        <option value="informal">😊 Informal</option>
+                        <option value="inspirational">✨ Inspirational</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* 生成按钮 */}
+                  <button 
+                    onClick={handleGenerate}
+                    disabled={isLoading || !userInput.mail?.trim()}
+                    className="w-full py-3 rounded-xl bg-[var(--blue-accent)] text-white text-sm font-medium hover:opacity-90 transition-all disabled:opacity-50 shadow-sm"
+                  >
+                    {isLoading ? (
+                      <span className="flex items-center justify-center space-x-2">
+                        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        <span>Generating...</span>
+                      </span>
+                    ) : (
+                      'Generate Optimized Mail'
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <textarea 
+                    value={userInput.replyTo}
+                    onChange={(e) => setUserInput({ ...userInput, replyTo: e.target.value })}
+                    className="w-full h-[200px] p-3 rounded-lg bg-[var(--background)] border border-[var(--card-border)] focus:ring-1 focus:ring-[var(--blue-accent)] focus:outline-none transition-all resize-y text-sm placeholder:text-gray-400 font-['.SFNSText-Regular', 'SF Pro Text', 'SF Pro Icons', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif]"
+                    placeholder="请粘贴需要回复的邮件内容... / Paste the email content you need to reply to..."
+                  />
+                  <textarea 
+                    value={userInput.reply}
+                    onChange={(e) => setUserInput({ ...userInput, reply: e.target.value })}
+                    className="w-full h-[200px] p-3 rounded-lg bg-[var(--background)] border border-[var(--card-border)] focus:ring-1 focus:ring-[var(--blue-accent)] focus:outline-none transition-all resize-y text-sm placeholder:text-gray-400 font-['.SFNSText-Regular', 'SF Pro Text', 'SF Pro Icons', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif]"
+                    placeholder="请输入您的回复草稿... / Enter your reply draft..."
+                  />
+                  <button 
+                    onClick={handleGenerate}
+                    disabled={isLoading || !userInput.replyTo.trim() || !userInput.reply.trim()}
+                    className="w-full py-2.5 rounded-lg bg-[var(--blue-accent)] text-white text-sm font-medium hover:opacity-90 transition-all disabled:opacity-50 shadow-sm"
+                  >
+                    {isLoading ? 'Generating...' : 'Generate Optimized Reply'}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 右侧预览区 */}
+          <div className="w-full md:w-1/2 order-2 md:order-1">
+            <div className="bg-[var(--card-bg)] shadow-sm border border-[var(--card-border)] rounded-xl p-6 min-h-[200px] max-h-[80vh] overflow-y-auto preview-box">
+              <div className="flex justify-end mb-4">
+                <button
+                  aria-label="Copy content"
+                  onClick={() => handleCopy(generatedContent)}
+                  className="relative p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-md transition-colors"
+                  disabled={!generatedContent || isLoading}
+                >
+                  {copySuccess ? (
+                    <span className="absolute -top-8 -left-2 bg-black/75 text-white text-xs py-1 px-2 rounded whitespace-nowrap">
+                      Copied!
+                    </span>
+                  ) : null}
+                  <Copy className={`w-4 h-4 ${
+                    !generatedContent || isLoading 
+                      ? 'text-gray-300 dark:text-gray-600' 
+                      : 'text-[var(--foreground)]'
+                  }`} />
+                </button>
+              </div>
+              <div 
+                className={`
+                  h-[calc(100%-3rem)] 
+                  overflow-y-auto 
+                  font-['.SFNSText-Regular','SF Pro Text','Helvetica Neue','Arial',sans-serif]
+                  text-[15px]
+                  leading-7
+                  tracking-[-0.003em]
+                  text-gray-800 
+                  dark:text-gray-200
+                  selection:bg-blue-500/20
+                  whitespace-pre-wrap
+                  px-1
+                `}
+                style={{
+                  WebkitFontSmoothing: 'antialiased',
+                  MozOsxFontSmoothing: 'grayscale',
+                }}
+              >
+                {!isLoading && generatedContent && (
+                  <div className="space-y-4">
+                    {generatedContent.split('\n\n').map((paragraph, index) => (
+                      <div key={index} className={`
+                        ${paragraph.startsWith('[Subject]') || paragraph.startsWith('[主题]') 
+                          ? 'text-base font-medium text-gray-900 dark:text-white tracking-tight' 
+                          : paragraph.startsWith('[English]') || paragraph.startsWith('[中文]')
+                            ? 'text-sm font-medium text-blue-500 dark:text-blue-400 border-b border-gray-100 dark:border-gray-800'
+                            : paragraph.trim().length === 0
+                              ? 'hidden'
+                              : 'text-[15px] leading-relaxed'
+                        }
+                        ${(paragraph.startsWith('[English]') || paragraph.startsWith('[中文]')) 
+                          ? 'mt-4 first:mt-0' 
+                          : ''
+                        }
+                        ${paragraph.includes('Dear') || paragraph.includes('尊敬的')
+                          ? 'text-[15px] font-normal mt-2'
+                          : ''
+                        }
+                      `}>
+                        {paragraph.startsWith('[') && paragraph.endsWith(']') 
+                          ? paragraph.slice(1, -1) // 移除方括号
+                          : paragraph
+                        }
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {isLoading && (
+                  <div className="flex items-center justify-center h-full text-gray-400">
+                    <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    <span>Generating content...</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+        {error && (
+          <div className="mt-4 p-3 bg-red-50 text-red-500 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
+      </div>
+      <style jsx>{`
+        .preview-box {
+          height: 710px;
+        }
+
+        @media (max-width: 768px) {
+          .preview-box {
+            height: auto;
+            min-height: 200px;
+          }
+        }
+      `}</style>
+    </div>
+  );
+}
