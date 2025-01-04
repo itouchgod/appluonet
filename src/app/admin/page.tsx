@@ -160,7 +160,7 @@ export default function AdminPage() {
             </button>
             <div className="flex items-center">
               <Image
-                src="/images/logo.svg"
+                src="/images/logo.png"
                 alt="Logo"
                 width={40}
                 height={40}

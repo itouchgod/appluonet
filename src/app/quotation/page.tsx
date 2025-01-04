@@ -69,6 +69,7 @@ export default function QuotationPage() {
     bankInfo: '',
     showDescription: false,
     showRemarks: false,
+    showBank: false,
     contractNo: ''
   });
 
@@ -152,6 +153,7 @@ export default function QuotationPage() {
               <SettingsPanel 
                 data={data}
                 onChange={setData}
+                activeTab={activeTab}
               />
             </div>
 
@@ -170,6 +172,22 @@ export default function QuotationPage() {
 
             {/* Notes 部分重新设计 */}
             <div className="mt-8">
+              {/* 银行信息区域 - 仅在订单确认页显示且showBank为true时显示 */}
+              {activeTab === 'confirmation' && data.showBank && (
+                <div className="mb-8">
+                  <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                    Bank Information:
+                  </label>
+                  <textarea
+                    value={data.bankInfo}
+                    onChange={e => handleInputChange('bankInfo', e.target.value)}
+                    placeholder="Enter bank information"
+                    rows={3}
+                    className={inputClassName}
+                  />
+                </div>
+              )}
+
               <NotesSection 
                 data={data}
                 onChange={setData}

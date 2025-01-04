@@ -64,7 +64,7 @@ export default function NewUserPage() {
         <div className="flex justify-between items-center mb-8">
           <div className="flex items-center">
             <Image
-              src="/images/logo.svg"
+              src="/images/logo.png"
               alt="Logo"
               width={40}
               height={40}

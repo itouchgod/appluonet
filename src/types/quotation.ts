@@ -37,4 +37,5 @@ export interface QuotationData {
   bankInfo: string;
   showDescription: boolean;
   showRemarks: boolean;
+  showBank: boolean;
 } 
