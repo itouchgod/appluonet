@@ -6,25 +6,25 @@ import { hash } from 'bcryptjs';
 export async function GET() {
   try {
     const session = await auth();
-    if (!session?.user || session.user.username !== 'admin') {
+    if (!session || !session.user?.isAdmin) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: '未授权访问' },
         { status: 401 }
       );
     }
 
     const users = await prisma.user.findMany({
-      orderBy: {
-        createdAt: 'desc',
-      },
       select: {
         id: true,
         username: true,
         email: true,
         status: true,
+        isAdmin: true,
         lastLoginAt: true,
         createdAt: true,
-        role: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
       },
     });
 
@@ -38,18 +38,17 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
     const session = await auth();
-    if (!session?.user || session.user.username !== 'admin') {
+    if (!session || !session.user?.isAdmin) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: '未授权访问' },
         { status: 401 }
       );
     }
 
-    const body = await request.json();
-    const { username, email, password, isAdmin } = body;
+    const { username, password, email, isAdmin = false } = await req.json();
 
     // 验证必填字段
     if (!username || !password) {
@@ -71,28 +70,29 @@ export async function POST(request: Request) {
       );
     }
 
-    // 创建新用户
+    // 对密码进行加密
     const hashedPassword = await hash(password, 10);
-    const newUser = await prisma.user.create({
+
+    // 创建新用户
+    const user = await prisma.user.create({
       data: {
         username,
-        email,
         password: hashedPassword,
-        role: isAdmin ? 'ADMIN' : 'USER',
-        status: 'ACTIVE',
+        email,
+        isAdmin,
       },
       select: {
         id: true,
         username: true,
         email: true,
         status: true,
+        isAdmin: true,
         lastLoginAt: true,
         createdAt: true,
-        role: true,
       },
     });
 
-    return NextResponse.json(newUser);
+    return NextResponse.json(user);
   } catch (error) {
     console.error('创建用户失败:', error);
     return NextResponse.json(

@@ -6,120 +6,133 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
 interface Permission {
+  id: string;
   moduleId: string;
   canAccess: boolean;
 }
 
-interface Tool {
+interface User {
   id: string;
-  name: string;
-  description: string;
-  icon: string;
-  path: string;
+  username: string;
+  email: string | null;
+  status: boolean;
+  isAdmin: boolean;
+  permissions: Permission[];
 }
 
-const TOOLS: Tool[] = [
-  {
-    id: 'mail',
-    name: 'AI邮件助手',
-    description: '智能生成商务邮件',
-    icon: '/icons/mail.svg',
-    path: '/tools/mail',
-  },
-  {
-    id: 'order',
-    name: '报价及确认',
-    description: '生成报价单和销售确认单',
-    icon: '/icons/order.svg',
-    path: '/tools/order',
-  },
-  {
-    id: 'invoice',
-    name: '发票管理',
-    description: '生成和管理发票',
-    icon: '/icons/invoice.svg',
-    path: '/tools/invoice',
-  },
+// 定义所有可用的模块
+const MODULES = [
+  { id: 'ai-email', name: 'AI邮件助手', description: '智能生成商务邮件', path: '/tools/ai-email' },
+  { id: 'quotation', name: '报价及确认', description: '生成报价单和销售确认单', path: '/tools/quotation' },
+  { id: 'invoice', name: '发票管理', description: '生成和管理发票', path: '/tools/invoice' },
+  { id: 'feature1', name: '功能1', description: '待开发功能', path: '/tools/feature1' },
+  { id: 'feature2', name: '功能2', description: '待开发功能', path: '/tools/feature2' },
+  { id: 'feature3', name: '功能3', description: '待开发功能', path: '/tools/feature3' },
+  { id: 'feature4', name: '功能4', description: '待开发功能', path: '/tools/feature4' },
+  { id: 'feature5', name: '功能5', description: '待开发功能', path: '/tools/feature5' },
+  { id: 'feature6', name: '功能6', description: '待开发功能', path: '/tools/feature6' },
+  { id: 'feature7', name: '功能7', description: '待开发功能', path: '/tools/feature7' },
+  { id: 'feature8', name: '功能8', description: '待开发功能', path: '/tools/feature8' },
+  { id: 'feature9', name: '功能9', description: '待开发功能', path: '/tools/feature9' },
 ];
 
 export default function ToolsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [permissions, setPermissions] = useState<{ [key: string]: boolean }>({});
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (status === 'loading') return;
-    
-    if (!session?.user) {
-      router.push('/');
+
+    if (!session) {
+      router.push('/auth/signin');
       return;
     }
 
-    fetchPermissions();
+    const fetchUser = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/users/me');
+        if (!response.ok) {
+          throw new Error('获取用户信息失败');
+        }
+        const data = await response.json();
+        setUser(data);
+      } catch (error) {
+        console.error('Error fetching user:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUser();
   }, [session, status, router]);
 
-  const fetchPermissions = async () => {
-    try {
-      const response = await fetch('/api/users/permissions');
-      if (!response.ok) {
-        throw new Error('Failed to fetch permissions');
-      }
-      const data = await response.json();
-      const permMap: { [key: string]: boolean } = {};
-      data.forEach((perm: Permission) => {
-        permMap[perm.moduleId] = perm.canAccess;
-      });
-      setPermissions(permMap);
-      setLoading(false);
-    } catch (err) {
-      console.error('Error fetching permissions:', err);
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
+  if (status === 'loading' || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">加载中...</div>
+      </div>
+    );
   }
 
+  if (!session) {
+    return null;
+  }
+
+  // 根据用户权限过滤可用模块
+  const availableModules = MODULES.filter(module => {
+    const permission = user?.permissions?.find(p => p.moduleId === module.id);
+    return permission?.canAccess;
+  });
+
   return (
-    <div className="container mx-auto p-4">
-      <div className="flex justify-between items-center mb-8">
-        <div className="flex items-center">
-          <Image src="/images/logo.png" alt="Logo" width={40} height={40} className="mr-4" />
-          <h1 className="text-2xl font-bold">工具箱</h1>
-        </div>
-        {session?.user?.username === 'admin' && (
-          <button
-            onClick={() => router.push('/admin')}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          >
-            系统管理
-          </button>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {TOOLS.map((tool) => {
-          // 如果用户没有该工具的权限，则不显示
-          if (!permissions[tool.id]) {
-            return null;
-          }
-
-          return (
-            <div
-              key={tool.id}
-              className="bg-white shadow rounded-lg p-6 hover:shadow-lg transition-shadow cursor-pointer"
-              onClick={() => router.push(tool.path)}
+    <div className="min-h-screen bg-gray-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex justify-between items-center mb-8">
+          <div className="flex items-center">
+            <Image
+              src="/images/logo.svg"
+              alt="Logo"
+              width={40}
+              height={40}
+              className="mr-2"
+            />
+            <h1 className="text-2xl font-bold">工具箱</h1>
+          </div>
+          {user?.isAdmin && (
+            <button
+              onClick={() => router.push('/admin')}
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
             >
-              <div className="flex items-center mb-4">
-                <Image src={tool.icon} alt={tool.name} width={32} height={32} className="mr-3" />
-                <h2 className="text-xl font-semibold">{tool.name}</h2>
+              系统管理
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {availableModules.map((module) => (
+            <div
+              key={module.id}
+              className="bg-white shadow rounded-lg overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => router.push(module.path)}
+            >
+              <div className="p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">{module.name}</h3>
+                <p className="text-sm text-gray-500">{module.description}</p>
+                <div className="mt-4">
+                  <span className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-500">
+                    开始使用
+                    <svg className="ml-1 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </span>
+                </div>
               </div>
-              <p className="text-gray-600">{tool.description}</p>
             </div>
-          );
-        })}
+          ))}
+        </div>
       </div>
     </div>
   );

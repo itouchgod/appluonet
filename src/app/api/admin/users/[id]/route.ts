@@ -1,145 +1,116 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
+export async function GET(
+  req: NextRequest,
+  context: { params: { id: string } }
 ) {
   try {
     const session = await auth();
-    if (!session?.user || session.user.username !== 'admin') {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    if (!session || !session.user?.isAdmin) {
+      return NextResponse.json({ error: '未授权访问' }, { status: 401 });
     }
 
-    // 不允许删除管理员账号
+    // 确保参数是有效的
+    const id = context.params.id;
+    if (!id) {
+      return NextResponse.json({ error: '无效的用户ID' }, { status: 400 });
+    }
+
     const user = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id },
+      include: {
+        permissions: true,
+      },
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: '用户不存在' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: '用户不存在' }, { status: 404 });
     }
 
-    if (user.username === 'admin') {
-      return NextResponse.json(
-        { error: '不能删除管理员账号' },
-        { status: 403 }
-      );
-    }
-
-    await prisma.user.delete({
-      where: { id: params.id },
-    });
-
-    return NextResponse.json(
-      { message: '用户删除成功' },
-      { status: 200 }
-    );
+    return NextResponse.json(user);
   } catch (error) {
-    console.error('删除用户失败:', error);
+    console.error('获取用户信息失败:', error);
     return NextResponse.json(
-      { error: '删除用户失败' },
+      { error: '获取用户信息失败' },
       { status: 500 }
     );
   }
 }
 
 export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  context: { params: { id: string } }
 ) {
   try {
     const session = await auth();
-    if (!session?.user || session.user.username !== 'admin') {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    if (!session || !session.user?.isAdmin) {
+      return NextResponse.json({ error: '未授权访问' }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { username, email } = body;
-
-    // 验证必填字段
-    if (!username) {
-      return NextResponse.json(
-        { error: '用户名为必填项' },
-        { status: 400 }
-      );
+    const id = context.params.id;
+    if (!id) {
+      return NextResponse.json({ error: '无效的用户ID' }, { status: 400 });
     }
 
-    // 检查用户是否存在
-    const user = await prisma.user.findUnique({
-      where: { id: params.id },
-    });
+    const { isAdmin, status } = await req.json();
+    const updateData: any = {};
 
-    if (!user) {
-      return NextResponse.json(
-        { error: '用户不存在' },
-        { status: 404 }
-      );
-    }
-
-    // 如果是管理员账号，只允许修改邮箱
-    if (user.username === 'admin') {
-      const updatedUser = await prisma.user.update({
-        where: { id: params.id },
-        data: { email },
-        select: {
-          id: true,
-          username: true,
-          email: true,
-          status: true,
-          lastLoginAt: true,
-          createdAt: true,
-        },
-      });
-      return NextResponse.json(updatedUser);
-    }
-
-    // 如果修改用户名，检查新用户名是否已存在
-    if (username !== user.username) {
-      const existingUser = await prisma.user.findUnique({
-        where: { username },
-      });
-
-      if (existingUser) {
-        return NextResponse.json(
-          { error: '用户名已存在' },
-          { status: 400 }
-        );
+    // 检查是否更新管理员权限
+    if (typeof isAdmin === 'boolean') {
+      // 防止取消最后一个管理员的管理员权限
+      if (!isAdmin) {
+        const adminCount = await prisma.user.count({
+          where: { isAdmin: true },
+        });
+        if (adminCount <= 1) {
+          return NextResponse.json(
+            { error: '必须保留至少一个管理员账号' },
+            { status: 400 }
+          );
+        }
       }
+      updateData.isAdmin = isAdmin;
     }
 
-    // 更新用户信息
-    const updatedUser = await prisma.user.update({
-      where: { id: params.id },
-      data: {
-        username,
-        email,
-      },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        status: true,
-        lastLoginAt: true,
-        createdAt: true,
+    // 检查是否更新状态
+    if (typeof status === 'boolean') {
+      // 防止禁用最后一个管理员账户
+      if (!status) {
+        const targetUser = await prisma.user.findUnique({
+          where: { id },
+          select: { isAdmin: true },
+        });
+        
+        if (targetUser?.isAdmin) {
+          const adminCount = await prisma.user.count({
+            where: { isAdmin: true, status: true },
+          });
+          if (adminCount <= 1) {
+            return NextResponse.json(
+              { error: '必须保留至少一个启用状态的管理员账号' },
+              { status: 400 }
+            );
+          }
+        }
+      }
+      updateData.status = status;
+    }
+
+    const user = await prisma.user.update({
+      where: { id },
+      data: updateData,
+      include: {
+        permissions: true,
       },
     });
 
-    return NextResponse.json(updatedUser);
+    return NextResponse.json(user);
   } catch (error) {
-    console.error('更新用户失败:', error);
+    console.error('更新用户信息失败:', error);
     return NextResponse.json(
-      { error: '更新用户失败' },
+      { error: '更新用户信息失败' },
       { status: 500 }
     );
   }

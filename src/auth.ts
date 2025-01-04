@@ -17,19 +17,19 @@ export const { auth, handlers: { GET, POST } } = NextAuth({
         }
 
         const user = await prisma.user.findUnique({
-          where: { username: credentials.username as string }
+          where: { username: credentials.username }
         });
 
         if (!user) {
           throw new Error('用户名或密码错误');
         }
 
-        if (user.status === 'INACTIVE') {
+        if (!user.status) {
           throw new Error('账号已被禁用');
         }
 
         const isPasswordValid = await compare(
-          credentials.password as string, 
+          credentials.password,
           user.password
         );
 
@@ -46,6 +46,8 @@ export const { auth, handlers: { GET, POST } } = NextAuth({
         return {
           id: user.id,
           username: user.username,
+          email: user.email,
+          isAdmin: user.isAdmin,
         };
       }
     })
@@ -58,13 +60,19 @@ export const { auth, handlers: { GET, POST } } = NextAuth({
       if (user) {
         token.id = user.id;
         token.username = user.username;
+        token.email = user.email;
+        token.isAdmin = user.isAdmin;
       }
       return token;
     },
     async session({ session, token }) {
       if (token) {
-        session.user.id = token.id as string;
-        session.user.username = token.username as string;
+        session.user = {
+          id: token.id as string,
+          username: token.username as string,
+          email: token.email as string,
+          isAdmin: token.isAdmin as boolean,
+        };
       }
       return session;
     },
