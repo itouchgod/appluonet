@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { CreateUserModal } from '@/components/admin/CreateUserModal';
+import { UserPlus } from 'lucide-react';
 
 interface User {
   id: string;
@@ -153,13 +154,22 @@ export default function AdminPage() {
       <AdminHeader 
         username={session.user.name || 'Admin'}
         onLogout={handleLogout}
-        onCreateUser={() => setShowCreateModal(true)}
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white dark:bg-[#1c1c1e] shadow rounded-lg">
           <div className="px-4 py-5 sm:p-6">
-            <h2 className="text-lg font-medium mb-4 text-gray-900 dark:text-white">用户管理</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white">用户管理</h2>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="flex items-center px-3 py-2 text-sm font-medium text-white 
+                         bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <UserPlus className="w-4 h-4 mr-2" />
+                添加用户
+              </button>
+            </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
                 <thead className="bg-gray-50 dark:bg-[#2c2c2e]">

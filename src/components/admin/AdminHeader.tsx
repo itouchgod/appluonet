@@ -1,15 +1,14 @@
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useState, useRef, useEffect } from 'react';
-import { ChevronDown, LogOut, UserPlus, ArrowLeft } from 'lucide-react';
+import { ChevronDown, LogOut, ArrowLeft } from 'lucide-react';
 
 interface AdminHeaderProps {
   username: string;
   onLogout: () => void;
-  onCreateUser: () => void;
 }
 
-export function AdminHeader({ username, onLogout, onCreateUser }: AdminHeaderProps) {
+export function AdminHeader({ username, onLogout }: AdminHeaderProps) {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -43,15 +42,6 @@ export function AdminHeader({ username, onLogout, onCreateUser }: AdminHeaderPro
           </div>
 
           <div className="flex items-center space-x-4">
-            <button
-              onClick={onCreateUser}
-              className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 
-                       dark:text-gray-300 dark:hover:text-white transition-colors"
-            >
-              <UserPlus className="w-4 h-4 mr-2" />
-              添加用户
-            </button>
-
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setShowDropdown(!showDropdown)}
