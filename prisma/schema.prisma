@@ -27,13 +27,15 @@ model User {
 }
 
 model Permission {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
+  userId    String
   moduleId  String
   canAccess Boolean  @default(false)
-  userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, moduleId])
+  @@index([userId])
+  @@index([moduleId])
 }
 
 enum Role {

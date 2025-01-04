@@ -1,90 +1,82 @@
 import NextAuth from "next-auth"
+import type { NextAuthConfig } from "next-auth"
+import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "@/lib/prisma"
 import CredentialsProvider from "next-auth/providers/credentials"
-import { compare } from "bcryptjs"
+import bcrypt from "bcryptjs"
+import { User } from "next-auth"
 
-export const { auth, handlers: { GET, POST } } = NextAuth({
+const authConfig = {
+  adapter: PrismaAdapter(prisma) as unknown as NextAuthConfig["adapter"],
   providers: [
     CredentialsProvider({
-      name: "Credentials",
+      name: "credentials",
       credentials: {
-        username: { label: "用户名", type: "text" },
-        password: { label: "密码", type: "password" }
+        username: { label: "Username", type: "text" },
+        password: { label: "Password", type: "password" }
       },
-      async authorize(credentials) {
+      async authorize(credentials): Promise<User | null> {
         if (!credentials?.username || !credentials?.password) {
-          throw new Error('请输入用户名和密码');
+          throw new Error("请输入用户名和密码")
         }
 
         const user = await prisma.user.findUnique({
-          where: { username: credentials.username }
-        });
+          where: { 
+            username: credentials.username as string
+          }
+        })
 
         if (!user) {
-          throw new Error('用户名或密码错误');
+          throw new Error("用户不存在")
+        }
+
+        if (!user.password) {
+          throw new Error("请先设置密码")
+        }
+
+        const isValid = await bcrypt.compare(
+          credentials.password as string, 
+          user.password as string
+        )
+
+        if (!isValid) {
+          throw new Error("密码错误")
         }
 
         if (!user.status) {
-          throw new Error('账号已被禁用');
+          throw new Error("账号已被禁用")
         }
-
-        const isPasswordValid = await compare(
-          credentials.password,
-          user.password
-        );
-
-        if (!isPasswordValid) {
-          throw new Error('用户名或密码错误');
-        }
-
-        // 更新最后登录时间
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { lastLoginAt: new Date() }
-        });
 
         return {
           id: user.id,
-          username: user.username,
           email: user.email,
-          isAdmin: user.isAdmin,
-        };
+          name: user.username,
+          username: user.username,
+          isAdmin: user.isAdmin
+        }
       }
     })
   ],
+  session: { strategy: "jwt" },
   pages: {
-    signIn: "/",
+    signIn: "/login",
   },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
-        token.username = user.username;
-        token.email = user.email;
-        token.isAdmin = user.isAdmin;
+        token.id = user.id
+        token.isAdmin = user.isAdmin
       }
-      return token;
+      return token
     },
     async session({ session, token }) {
-      if (token) {
-        session.user = {
-          id: token.id as string,
-          username: token.username as string,
-          email: token.email as string,
-          isAdmin: token.isAdmin as boolean,
-        };
+      if (session.user) {
+        session.user.id = token.id as string
+        session.user.isAdmin = token.isAdmin as boolean
       }
-      return session;
-    },
-    async redirect({ url, baseUrl }) {
-      if (url === baseUrl || url === '/') {
-        return '/tools';
-      }
-      return url;
+      return session
     }
-  },
-  session: {
-    strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
-  },
-}); 
+  }
+} satisfies NextAuthConfig
+
+export const { handlers, auth, signIn, signOut } = NextAuth(authConfig) 

@@ -39,26 +39,20 @@ const MODULES = [
 ];
 
 export default function UserDetailPage() {
-  const { data: session, status } = useSession();
   const router = useRouter();
   const params = useParams();
+  const { data: session } = useSession();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [pendingPermissions, setPendingPermissions] = useState<Map<string, boolean>>(new Map());
+  const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
-    if (status === 'loading') return;
-
-    if (!session?.user?.isAdmin) {
-      router.push('/tools');
-      return;
-    }
-
     const fetchUser = async () => {
       try {
         setLoading(true);
-        setError(null);
         const response = await fetch(`/api/admin/users/${params.id}`);
         if (!response.ok) {
           const data = await response.json();
@@ -66,6 +60,12 @@ export default function UserDetailPage() {
         }
         const data = await response.json();
         setUser(data);
+        // 初始化权限状态
+        const initialPermissions = new Map();
+        data.permissions.forEach((permission: Permission) => {
+          initialPermissions.set(permission.moduleId, permission.canAccess);
+        });
+        setPendingPermissions(initialPermissions);
       } catch (error) {
         console.error('Error fetching user:', error);
         setError(error instanceof Error ? error.message : '获取用户信息失败');
@@ -77,66 +77,34 @@ export default function UserDetailPage() {
     if (params.id) {
       fetchUser();
     }
-  }, [session, status, router, params.id]);
+  }, [params.id]);
 
-  const handleToggleStatus = async () => {
-    if (!user) return;
-    try {
-      setSaving(true);
-      const response = await fetch(`/api/admin/users/${user.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: !user.status }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || '更新用户状态失败');
-      }
-
-      const data = await response.json();
-      setUser(data);
-    } catch (error) {
-      console.error('Error updating user status:', error);
-      alert(error instanceof Error ? error.message : '更新用户状态失败');
-    } finally {
-      setSaving(false);
-    }
+  const handleTogglePermission = (moduleId: string, currentAccess: boolean) => {
+    const newPermissions = new Map(pendingPermissions);
+    newPermissions.set(moduleId, !currentAccess);
+    setPendingPermissions(newPermissions);
+    setHasChanges(true);
   };
 
-  const handleToggleAdmin = async () => {
-    if (!user) return;
+  const handleSavePermissions = async () => {
+    if (!user || !hasChanges) return;
     try {
       setSaving(true);
-      const response = await fetch(`/api/admin/users/${user.id}`, {
+      
+      // 构建权限数据
+      const updatedPermissions = MODULES.map(module => ({
+        moduleId: module.id,
+        canAccess: pendingPermissions.get(module.id) ?? false
+      }));
+
+      console.log('Sending permissions:', updatedPermissions); // 调试日志
+
+      const response = await fetch(`/api/admin/users/${user.id}/permissions/batch`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isAdmin: !user.isAdmin }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || '更新管理员权限失败');
-      }
-
-      const data = await response.json();
-      setUser(data);
-    } catch (error) {
-      console.error('Error updating admin status:', error);
-      alert(error instanceof Error ? error.message : '更新管理员权限失败');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleTogglePermission = async (moduleId: string, currentAccess: boolean) => {
-    if (!user) return;
-    try {
-      setSaving(true);
-      const response = await fetch(`/api/admin/users/${user.id}/permissions`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ moduleId, canAccess: !currentAccess }),
+        headers: { 
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ permissions: updatedPermissions })
       });
 
       if (!response.ok) {
@@ -146,15 +114,17 @@ export default function UserDetailPage() {
 
       const data = await response.json();
       setUser(data);
+      setHasChanges(false);
+      alert('权限更新成功');
     } catch (error) {
-      console.error('Error updating permission:', error);
+      console.error('Error updating permissions:', error);
       alert(error instanceof Error ? error.message : '更新模块权限失败');
     } finally {
       setSaving(false);
     }
   };
 
-  if (status === 'loading' || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-lg">加载中...</div>
@@ -175,7 +145,7 @@ export default function UserDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 dark:bg-black">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-8">
           <div className="flex items-center">
@@ -198,64 +168,60 @@ export default function UserDetailPage() {
 
         {user && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="bg-white shadow rounded-lg">
+            <div className="bg-white dark:bg-[#1c1c1e] shadow rounded-lg">
               <div className="px-4 py-5 sm:p-6">
                 <h2 className="text-lg font-medium mb-4">基本信息</h2>
-                <div className="grid grid-cols-1 gap-6">
+                <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">用户名</label>
-                    <div className="mt-1 text-sm text-gray-900">{user.username}</div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">用户名</label>
+                    <div className="mt-1 text-sm text-gray-900 dark:text-white">
+                      {user.username}
+                    </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">邮箱</label>
-                    <div className="mt-1 text-sm text-gray-900">{user.email || '-'}</div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">邮箱</label>
+                    <div className="mt-1 text-sm text-gray-900 dark:text-white">
+                      {user.email || '-'}
+                    </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">状态</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">状态</label>
                     <div className="mt-1">
-                      <button
-                        onClick={handleToggleStatus}
-                        disabled={saving}
-                        className={`px-3 py-1 inline-flex items-center text-xs leading-5 font-semibold rounded-full transition-colors ${
-                          user.status
-                            ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                            : 'bg-red-100 text-red-800 hover:bg-red-200'
-                        }`}
-                      >
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        user.status
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200'
+                          : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200'
+                      }`}>
                         {user.status ? '启用' : '禁用'}
-                      </button>
+                      </span>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">管理员权限</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">管理员权限</label>
                     <div className="mt-1">
-                      <button
-                        onClick={handleToggleAdmin}
-                        disabled={saving}
-                        className={`px-3 py-1 inline-flex items-center text-xs leading-5 font-semibold rounded-full transition-colors ${
-                          user.isAdmin
-                            ? 'bg-blue-100 text-blue-800 hover:bg-blue-200'
-                            : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                        }`}
-                      >
+                      <span className={`px-3 py-1 text-xs rounded-full ${
+                        user.isAdmin
+                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200'
+                          : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
+                      }`}>
                         {user.isAdmin ? '是' : '否'}
-                      </button>
+                      </span>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">最后登录时间</label>
-                    <div className="mt-1 text-sm text-gray-900">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">最后登录时间</label>
+                    <div className="mt-1 text-sm text-gray-900 dark:text-white">
                       {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString() : '-'}
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">创建时间</label>
-                    <div className="mt-1 text-sm text-gray-900">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">创建时间</label>
+                    <div className="mt-1 text-sm text-gray-900 dark:text-white">
                       {new Date(user.createdAt).toLocaleString()}
                     </div>
                   </div>
@@ -263,21 +229,37 @@ export default function UserDetailPage() {
               </div>
             </div>
 
-            <div className="bg-white shadow rounded-lg">
+            <div className="bg-white dark:bg-[#1c1c1e] shadow rounded-lg">
               <div className="px-4 py-5 sm:p-6">
-                <h2 className="text-lg font-medium mb-4">模块权限</h2>
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-lg font-medium">模块权限</h2>
+                  <button
+                    onClick={handleSavePermissions}
+                    disabled={!hasChanges || saving}
+                    className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                      hasChanges && !saving
+                        ? 'bg-blue-600 text-white hover:bg-blue-700'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    {saving ? '保存中...' : '保存更改'}
+                  </button>
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {MODULES.map((module) => {
-                    const permission = user.permissions?.find(p => p.moduleId === module.id);
-                    const hasAccess = permission?.canAccess ?? false;
+                    const hasAccess = pendingPermissions.get(module.id) ?? false;
                     return (
                       <div
                         key={module.id}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
                       >
                         <div className="flex flex-col">
-                          <span className="text-sm font-medium text-gray-700">{module.name}</span>
-                          <span className="text-xs text-gray-500">{module.description}</span>
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            {module.name}
+                          </span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {module.description}
+                          </span>
                         </div>
                         <label className="relative inline-flex items-center cursor-pointer">
                           <input
@@ -287,10 +269,7 @@ export default function UserDetailPage() {
                             disabled={saving}
                             className="sr-only peer"
                           />
-                          <div className={`relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer ${
-                            hasAccess ? 'peer-checked:bg-blue-600' : ''
-                          } peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all`}>
-                          </div>
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
                         </label>
                       </div>
                     );

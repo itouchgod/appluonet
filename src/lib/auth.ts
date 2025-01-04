@@ -1,83 +1,77 @@
-import { PrismaClient } from '@prisma/client';
-import { hash } from 'bcryptjs';
+import NextAuth from "next-auth";
+import { PrismaAdapter } from "@auth/prisma-adapter";
+import { prisma } from "./prisma";
+import CredentialsProvider from "next-auth/providers/credentials";
+import bcrypt from "bcryptjs";
+import type { NextAuthConfig } from "next-auth";
 
-const prisma = new PrismaClient();
-
-export async function createTestUser() {
-  try {
-    // 创建 admin 用户
-    const adminUser = await createAdminUser('admin', 'admin123');
-    // 创建 jschina 用户
-    const jschinaUser = await createAdminUser('jschina', 'jschina111');
-
-    console.log('测试用户创建成功');
-    return adminUser;
-  } catch (error) {
-    console.error('创建测试用户失败:', error);
-    throw error;
-  }
-}
-
-async function createAdminUser(username: string, password: string) {
-  const existingUser = await prisma.user.findUnique({
-    where: { username },
-  });
-
-  if (!existingUser) {
-    const hashedPassword = await hash(password, 12);
-    const user = await prisma.user.create({
-      data: {
-        username,
-        password: hashedPassword,
-        status: true,
-        isAdmin: true,
-        permissions: {
-          create: [
-            { moduleId: 'mail', canAccess: true },
-            { moduleId: 'order', canAccess: true },
-            { moduleId: 'invoice', canAccess: true },
-          ]
-        }
+export const config = {
+  adapter: PrismaAdapter(prisma),
+  session: {
+    strategy: "jwt",
+  },
+  pages: {
+    signIn: "/login",
+  },
+  providers: [
+    CredentialsProvider({
+      name: "credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" }
       },
-      include: {
-        permissions: true
-      }
-    });
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          throw new Error("请输入邮箱和密码")
+        }
 
-    console.log(`创建管理员用户 ${username} 成功`);
-    return user;
-  }
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email }
+        })
 
-  // 如果用户已存在，确保更新为管理员权限
-  const updatedUser = await prisma.user.update({
-    where: { username },
-    data: {
-      isAdmin: true,
-      permissions: {
-        upsert: [
-          {
-            where: { userId_moduleId: { userId: existingUser.id, moduleId: 'mail' } },
-            create: { moduleId: 'mail', canAccess: true },
-            update: { canAccess: true }
-          },
-          {
-            where: { userId_moduleId: { userId: existingUser.id, moduleId: 'order' } },
-            create: { moduleId: 'order', canAccess: true },
-            update: { canAccess: true }
-          },
-          {
-            where: { userId_moduleId: { userId: existingUser.id, moduleId: 'invoice' } },
-            create: { moduleId: 'invoice', canAccess: true },
-            update: { canAccess: true }
-          }
-        ]
+        if (!user) {
+          throw new Error("用户不存在")
+        }
+
+        if (!user.password) {
+          throw new Error("请先设置密码")
+        }
+
+        const isValid = await bcrypt.compare(credentials.password, user.password)
+
+        if (!isValid) {
+          throw new Error("密码错误")
+        }
+
+        if (!user.status) {
+          throw new Error("账号已被禁用")
+        }
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.username,
+          isAdmin: user.isAdmin
+        }
       }
+    })
+  ],
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id
+        token.isAdmin = user.isAdmin
+      }
+      return token
     },
-    include: {
-      permissions: true
+    async session({ session, token }) {
+      if (session.user) {
+        session.user.id = token.id as string
+        session.user.isAdmin = token.isAdmin as boolean
+      }
+      return session
     }
-  });
+  }
+} satisfies NextAuthConfig
 
-  console.log(`更新用户 ${username} 为管理员成功`);
-  return updatedUser;
-} 
+export const { auth, signIn, signOut } = NextAuth(config) 

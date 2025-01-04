@@ -1,37 +1,41 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { NextResponse, NextRequest } from 'next/server';
+import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 export async function GET(
-  req: NextRequest,
+  request: Request,
   context: { params: { id: string } }
 ) {
   try {
+    // 验证管理员权限
     const session = await auth();
-    if (!session || !session.user?.isAdmin) {
-      return NextResponse.json({ error: '未授权访问' }, { status: 401 });
+    if (!session?.user?.isAdmin) {
+      return NextResponse.json(
+        { error: '需要管理员权限' },
+        { status: 403 }
+      );
     }
 
-    // 确保参数是有效的
-    const id = context.params.id;
-    if (!id) {
-      return NextResponse.json({ error: '无效的用户ID' }, { status: 400 });
-    }
+    const { id } = context.params;
 
+    // 获取用户信息
     const user = await prisma.user.findUnique({
       where: { id },
       include: {
-        permissions: true,
-      },
+        permissions: true
+      }
     });
 
     if (!user) {
-      return NextResponse.json({ error: '用户不存在' }, { status: 404 });
+      return NextResponse.json(
+        { error: '用户不存在' },
+        { status: 404 }
+      );
     }
 
     return NextResponse.json(user);
   } catch (error) {
-    console.error('获取用户信息失败:', error);
+    console.error('获取用户信息时出错:', error);
     return NextResponse.json(
       { error: '获取用户信息失败' },
       { status: 500 }
@@ -55,7 +59,7 @@ export async function PUT(
     }
 
     const { isAdmin, status } = await req.json();
-    const updateData: any = {};
+    const updateData: { isAdmin?: boolean; status?: boolean } = {};
 
     // 检查是否更新管理员权限
     if (typeof isAdmin === 'boolean') {

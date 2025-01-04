@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/Header';
+import { ProfileModal } from '@/components/profile/ProfileModal';
 
 interface Permission {
   id: string;
@@ -41,6 +42,7 @@ export default function ToolsPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -70,7 +72,6 @@ export default function ToolsPage() {
   }, [session, status, router]);
 
   const handleLogout = async () => {
-    // 处理退出登录逻辑
     try {
       const response = await fetch('/api/auth/signout', {
         method: 'POST',
@@ -104,13 +105,22 @@ export default function ToolsPage() {
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-black">
       {user && (
-        <Header 
-          user={{
-            name: user.username,
-            isAdmin: user.isAdmin
-          }}
-          onLogout={handleLogout}
-        />
+        <>
+          <Header 
+            user={{
+              name: user.username,
+              isAdmin: user.isAdmin
+            }}
+            onLogout={handleLogout}
+            onProfile={() => setShowProfileModal(true)}
+          />
+
+          <ProfileModal
+            isOpen={showProfileModal}
+            onClose={() => setShowProfileModal(false)}
+            user={user}
+          />
+        </>
       )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
