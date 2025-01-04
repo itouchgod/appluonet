@@ -10,9 +10,13 @@ interface Permission {
   canAccess: boolean;
 }
 
+type RouteParams = {
+  id: string;
+};
+
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: RouteParams }
 ) {
   try {
     // 验证管理员权限
