@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LC APP - 企业级文档管理系统
 
-## Getting Started
+## 项目简介
+LC APP 是一个基于 Next.js 开发的企业级文档管理系统，主要用于处理报价单、销售确认单和发票等商业文档的生成和管理。
 
-First, run the development server:
+## 技术栈
+- Next.js 15.1.3 (App Router)
+- TypeScript 5.x
+- Tailwind CSS 3.4.1
+- Prisma (ORM)
+- PostgreSQL
+- Auth.js
+- jsPDF
 
+## 开发环境设置
+
+1. 克隆项目
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone [repository-url]
+cd lc-app
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. 安装依赖
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. 环境变量配置
+复制 `.env.example` 到 `.env` 并填写必要的环境变量。
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. 数据库迁移
+```bash
+npx prisma migrate dev
+```
 
-## Learn More
+5. 启动开发服务器
+```bash
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+## 主要功能
+- 报价单生成和管理
+- 销售确认单处理
+- 发票生成
+- 用户认证与权限管理
+- PDF 文档生成
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 项目结构
+```
+/src
+  /app
+    /admin     # 管理界面
+    /tools     # 模块面板
+    /quotation # 报价单模块
+    /order     # 订单确认模块
+    /invoice   # 发票模块
+    /page.tsx  # 登录页面
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 贡献指南
+1. Fork 项目
+2. 创建功能分支
+3. 提交更改
+4. 发起 Pull Request
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 许可证
+MIT
