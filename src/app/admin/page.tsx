@@ -246,10 +246,10 @@ export default function AdminPage() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">用户名</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">邮箱</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">最后登录</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">创建时间</th>
+                <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">最后登录</th>
+                <th className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">邮箱</th>
+                <th className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">创建时间</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
               </tr>
             </thead>
@@ -269,6 +269,16 @@ export default function AdminPage() {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      user.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {user.status === 'ACTIVE' ? '活跃' : '禁用'}
+                    </span>
+                  </td>
+                  <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap">
+                    {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString() : '-'}
+                  </td>
+                  <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap">
                     {isEditingUser === user.id ? (
                       <input
                         type="email"
@@ -280,17 +290,7 @@ export default function AdminPage() {
                       user.email || '-'
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      user.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                    }`}>
-                      {user.status === 'ACTIVE' ? '活跃' : '禁用'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {new Date(user.lastLoginAt).toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap">
                     {new Date(user.createdAt).toLocaleString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -313,7 +313,7 @@ export default function AdminPage() {
                         </button>
                       </>
                     ) : (
-                      <>
+                      <div className="flex space-x-2">
                         <button
                           onClick={() => {
                             setIsEditingUser(user.id);
@@ -322,13 +322,13 @@ export default function AdminPage() {
                               email: user.email || '',
                             });
                           }}
-                          className="text-indigo-600 hover:text-indigo-900 mr-4"
+                          className="text-indigo-600 hover:text-indigo-900"
                         >
                           编辑
                         </button>
                         <button
                           onClick={() => handleToggleStatus(user.id, user.status)}
-                          className="text-yellow-600 hover:text-yellow-900 mr-4"
+                          className="text-yellow-600 hover:text-yellow-900"
                         >
                           {user.status === 'ACTIVE' ? '禁用' : '启用'}
                         </button>
@@ -338,7 +338,7 @@ export default function AdminPage() {
                         >
                           删除
                         </button>
-                      </>
+                      </div>
                     )}
                   </td>
                 </tr>
