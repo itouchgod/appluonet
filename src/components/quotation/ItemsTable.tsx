@@ -1,9 +1,16 @@
 import type { QuotationData, LineItem } from '@/types/quotation';
+import { useState } from 'react';
 
 interface ItemsTableProps {
   data: QuotationData;
   onChange: (data: QuotationData) => void;
 }
+
+const currencySymbols: Record<'USD' | 'EUR' | 'CNY', string> = {
+  USD: '$',
+  EUR: '€',
+  CNY: '¥'
+};
 
 const tableClassName = `overflow-x-auto rounded-2xl 
   border border-gray-200/30 dark:border-gray-700/30
@@ -41,6 +48,9 @@ const selectClassName = `${inputClassName}
   pr-8`;
 
 export function ItemsTable({ data, onChange }: ItemsTableProps) {
+  const [editingUnitPrice, setEditingUnitPrice] = useState<string>('');
+  const [editingUnitPriceIndex, setEditingUnitPriceIndex] = useState<number | null>(null);
+
   const addLineItem = () => {
     onChange({
       ...data,
@@ -122,7 +132,7 @@ export function ItemsTable({ data, onChange }: ItemsTableProps) {
                     value={item.partName}
                     onChange={e => updateLineItem(index, 'partName', e.target.value)}
                     placeholder="Enter part name"
-                    className={inputClassName}
+                    className={`${inputClassName} text-center`}
                   />
                 </td>
                 {data.showDescription && (
@@ -132,7 +142,7 @@ export function ItemsTable({ data, onChange }: ItemsTableProps) {
                       value={item.description || ''}
                       onChange={e => updateLineItem(index, 'description', e.target.value)}
                       placeholder="Enter description"
-                      className={inputClassName}
+                      className={`${inputClassName} text-center`}
                     />
                   </td>
                 )}
@@ -153,7 +163,7 @@ export function ItemsTable({ data, onChange }: ItemsTableProps) {
                       const unit = item.quantity <= 1 ? baseUnit : `${baseUnit}s`;
                       updateLineItem(index, 'unit', unit);
                     }}
-                    className={selectClassName}
+                    className={`${selectClassName} text-center`}
                   >
                     <option value="pc">pc{item.quantity > 1 ? 's' : ''}</option>
                     <option value="set">set{item.quantity > 1 ? 's' : ''}</option>
@@ -162,10 +172,28 @@ export function ItemsTable({ data, onChange }: ItemsTableProps) {
                 </td>
                 <td className={tableCellClassName}>
                   <input
-                    type="number"
-                    value={item.unitPrice || ''}
-                    onChange={e => updateLineItem(index, 'unitPrice', Number(e.target.value))}
-                    placeholder="0.00"
+                    type="text"
+                    inputMode="decimal"
+                    value={editingUnitPriceIndex === index ? editingUnitPrice : (item.unitPrice.toFixed(2))}
+                    onChange={e => {
+                      const value = e.target.value;
+                      // 允许输入数字、小数点和空值
+                      if (/^[0-9]*\.?[0-9]*$/.test(value)) {
+                        setEditingUnitPrice(value);
+                        if (value) {
+                          updateLineItem(index, 'unitPrice', parseFloat(value) || 0);
+                        }
+                      }
+                    }}
+                    onFocus={e => {
+                      setEditingUnitPriceIndex(index);
+                      setEditingUnitPrice(item.unitPrice.toString());
+                      e.target.select();
+                    }}
+                    onBlur={() => {
+                      setEditingUnitPriceIndex(null);
+                      setEditingUnitPrice('');
+                    }}
                     className={`${numberInputClassName} text-right`}
                   />
                 </td>
@@ -184,7 +212,7 @@ export function ItemsTable({ data, onChange }: ItemsTableProps) {
                       value={item.remarks || ''}
                       onChange={e => updateLineItem(index, 'remarks', e.target.value)}
                       placeholder="Enter remarks"
-                      className={inputClassName}
+                      className={`${inputClassName} text-center`}
                     />
                   </td>
                 )}
@@ -204,10 +232,12 @@ export function ItemsTable({ data, onChange }: ItemsTableProps) {
         >
           + Add Line
         </button>
-        <div className="text-right">
-          <span className="text-sm text-gray-500">Total Amount</span>
-          <div className="text-xl font-semibold">
-            ${getTotalAmount().toFixed(2)}
+        <div className="text-right mr-4">
+          <div className="flex items-center justify-end gap-4">
+            <span className="text-sm text-gray-500">Total Amount:</span>
+            <span className="text-xl font-semibold w-48 text-right">
+              {currencySymbols[data.currency as 'USD' | 'EUR' | 'CNY']}{getTotalAmount().toFixed(2)}
+            </span>
           </div>
         </div>
       </div>

@@ -177,10 +177,12 @@ export default function QuotationPage() {
             {/* 生成按钮 */}
             <button
               type="submit"
-              className={primaryButtonClassName}
+              className={`${primaryButtonClassName} mt-8`}
             >
-              <Download className="w-5 h-5" />
-              Generate {activeTab === 'quotation' ? 'Quotation' : 'Order'}
+              <div className="flex items-center gap-2">
+                <Download className="w-4 h-4" />
+                <span>Generate {activeTab === 'quotation' ? 'Quotation' : 'Order'}</span>
+              </div>
             </button>
           </form>
         </div>
