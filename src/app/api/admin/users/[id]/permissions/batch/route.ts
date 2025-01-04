@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
@@ -10,7 +10,7 @@ interface Permission {
 }
 
 export async function PUT(
-  req: NextRequest,
+  request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -26,7 +26,7 @@ export async function PUT(
     const { id } = params;
 
     // 获取请求体中的权限数据
-    const body = await req.json();
+    const body = await request.json();
     console.log('Received body:', body);
 
     if (!body?.permissions || !Array.isArray(body.permissions)) {
