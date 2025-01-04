@@ -6,9 +6,10 @@ import { ChevronDown, LogOut, UserPlus, ArrowLeft } from 'lucide-react';
 interface AdminHeaderProps {
   username: string;
   onLogout: () => void;
+  onCreateUser: () => void;
 }
 
-export function AdminHeader({ username, onLogout }: AdminHeaderProps) {
+export function AdminHeader({ username, onLogout, onCreateUser }: AdminHeaderProps) {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -43,7 +44,7 @@ export function AdminHeader({ username, onLogout }: AdminHeaderProps) {
 
           <div className="flex items-center space-x-4">
             <button
-              onClick={() => router.push('/admin/users/new')}
+              onClick={onCreateUser}
               className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 
                        dark:text-gray-300 dark:hover:text-white transition-colors"
             >
@@ -66,7 +67,10 @@ export function AdminHeader({ username, onLogout }: AdminHeaderProps) {
                               rounded-md shadow-lg py-1 z-10
                               border border-gray-200/30 dark:border-gray-800/30">
                   <button
-                    onClick={() => router.push('/tools')}
+                    onClick={() => {
+                      router.push('/tools');
+                      setShowDropdown(false);
+                    }}
                     className="flex items-center w-full px-4 py-2 text-sm text-gray-700 
                              hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800/50"
                   >
@@ -74,7 +78,10 @@ export function AdminHeader({ username, onLogout }: AdminHeaderProps) {
                     返回工具箱
                   </button>
                   <button
-                    onClick={onLogout}
+                    onClick={() => {
+                      onLogout();
+                      setShowDropdown(false);
+                    }}
                     className="flex items-center w-full px-4 py-2 text-sm text-gray-700 
                              hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800/50"
                   >

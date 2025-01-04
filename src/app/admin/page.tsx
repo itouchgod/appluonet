@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { AdminHeader } from '@/components/admin/AdminHeader';
+import { CreateUserModal } from '@/components/admin/CreateUserModal';
 
 interface User {
   id: string;
@@ -21,6 +22,7 @@ export default function AdminPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -151,6 +153,7 @@ export default function AdminPage() {
       <AdminHeader 
         username={session.user.name || 'Admin'}
         onLogout={handleLogout}
+        onCreateUser={() => setShowCreateModal(true)}
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -239,6 +242,12 @@ export default function AdminPage() {
           </div>
         </div>
       </div>
+
+      <CreateUserModal 
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={fetchUsers}
+      />
     </div>
   );
 }
