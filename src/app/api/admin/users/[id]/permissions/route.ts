@@ -2,12 +2,11 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
-export async function PUT(
+export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
-    // 验证管理员权限
     const session = await auth();
     if (!session?.user?.isAdmin) {
       return NextResponse.json(
@@ -16,36 +15,9 @@ export async function PUT(
       );
     }
 
-    // 获取请求体中的权限数据
-    const { moduleId, canAccess } = await request.json();
-    if (!moduleId || typeof canAccess !== 'boolean') {
-      return NextResponse.json(
-        { error: '无效的权限数据' },
-        { status: 400 }
-      );
-    }
-
-    // 更新用户权限
-    const permission = await prisma.permission.upsert({
-      where: {
-        userId_moduleId: {
-          userId: params.id,
-          moduleId: moduleId
-        }
-      },
-      update: {
-        canAccess: canAccess
-      },
-      create: {
-        userId: params.id,
-        moduleId: moduleId,
-        canAccess: canAccess
-      }
-    });
-
-    // 获取更新后的用户信息
+    const { id } = context.params;
     const user = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         permissions: true
       }
@@ -58,11 +30,11 @@ export async function PUT(
       );
     }
 
-    return NextResponse.json(user);
+    return NextResponse.json(user.permissions);
   } catch (error) {
-    console.error('更新权限时出错:', error);
+    console.error('获取权限列表失败:', error);
     return NextResponse.json(
-      { error: '更新权限失败' },
+      { error: '获取权限列表失败' },
       { status: 500 }
     );
   }
