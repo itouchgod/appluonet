@@ -9,15 +9,9 @@ interface Permission {
   canAccess: boolean;
 }
 
-type Props = {
-  params: {
-    id: string;
-  };
-};
-
 export async function PUT(
   req: NextRequest,
-  props: Props
+  { params }: { params: { id: string } }
 ) {
   try {
     // 验证管理员权限
@@ -29,7 +23,7 @@ export async function PUT(
       );
     }
 
-    const { id } = props.params;
+    const { id } = params;
 
     // 获取请求体中的权限数据
     const body = await req.json();
