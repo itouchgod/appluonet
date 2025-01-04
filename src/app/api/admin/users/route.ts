@@ -1,56 +1,103 @@
+import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
+import { hash } from 'bcryptjs';
 
 export async function GET() {
   try {
     const session = await auth();
-    console.log('Current session:', session);
-    
-    if (!session?.user) {
-      console.log('No session or user found');
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized', users: [] }), 
-        { 
-          status: 401,
-          headers: { 'Content-Type': 'application/json' }
-        }
+    if (!session?.user || session.user.username !== 'admin') {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
       );
     }
 
-    console.log('Fetching users...');
     const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        username: true,
-        status: true,
-        lastLoginAt: true,
-        createdAt: true,
-      },
       orderBy: {
         createdAt: 'desc',
       },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        status: true,
+        lastLoginAt: true,
+        createdAt: true,
+        role: true,
+      },
     });
-    console.log('Users found:', users);
 
-    return new Response(
-      JSON.stringify({ users }), 
-      { 
-        status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      }
-    );
+    return NextResponse.json(users);
   } catch (error) {
     console.error('获取用户列表失败:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: '获取用户列表失败', 
-        details: error instanceof Error ? error.message : String(error),
-        users: []
-      }), 
-      { 
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      }
+    return NextResponse.json(
+      { error: '获取用户列表失败' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const session = await auth();
+    if (!session?.user || session.user.username !== 'admin') {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    const { username, email, password, isAdmin } = body;
+
+    // 验证必填字段
+    if (!username || !password) {
+      return NextResponse.json(
+        { error: '用户名和密码为必填项' },
+        { status: 400 }
+      );
+    }
+
+    // 检查用户名是否已存在
+    const existingUser = await prisma.user.findUnique({
+      where: { username },
+    });
+
+    if (existingUser) {
+      return NextResponse.json(
+        { error: '用户名已存在' },
+        { status: 400 }
+      );
+    }
+
+    // 创建新用户
+    const hashedPassword = await hash(password, 10);
+    const newUser = await prisma.user.create({
+      data: {
+        username,
+        email,
+        password: hashedPassword,
+        role: isAdmin ? 'ADMIN' : 'USER',
+        status: 'ACTIVE',
+      },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        status: true,
+        lastLoginAt: true,
+        createdAt: true,
+        role: true,
+      },
+    });
+
+    return NextResponse.json(newUser);
+  } catch (error) {
+    console.error('创建用户失败:', error);
+    return NextResponse.json(
+      { error: '创建用户失败' },
+      { status: 500 }
     );
   }
 } 

@@ -16,8 +16,10 @@ datasource db {
 model User {
   id          String      @id @default(uuid())
   username    String      @unique
+  email       String?
   password    String
   status      UserStatus  @default(ACTIVE)
+  role        UserRole    @default(USER)
   lastLoginAt DateTime?
   createdAt   DateTime    @default(now())
   permissions Permission[]
@@ -34,7 +36,17 @@ model Permission {
   @@unique([userId, moduleId])
 }
 
+enum Role {
+  USER
+  ADMIN
+}
+
 enum UserStatus {
   ACTIVE
   INACTIVE
+}
+
+enum UserRole {
+  USER
+  ADMIN
 }
