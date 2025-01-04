@@ -265,7 +265,12 @@ export default function AdminPage() {
                         className="border rounded px-2 py-1"
                       />
                     ) : (
-                      user.username
+                      <button
+                        onClick={() => router.push(`/admin/users/${user.id}`)}
+                        className="text-blue-600 hover:text-blue-900 hover:underline"
+                      >
+                        {user.username}
+                      </button>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
