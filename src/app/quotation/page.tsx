@@ -99,7 +99,7 @@ export default function QuotationPage() {
         {/* 返回按钮 */}
         <Link href="/" className="inline-flex items-center text-gray-600 hover:text-gray-900">
           <ArrowLeft className="w-4 h-4 mr-2" />
-          返回
+          Back
         </Link>
 
         {/* 标签切换 */}
@@ -108,13 +108,13 @@ export default function QuotationPage() {
             active={activeTab === 'quotation'}
             onClick={() => setActiveTab('quotation')}
           >
-            报价单
+            Quotation
           </TabButton>
           <TabButton 
             active={activeTab === 'confirmation'}
             onClick={() => setActiveTab('confirmation')}
           >
-            订单确认
+            Order Confirmation
           </TabButton>
         </div>
 
@@ -148,12 +148,12 @@ export default function QuotationPage() {
             </div>
 
             {/* 设置面板 */}
-            {showSettings && (
+            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${showSettings ? 'max-h-[200px] opacity-100 mb-8' : 'max-h-0 opacity-0'}`}>
               <SettingsPanel 
                 data={data}
                 onChange={setData}
               />
-            )}
+            </div>
 
             {/* 客户信息区域 */}
             <CustomerInfoSection 
@@ -168,11 +168,13 @@ export default function QuotationPage() {
               onChange={setData}
             />
 
-            {/* Notes 区域 */}
-            <NotesSection 
-              data={data}
-              onChange={setData}
-            />
+            {/* Notes 部分重新设计 */}
+            <div className="mt-8">
+              <NotesSection 
+                data={data}
+                onChange={setData}
+              />
+            </div>
 
             {/* 生成按钮 */}
             <button
