@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
@@ -10,8 +10,8 @@ interface Permission {
 }
 
 export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  context: { params: { id: string } }
 ) {
   try {
     // 验证管理员权限
@@ -23,7 +23,7 @@ export async function PUT(
       );
     }
 
-    const { id } = params;
+    const { id } = context.params;
 
     // 获取请求体中的权限数据
     const body = await request.json();
