@@ -115,7 +115,7 @@ export function SettingsPanel({ data, onChange, activeTab }: SettingsPanelProps)
                 name="currency"
                 value="USD"
                 checked={data.currency === 'USD'}
-                onChange={e => onChange({ ...data, currency: e.target.value })}
+                onChange={e => onChange({ ...data, currency: e.target.value as 'USD' | 'EUR' | 'CNY' })}
                 className="sr-only"
               />
               <span>$</span>
@@ -131,7 +131,7 @@ export function SettingsPanel({ data, onChange, activeTab }: SettingsPanelProps)
                 name="currency"
                 value="EUR"
                 checked={data.currency === 'EUR'}
-                onChange={e => onChange({ ...data, currency: e.target.value })}
+                onChange={e => onChange({ ...data, currency: e.target.value as 'USD' | 'EUR' | 'CNY' })}
                 className="sr-only"
               />
               <span>€</span>
@@ -147,7 +147,7 @@ export function SettingsPanel({ data, onChange, activeTab }: SettingsPanelProps)
                 name="currency"
                 value="CNY"
                 checked={data.currency === 'CNY'}
-                onChange={e => onChange({ ...data, currency: e.target.value })}
+                onChange={e => onChange({ ...data, currency: e.target.value as 'USD' | 'EUR' | 'CNY' })}
                 className="sr-only"
               />
               <span>¥</span>
@@ -331,7 +331,7 @@ export function SettingsPanel({ data, onChange, activeTab }: SettingsPanelProps)
                 name="currency"
                 value="USD"
                 checked={data.currency === 'USD'}
-                onChange={e => onChange({ ...data, currency: e.target.value })}
+                onChange={e => onChange({ ...data, currency: e.target.value as 'USD' | 'EUR' | 'CNY' })}
                 className="sr-only"
               />
               <span>$</span>
@@ -347,7 +347,7 @@ export function SettingsPanel({ data, onChange, activeTab }: SettingsPanelProps)
                 name="currency"
                 value="EUR"
                 checked={data.currency === 'EUR'}
-                onChange={e => onChange({ ...data, currency: e.target.value })}
+                onChange={e => onChange({ ...data, currency: e.target.value as 'USD' | 'EUR' | 'CNY' })}
                 className="sr-only"
               />
               <span>€</span>
@@ -363,7 +363,7 @@ export function SettingsPanel({ data, onChange, activeTab }: SettingsPanelProps)
                 name="currency"
                 value="CNY"
                 checked={data.currency === 'CNY'}
-                onChange={e => onChange({ ...data, currency: e.target.value })}
+                onChange={e => onChange({ ...data, currency: e.target.value as 'USD' | 'EUR' | 'CNY' })}
                 className="sr-only"
               />
               <span>¥</span>
@@ -490,7 +490,7 @@ export function SettingsPanel({ data, onChange, activeTab }: SettingsPanelProps)
                 name="currency"
                 value="USD"
                 checked={data.currency === 'USD'}
-                onChange={e => onChange({ ...data, currency: e.target.value })}
+                onChange={e => onChange({ ...data, currency: e.target.value as 'USD' | 'EUR' | 'CNY' })}
                 className="sr-only"
               />
               <span>$</span>
@@ -506,7 +506,7 @@ export function SettingsPanel({ data, onChange, activeTab }: SettingsPanelProps)
                 name="currency"
                 value="EUR"
                 checked={data.currency === 'EUR'}
-                onChange={e => onChange({ ...data, currency: e.target.value })}
+                onChange={e => onChange({ ...data, currency: e.target.value as 'USD' | 'EUR' | 'CNY' })}
                 className="sr-only"
               />
               <span>€</span>
@@ -522,7 +522,7 @@ export function SettingsPanel({ data, onChange, activeTab }: SettingsPanelProps)
                 name="currency"
                 value="CNY"
                 checked={data.currency === 'CNY'}
-                onChange={e => onChange({ ...data, currency: e.target.value })}
+                onChange={e => onChange({ ...data, currency: e.target.value as 'USD' | 'EUR' | 'CNY' })}
                 className="sr-only"
               />
               <span>¥</span>

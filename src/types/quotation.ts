@@ -9,6 +9,13 @@ export interface LineItem {
   remarks?: string;
 }
 
+export interface OtherFee {
+  id: number;
+  description: string;
+  amount: number;
+  remarks?: string;
+}
+
 export interface QuotationData {
   to: string;
   date: string;
@@ -16,7 +23,7 @@ export interface QuotationData {
   inquiryNo: string;
   quotationNo: string;
   contractNo?: string;
-  currency: string;
+  currency: 'USD' | 'EUR' | 'CNY';
   paymentDate: string;
   items: {
     lineNo: number;
@@ -38,4 +45,7 @@ export interface QuotationData {
   showRemarks: boolean;
   showBank: boolean;
   showStamp: boolean;
+  packingFee?: number;
+  packingFeeDesc?: string;
+  otherFees?: OtherFee[];
 } 

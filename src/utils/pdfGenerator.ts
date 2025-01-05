@@ -1,3 +1,4 @@
 export { generateInvoicePDF } from './invoicePdfGenerator';
-export { generateQuotationPDF, generateOrderConfirmationPDF } from './quotationPdfGenerator';
+export { generateQuotationPDF } from './quotationPdfGenerator';
+export { generateOrderConfirmationPDF } from './orderConfirmationPdfGenerator';
 export * from './pdfHelpers'; 

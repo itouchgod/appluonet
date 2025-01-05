@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Settings, Download, ArrowLeft } from 'lucide-react';
-import { generateQuotationPDF, generateOrderConfirmationPDF } from '@/utils/pdfGenerator';
+import { generateQuotationPDF } from '@/utils/quotationPdfGenerator';
+import { generateOrderConfirmationPDF } from '@/utils/orderConfirmationPdfGenerator';
 import { TabButton } from '@/components/quotation/TabButton';
 import { getDefaultNotes } from '@/utils/getDefaultNotes';
 import { CustomerInfoSection } from '@/components/quotation/CustomerInfoSection';
@@ -42,6 +43,8 @@ const primaryButtonClassName = `${buttonClassName}
 export default function QuotationPage() {
   const [activeTab, setActiveTab] = useState<'quotation' | 'confirmation'>('quotation');
   const [showSettings, setShowSettings] = useState(false);
+  const [editingFeeAmount, setEditingFeeAmount] = useState<string>('');
+  const [editingFeeIndex, setEditingFeeIndex] = useState<number | null>(null);
   const [data, setData] = useState<QuotationData>({
     to: '',
     inquiryNo: '',
@@ -165,10 +168,177 @@ export default function QuotationPage() {
             />
 
             {/* 商品表格 */}
-            <ItemsTable 
-              data={data}
-              onChange={setData}
-            />
+            <div className="space-y-2">
+              <ItemsTable 
+                data={data}
+                onChange={setData}
+              />
+
+              {/* Other Fees 区域 */}
+              {data.otherFees && data.otherFees.length > 0 && (
+                <div className={`overflow-x-auto -mt-[1px]
+                  border-x border-b border-[#E5E5EA] dark:border-[#2C2C2E]
+                  bg-white/80 dark:bg-[#1C1C1E]/80
+                  backdrop-blur-xl
+                  rounded-b-2xl`}>
+                  {data.otherFees.map((fee, index) => (
+                    <div key={fee.id} 
+                      className={`flex items-center border-t border-[#007AFF]/10 dark:border-[#0A84FF]/10
+                        ${index % 2 === 0 ? 'bg-[#007AFF]/[0.02] dark:bg-[#0A84FF]/[0.02]' : ''}`}>
+                      <div className="px-4 py-3 w-[40px]">
+                        <span 
+                          className="flex items-center justify-center w-6 h-6 rounded-full 
+                            text-xs text-[#86868B] hover:bg-red-500/10 hover:text-red-500 
+                            cursor-pointer transition-all duration-200"
+                          onClick={() => {
+                            const newFees = data.otherFees?.filter(f => f.id !== fee.id) || [];
+                            setData({ ...data, otherFees: newFees });
+                          }}
+                          title="Click to delete"
+                        >
+                          ×
+                        </span>
+                      </div>
+                      <div className="flex-1 px-4 py-2">
+                        <input
+                          type="text"
+                          value={fee.description}
+                          onChange={(e) => {
+                            const newFees = [...(data.otherFees || [])];
+                            newFees[index] = { ...fee, description: e.target.value };
+                            setData({ ...data, otherFees: newFees });
+                          }}
+                          placeholder="Other Fee"
+                          className="w-full px-3 py-1.5 bg-transparent border border-transparent
+                            focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
+                            hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
+                            text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
+                            placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
+                            transition-all duration-200 text-center"
+                        />
+                      </div>
+                      <div className="w-[120px] px-4 py-2">
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={editingFeeIndex === index ? editingFeeAmount : (fee.amount === 0 ? '' : fee.amount.toFixed(2))}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (/^[0-9]*\.?[0-9]*$/.test(value)) {
+                              setEditingFeeAmount(value);
+                              const newFees = [...(data.otherFees || [])];
+                              newFees[index] = { ...fee, amount: value === '' ? 0 : parseFloat(value) };
+                              setData({ ...data, otherFees: newFees });
+                            }
+                          }}
+                          onFocus={(e) => {
+                            setEditingFeeIndex(index);
+                            setEditingFeeAmount(fee.amount === 0 ? '' : fee.amount.toString());
+                            e.target.select();
+                          }}
+                          onBlur={() => {
+                            setEditingFeeIndex(null);
+                            setEditingFeeAmount('');
+                          }}
+                          placeholder="0.00"
+                          className="w-full px-3 py-1.5 bg-transparent border border-transparent
+                            focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
+                            hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
+                            text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
+                            placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
+                            [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none
+                            transition-all duration-200 text-right"
+                        />
+                      </div>
+                      {data.showRemarks && (
+                        <div className="w-[200px] px-4 py-2">
+                          <input
+                            type="text"
+                            value={fee.remarks || ''}
+                            onChange={(e) => {
+                              const newFees = [...(data.otherFees || [])];
+                              newFees[index] = { ...fee, remarks: e.target.value };
+                              setData({ ...data, otherFees: newFees });
+                            }}
+                            placeholder="Enter remarks"
+                            className="w-full px-3 py-1.5 rounded-lg bg-transparent border border-transparent
+                              focus:outline-none focus:ring-2 focus:ring-[#007AFF]/40 dark:focus:ring-[#0A84FF]/40
+                              hover:bg-gray-50/50 dark:hover:bg-[#1c1c1e]/50 text-sm text-center"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* 总额显示区域 */}
+            <div className="flex justify-between items-center mt-6">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newItems = [...data.items];
+                    newItems.push({
+                      lineNo: newItems.length + 1,
+                      partName: '',
+                      description: '',
+                      quantity: 0,
+                      unit: 'pc',
+                      unitPrice: 0,
+                      amount: 0,
+                      remarks: ''
+                    });
+                    setData({ ...data, items: newItems });
+                  }}
+                  className="px-3 h-7 rounded-lg
+                    bg-[#007AFF]/[0.08] dark:bg-[#0A84FF]/[0.08]
+                    hover:bg-[#007AFF]/[0.12] dark:hover:bg-[#0A84FF]/[0.12]
+                    text-[#007AFF] dark:text-[#0A84FF]
+                    text-[13px] font-medium
+                    flex items-center gap-1
+                    transition-all duration-200"
+                >
+                  <span className="text-lg leading-none translate-y-[-1px]">+</span>
+                  <span>Add Line</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newFees = [...(data.otherFees || [])];
+                    newFees.push({
+                      id: Date.now(),
+                      description: '',
+                      amount: 0
+                    });
+                    setData({ ...data, otherFees: newFees });
+                  }}
+                  className="px-3 h-7 rounded-lg
+                    bg-[#007AFF]/[0.08] dark:bg-[#0A84FF]/[0.08]
+                    hover:bg-[#007AFF]/[0.12] dark:hover:bg-[#0A84FF]/[0.12]
+                    text-[#007AFF] dark:text-[#0A84FF]
+                    text-[13px] font-medium
+                    flex items-center gap-1
+                    transition-all duration-200"
+                >
+                  <span className="text-lg leading-none translate-y-[-1px]">+</span>
+                  <span>Add Other Fee</span>
+                </button>
+              </div>
+
+              <div className="text-right">
+                <div className="text-sm text-[#86868B] dark:text-gray-400">Total Amount:</div>
+                <div className="text-2xl font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">
+                  {data.currency === 'USD' ? '$' : '¥'}
+                  {(
+                    data.items.reduce((sum, item) => sum + item.amount, 0) +
+                    (data.otherFees?.reduce((sum, fee) => sum + fee.amount, 0) || 0)
+                  ).toFixed(2)}
+                </div>
+              </div>
+            </div>
 
             {/* Notes 部分重新设计 */}
             <div className="mt-8">

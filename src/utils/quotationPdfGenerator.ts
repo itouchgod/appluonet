@@ -12,33 +12,6 @@ const currencySymbols: { [key: string]: string } = {
 
 // 生成报价单PDF
 export const generateQuotationPDF = async (data: QuotationData) => {
-  const doc = new jsPDF();
-  
-  // 使用 currencySymbols
-  const currencySymbol = currencySymbols[data.currency];
-  
-  // 使用 autoTable
-  doc.autoTable({
-    head: [['No.', 'Part Name', 'Q\'TY', 'Unit', 'U/Price', 'Amount']],
-    body: data.items.map((item, index) => [
-      index + 1,
-      item.partName,
-      item.quantity,
-      item.unit,
-      `${currencySymbol}${item.unitPrice.toFixed(2)}`,
-      `${currencySymbol}${item.amount.toFixed(2)}`
-    ]),
-    styles: {
-      fontSize: 9,
-      cellPadding: 2
-    }
-  });
-
-  doc.save(`Quotation-${data.quotationNo}-${data.date}.pdf`);
-};
-
-// 生成订单确认PDF
-export const generateOrderConfirmationPDF = async (data: QuotationData) => {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -71,7 +44,7 @@ export const generateOrderConfirmationPDF = async (data: QuotationData) => {
         );
         doc.setFontSize(14);
         doc.setFont('NotoSansSC', 'bold');
-        const title = 'ORDER CONFIRMATION';
+        const title = 'QUOTATION';
         const titleWidth = doc.getTextWidth(title);
         const titleY = margin + imgHeight + 5;  // 标题Y坐标
         doc.text(title, (pageWidth - titleWidth) / 2, titleY);  // 标题位置
@@ -82,7 +55,7 @@ export const generateOrderConfirmationPDF = async (data: QuotationData) => {
       // 使用默认布局
       doc.setFontSize(14);
       doc.setFont('NotoSansSC', 'bold');
-      const title = 'ORDER CONFIRMATION';
+      const title = 'QUOTATION';
       const titleWidth = doc.getTextWidth(title);
       const titleY = margin + 5;  // 标题Y坐标
       doc.text(title, (pageWidth - titleWidth) / 2, titleY);  // 标题位置
@@ -126,7 +99,7 @@ export const generateOrderConfirmationPDF = async (data: QuotationData) => {
       }
     });
 
-    doc.save(`Order-${data.quotationNo}-${data.date}.pdf`);
+    doc.save(`Quotation-${data.quotationNo}-${data.date}.pdf`);
   } catch (error) {
     console.error('Error generating PDF:', error);
     throw error;

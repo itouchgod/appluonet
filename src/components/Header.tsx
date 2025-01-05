@@ -38,8 +38,9 @@ export function Header({ user, onLogout, onProfile }: HeaderProps) {
   return (
     <header className="bg-white shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-        <div className="flex items-center">
-          <Image src="/images/header-bilingual.png" alt="Logo" width={200} height={50} />
+        <div className="flex items-center space-x-4">
+          <Image src="/images/logo.png" alt="Logo" width={45} height={45} />
+          <h1 className="text-xl font-semibold text-gray-900">智能助手面板</h1>
         </div>
         
         <div className="relative" ref={dropdownRef}>

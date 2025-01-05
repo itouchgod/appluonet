@@ -14,13 +14,6 @@ const inputClassName = `w-full px-3 py-1.5 rounded-lg
   transition-all duration-200`;
 
 export function NotesSection({ data, onChange }: NotesSectionProps) {
-  const addNote = () => {
-    onChange({
-      ...data,
-      notes: [...data.notes, '']
-    });
-  };
-
   const updateNote = (index: number, value: string) => {
     const newNotes = [...data.notes];
     newNotes[index] = value;
@@ -39,22 +32,25 @@ export function NotesSection({ data, onChange }: NotesSectionProps) {
       bg-gray-50/50 dark:bg-[#1c1c1e]/50
       rounded-xl p-4 
       border border-gray-200/30 dark:border-[#2c2c2e]/50">
-      <div className="flex justify-between items-center mb-3">
-        <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">
-          Notes:
-        </h3>
+      <div className="flex items-center justify-between mb-4">
+        <div className="text-[15px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Notes:</div>
         <button
           type="button"
-          onClick={addNote}
-          className="px-2 py-1 rounded-lg
+          onClick={() => {
+            const newNotes = [...data.notes];
+            newNotes.push('');
+            onChange({ ...data, notes: newNotes });
+          }}
+          className="px-3 h-7 rounded-lg
+            bg-[#007AFF]/[0.08] dark:bg-[#0A84FF]/[0.08]
+            hover:bg-[#007AFF]/[0.12] dark:hover:bg-[#0A84FF]/[0.12]
             text-[#007AFF] dark:text-[#0A84FF]
-            hover:bg-[#007AFF]/10 dark:hover:bg-[#0A84FF]/10
-            transition-all duration-300
-            text-sm font-medium 
-            flex items-center gap-1"
+            text-[13px] font-medium
+            flex items-center gap-1
+            transition-all duration-200"
         >
-          <span className="text-lg leading-none">+</span>
-          <span className="text-xs">Add Note</span>
+          <span className="text-lg leading-none translate-y-[-1px]">+</span>
+          <span>Add Note</span>
         </button>
       </div>
       <div className="space-y-2">
