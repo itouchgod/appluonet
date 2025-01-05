@@ -18,6 +18,7 @@ interface AutoTableConfig {
     valign?: 'top' | 'middle' | 'bottom';
   };
   headStyles?: {
+    fontSize?: number;
     fillColor?: number[] | false;
     textColor?: number[];
     fontStyle?: string;
@@ -225,6 +226,10 @@ export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolea
     const rightMargin = pageWidth - 20;
     let currentY = startY + 10;  // 修改这里，使用 startY 并增加额外间距
 
+    // 设置字体和样式
+    doc.setFontSize(8);  // 将抬头信息字号改为8
+    doc.setFont('NotoSansSC', 'normal');
+    
     // 客户信息区域
     const toLines = data.to.split('\n').filter(line => line.trim());
     doc.text('To:', leftMargin, currentY);
@@ -242,7 +247,7 @@ export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolea
     }
     
     // Order No. 位置（在客户信息下方）
-    currentY += 10;  // 与客户信息保持适当间距
+    currentY += 10;
     doc.text('Order No.:', leftMargin, currentY);
     const orderNoTextWidth = doc.getTextWidth('Order No.: ');
     
@@ -299,7 +304,7 @@ export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolea
     });
     
     // 更新当前Y坐标，为表格预留间距
-    currentY += 10;
+    currentY += 5;  // 将间距从10改为5
 
     // 调整表格起始位置和样式
     doc.autoTable({
@@ -310,12 +315,12 @@ export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolea
         item.description,
         item.quantity,
         item.unit,
-        Number(item.unitPrice).toFixed(2),
-        Number(item.amount).toFixed(2)
+        `${data.currency === 'USD' ? '$' : '¥'}${Number(item.unitPrice).toFixed(2)}`,
+        `${data.currency === 'USD' ? '$' : '¥'}${Number(item.amount).toFixed(2)}`
       ]),
       theme: 'plain',           // 使用plain主题，移除默认样式
       styles: {
-        fontSize: 9,
+        fontSize: 8,            // 将表格内容字号从9改为8
         cellPadding: 2,
         lineColor: [0, 0, 0],   // 边框
         lineWidth: 0.1,         // 细边框
@@ -324,6 +329,7 @@ export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolea
         valign: 'middle'  // 添加垂直居中
       },
       headStyles: {
+        fontSize: 8,            // 为表头也设置相同的字号
         fontStyle: 'bold',
         halign: 'center',
         font: 'NotoSansSC',
@@ -351,49 +357,53 @@ export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolea
     const finalY = doc.lastAutoTable.finalY;
     
     // 设置字体和样式
-    doc.setFontSize(10);
+    doc.setFontSize(8);  // 将总金额字号也改为8
     doc.setFont('NotoSansSC', 'normal');
     
-    // 显示总金额
-    doc.text('Total Amount:', pageWidth - margin - 60, finalY + 5);
-    doc.text(Number(getTotalAmount(data.items)).toFixed(2), pageWidth - margin, finalY + 5, { align: 'right' });
+    // 显示总金额（添加货币符号）
+    const totalAmountLabel = 'Total Amount:';
+    const totalAmountValue = `${data.currency === 'USD' ? '$' : '¥'}${Number(getTotalAmount(data.items)).toFixed(2)}`;
     
-    // 构建完整的大写金额文本
-    let amountText = `SAY TOTAL US DOLLARS ${data.amountInWords.dollars}`;
-    if (data.amountInWords.hasDecimals) {
-      amountText += ` AND ${data.amountInWords.cents}`;
-    }
+    // 使用表格的最后一列位置来对齐
+    const valueX = pageWidth - margin;
+    const labelX = valueX - 50;  // 固定标签位置，确保不会重叠
+    
+    // 绘制总金额行
+    doc.text(totalAmountLabel, labelX, finalY + 8);
+    doc.text(totalAmountValue, valueX, finalY + 8, { align: 'right' });
     
     // 分割为单词数组并组织成行
-    const lines = doc.splitTextToSize(amountText, pageWidth - (margin * 2));
+    const lines = doc.splitTextToSize(`SAY TOTAL US DOLLARS ${data.amountInWords.dollars}`, pageWidth - (margin * 2));
     
-    // 绘制大写金额（每行间距5mm）
+    // 设置较小的字体
+    doc.setFontSize(8);
+    
+    // 绘制大写金额（调整与总金额的间距）
     lines.forEach((line: string, index: number) => {
-      doc.text(line, margin, finalY + 10 + (index * 5));
+      doc.text(line, margin, finalY + 15 + (index * 5));
     });
 
-    // 修改银行信息显示部分（从大写金额的最后一行开始）
-    const contentStartY = finalY + 10 + (lines.length * 5) + 5;  // 额外加5mm作为段落间距
-
-    // 只在银行信息不为空时显示标题和内容
+    // 计算银行信息的起始位置
+    currentY = finalY + 15 + (lines.length * 5) + 8;  // 增加到8mm的间距
+    
+    // 显示银行信息
     if (data.bankInfo && data.bankInfo.trim()) {
-      doc.text('Bank Information:', margin, contentStartY);
+      doc.text('Bank Information:', margin, currentY);
       const bankInfoLines = data.bankInfo.split('\n').filter(line => line.trim());
-      let currentBankY = contentStartY + 5;
+      currentY += 5;  // 标题与内容之间保持5mm间距
       
       // 处理每一行，如果太长则自动换行
       bankInfoLines.forEach(line => {
         const wrappedLines = doc.splitTextToSize(line.trim(), pageWidth - (margin * 2));
         wrappedLines.forEach((wrappedLine: string, index: number) => {
-          doc.text(wrappedLine, margin, currentBankY + (index * 5));
+          doc.text(wrappedLine, margin, currentY + (index * 5));
         });
-        currentBankY += wrappedLines.length * 5;
+        currentY += wrappedLines.length * 5;
       });
-      
-      currentY = currentBankY + 2;  // 为下一部分内容预留2mm间距
-    } else {
-      currentY = contentStartY;
     }
+
+    // 计算 Payment Terms 的起始位置
+    currentY += 8;  // 与上方内容保持8mm间距
 
     // 显示付款条款
     let totalTerms = 0;
@@ -405,8 +415,9 @@ export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolea
 
     if (totalTerms === 1) {
       // 单条付款条款的情况，使用单行格式
-      doc.text('Payment Term: Please state our invoice no. "', margin, currentY);
+      doc.text('Payment Term:', margin, currentY);
       const prefixWidth = doc.getTextWidth('Payment Term: Please state our invoice no. "');
+      doc.text('Please state our invoice no. "', margin + doc.getTextWidth('Payment Term: '), currentY);
       
       // 发票号显示为红色
       doc.setTextColor(255, 0, 0);
@@ -497,7 +508,12 @@ export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolea
     if (stampImage) {
       try {
         const stampImg = await loadImage(stampImage);
-        doc.addImage(stampImg, 'PNG', margin, currentY, 73, 34);  // 设置印章宽度73mm，高度34mm，放在左侧
+        // 根据印章类型设置不同的尺寸
+        if (data.templateConfig.stampType === 'shanghai') {
+          doc.addImage(stampImg, 'PNG', margin, currentY, 40, 40);  // 上海印章：40mm x 40mm
+        } else {
+          doc.addImage(stampImg, 'PNG', margin, currentY, 73, 34);  // 其他印章保持原有尺寸
+        }
       } catch (error) {
         console.error('Error loading stamp image:', error);
       }
