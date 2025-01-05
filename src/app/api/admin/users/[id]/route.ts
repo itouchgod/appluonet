@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: Request,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
     // 验证管理员权限
@@ -16,7 +16,7 @@ export async function GET(
       );
     }
 
-    const { id } = context.params;
+    const { id } = params;
 
     // 获取用户信息
     const user = await prisma.user.findUnique({
@@ -45,7 +45,7 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
     const session = await auth();
@@ -53,7 +53,7 @@ export async function PUT(
       return NextResponse.json({ error: '未授权访问' }, { status: 401 });
     }
 
-    const id = context.params.id;
+    const id = params.id;
     if (!id) {
       return NextResponse.json({ error: '无效的用户ID' }, { status: 400 });
     }
