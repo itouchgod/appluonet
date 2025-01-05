@@ -38,4 +38,5 @@ export interface QuotationData {
   showDescription: boolean;
   showRemarks: boolean;
   showBank: boolean;
+  showStamp: boolean;
 } 

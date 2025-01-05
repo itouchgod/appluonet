@@ -70,6 +70,7 @@ export default function QuotationPage() {
     showDescription: false,
     showRemarks: false,
     showBank: false,
+    showStamp: false,
     contractNo: ''
   });
 

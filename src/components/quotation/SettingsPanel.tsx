@@ -81,8 +81,28 @@ export function SettingsPanel({ data, onChange, activeTab }: SettingsPanelProps)
           </select>
         </div>
 
-        {/* 第二行：币种选择 */}
-        <div className="flex justify-center">
+        {/* 第二行：Bank复选框和币种选择 */}
+        <div className="flex items-center justify-center gap-4">
+          {/* Bank复选框 */}
+          {activeTab === 'confirmation' && (
+            <label className="flex items-center gap-2 cursor-pointer h-[38px] px-4 shrink-0">
+              <input
+                type="checkbox"
+                checked={data.showBank}
+                onChange={e => onChange({ ...data, showBank: e.target.checked })}
+                className="w-3.5 h-3.5 rounded 
+                  border-gray-300 dark:border-gray-600
+                  text-[#007AFF] dark:text-[#0A84FF]
+                  focus:ring-[#007AFF]/40 dark:focus:ring-[#0A84FF]/40
+                  cursor-pointer"
+              />
+              <span className="text-xs text-gray-600 dark:text-gray-400">
+                Bank
+              </span>
+            </label>
+          )}
+
+          {/* 币种选择 */}
           <div className={`${radioGroupClassName} h-[38px] w-[120px]`}>
             <label
               className={`${radioButtonClassName} ${
@@ -135,15 +155,15 @@ export function SettingsPanel({ data, onChange, activeTab }: SettingsPanelProps)
           </div>
         </div>
 
-        {/* 第三行：复选框组 */}
+        {/* 第三行：HK Stamp和Description/Remarks复选框组 */}
         <div className="flex items-center justify-center gap-4">
-          {/* Bank复选框 */}
+          {/* HK Stamp复选框 */}
           {activeTab === 'confirmation' && (
             <label className="flex items-center gap-2 cursor-pointer h-[38px] px-4 shrink-0">
               <input
                 type="checkbox"
-                checked={data.showBank}
-                onChange={e => onChange({ ...data, showBank: e.target.checked })}
+                checked={data.showStamp}
+                onChange={e => onChange({ ...data, showStamp: e.target.checked })}
                 className="w-3.5 h-3.5 rounded 
                   border-gray-300 dark:border-gray-600
                   text-[#007AFF] dark:text-[#0A84FF]
@@ -151,7 +171,7 @@ export function SettingsPanel({ data, onChange, activeTab }: SettingsPanelProps)
                   cursor-pointer"
               />
               <span className="text-xs text-gray-600 dark:text-gray-400">
-                Bank
+                HK Stamp
               </span>
             </label>
           )}
@@ -240,6 +260,25 @@ export function SettingsPanel({ data, onChange, activeTab }: SettingsPanelProps)
               />
               <span className="text-xs text-gray-600 dark:text-gray-400">
                 Bank
+              </span>
+            </label>
+          )}
+
+          {/* Stamp复选框 */}
+          {activeTab === 'confirmation' && (
+            <label className="flex items-center gap-2 cursor-pointer h-[38px] px-4 shrink-0">
+              <input
+                type="checkbox"
+                checked={data.showStamp}
+                onChange={e => onChange({ ...data, showStamp: e.target.checked })}
+                className="w-3.5 h-3.5 rounded 
+                  border-gray-300 dark:border-gray-600
+                  text-[#007AFF] dark:text-[#0A84FF]
+                  focus:ring-[#007AFF]/40 dark:focus:ring-[#0A84FF]/40
+                  cursor-pointer"
+              />
+              <span className="text-xs text-gray-600 dark:text-gray-400">
+                HK Stamp
               </span>
             </label>
           )}
@@ -380,6 +419,25 @@ export function SettingsPanel({ data, onChange, activeTab }: SettingsPanelProps)
               />
               <span className="text-xs text-gray-600 dark:text-gray-400">
                 Bank
+              </span>
+            </label>
+          )}
+
+          {/* Stamp复选框 */}
+          {activeTab === 'confirmation' && (
+            <label className="flex items-center gap-2 cursor-pointer h-[38px] px-4 shrink-0">
+              <input
+                type="checkbox"
+                checked={data.showStamp}
+                onChange={e => onChange({ ...data, showStamp: e.target.checked })}
+                className="w-3.5 h-3.5 rounded 
+                  border-gray-300 dark:border-gray-600
+                  text-[#007AFF] dark:text-[#0A84FF]
+                  focus:ring-[#007AFF]/40 dark:focus:ring-[#0A84FF]/40
+                  cursor-pointer"
+              />
+              <span className="text-xs text-gray-600 dark:text-gray-400">
+                HK Stamp
               </span>
             </label>
           )}

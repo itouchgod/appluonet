@@ -128,6 +128,10 @@ export const generateQuotationPDF = async (data: QuotationData) => {
 export const generateOrderConfirmationPDF = async (data: QuotationData) => {
   const doc = new jsPDF();
   
+  // 使用 currencySymbols
+  const currencySymbol = currencySymbols[data.currency];
+  
+  // 使用 autoTable
   doc.autoTable({
     head: [['No.', 'Part Name', 'Q\'TY', 'Unit', 'U/Price', 'Amount']],
     body: data.items.map((item, index) => [
@@ -135,14 +139,31 @@ export const generateOrderConfirmationPDF = async (data: QuotationData) => {
       item.partName,
       item.quantity,
       item.unit,
-      item.unitPrice.toFixed(2),
-      item.amount.toFixed(2)
+      `${currencySymbol}${item.unitPrice.toFixed(2)}`,
+      `${currencySymbol}${item.amount.toFixed(2)}`
     ]),
     styles: {
       fontSize: 9,
       cellPadding: 2
     }
   });
+
+  // 获取表格结束位置
+  const finalY = doc.lastAutoTable.finalY;
+
+  // 如果需要显示印章
+  if (data.showStamp) {
+    try {
+      // 默认使用香港印章
+      const stampImage = await loadImage('/images/stamp-hongkong.png');
+      if (stampImage) {
+        // 在表格下方添加印章，预留一些间距
+        doc.addImage(stampImage, 'PNG', 20, finalY + 20, 73, 34);  // 使用香港印章的标准尺寸
+      }
+    } catch (error) {
+      console.error('Error loading stamp image:', error);
+    }
+  }
   
   doc.save(`Order-${data.quotationNo}-${data.date}.pdf`);
 };
