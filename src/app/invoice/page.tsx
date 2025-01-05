@@ -105,6 +105,10 @@ export default function InvoicePage() {
     invoiceType: 'invoice',
     stampType: 'none'
   });
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string>('');
+  const [showPaymentTerms, setShowPaymentTerms] = useState(true);
+  const [additionalPaymentTerms, setAdditionalPaymentTerms] = useState('');
 
   const handleAddLine = () => {
     setInvoiceData(prev => ({
@@ -126,10 +130,13 @@ export default function InvoicePage() {
     try {
       await generateInvoicePDF({
         ...invoiceData,
+        showPaymentTerms,
+        additionalPaymentTerms,
         templateConfig
       });
     } catch (error) {
       console.error('Error generating PDF:', error);
+      // TODO: 添加错误提示
     }
   };
 
@@ -250,6 +257,15 @@ export default function InvoicePage() {
     }));
   }, [invoiceData.items, getTotalAmount, numberToWords]);
 
+  // 处理额外付款条款的变化
+  const handleAdditionalTermsChange = (value: string) => {
+    setAdditionalPaymentTerms(value);
+    setInvoiceData(prev => ({
+      ...prev,
+      additionalPaymentTerms: value
+    }));
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -346,6 +362,15 @@ export default function InvoicePage() {
                       <div>
                         <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Header Type</h3>
                         <div className="flex gap-3">
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="radio"
+                              checked={templateConfig.headerType === 'none'}
+                              onChange={() => setTemplateConfig(prev => ({ ...prev, headerType: 'none' }))}
+                              className="text-blue-500 focus:ring-blue-500/40"
+                            />
+                            <span className="text-sm">None</span>
+                          </label>
                           <label className="flex items-center gap-2">
                             <input
                               type="radio"
@@ -634,22 +659,22 @@ export default function InvoicePage() {
 
             {/* 英文大写金额显示区域 */}
             <div className="mt-4 mb-8">
-              <div className="flex flex-wrap gap-1 text-sm">
-                <span className="text-gray-600 dark:text-gray-400">SAY TOTAL</span>
+              <div className="inline text-sm">
+                <span className="text-gray-600 dark:text-gray-400">SAY TOTAL </span>
                 <span className="text-blue-500">
-                  {invoiceData.currency === 'USD' ? 'US DOLLARS' : 'CHINESE YUAN'}
+                  {invoiceData.currency === 'USD' ? 'US DOLLARS ' : 'CHINESE YUAN '}
                 </span>
                 <span className="text-gray-600 dark:text-gray-400">{invoiceData.amountInWords.dollars}</span>
                 {invoiceData.amountInWords.hasDecimals && (
                   <>
-                    <span className="text-red-500">AND</span>
+                    <span className="text-red-500"> AND </span>
                     <span className="text-gray-600 dark:text-gray-400">
                       {invoiceData.amountInWords.cents}
                     </span>
                   </>
                 )}
                 {!invoiceData.amountInWords.hasDecimals && (
-                  <span className="text-gray-600 dark:text-gray-400">ONLY</span>
+                  <span className="text-gray-600 dark:text-gray-400"> ONLY</span>
                 )}
               </div>
             </div>
@@ -678,6 +703,14 @@ export default function InvoicePage() {
                   <div className="flex items-center gap-2">
                     <input
                       type="checkbox"
+                      checked={showPaymentTerms}
+                      onChange={(e) => {
+                        setShowPaymentTerms(e.target.checked);
+                        setInvoiceData(prev => ({
+                          ...prev,
+                          showPaymentTerms: e.target.checked
+                        }));
+                      }}
                       className="rounded border-gray-300"
                     />
                     <div className="flex items-center gap-2 flex-wrap">
@@ -689,7 +722,7 @@ export default function InvoicePage() {
                           ...prev, 
                           paymentDate: e.target.value 
                         }))}
-                        className={`${inputClassName} !py-1.5`}
+                        className={`${inputClassName} !py-1.5 text-red-500`}
                         style={{ 
                           colorScheme: 'light dark',
                           width: '150px',
@@ -703,25 +736,23 @@ export default function InvoicePage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      className="rounded border-gray-300"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Enter additional remarks"
-                      className={inputClassName}
+                    <textarea
+                      value={additionalPaymentTerms}
+                      onChange={(e) => handleAdditionalTermsChange(e.target.value)}
+                      placeholder="Enter additional remarks (each line will be a new payment term)"
+                      className={`${inputClassName} min-h-[4em] resize`}
+                      rows={2}
                     />
                   </div>
                   <div className="text-sm text-gray-600 dark:text-gray-400">
-                    Please state our invoice no. &quot;{invoiceData.invoiceNo}&quot; on your payment documents.
+                    Please state our invoice no. <span className="text-red-500">&quot;{invoiceData.invoiceNo}&quot;</span> on your payment documents.
                   </div>
                 </div>
               </div>
             </div>
 
             {/* 生成按钮 */}
-            <div className="flex justify-start">
+            <div className="flex justify-start gap-4">
               <button
                 type="submit"
                 className="px-6 py-2.5 rounded-xl bg-blue-500 text-white 
@@ -732,10 +763,71 @@ export default function InvoicePage() {
                 <Download className="w-4 h-4" />
                 Generate Invoice
               </button>
+
+              <button
+                type="button"
+                onClick={async (e) => {
+                  e.preventDefault();
+                  try {
+                    const pdfUrl = await generateInvoicePDF({
+                      ...invoiceData,
+                      showPaymentTerms,
+                      additionalPaymentTerms,
+                      templateConfig
+                    }, true);
+                    if (pdfUrl) {
+                      setPreviewUrl(pdfUrl.toString());
+                      setShowPreview(true);
+                    }
+                  } catch (error) {
+                    console.error('Error previewing PDF:', error);
+                  }
+                }}
+                className="px-6 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 
+                         text-gray-600 dark:text-gray-300
+                         flex items-center justify-center gap-2
+                         hover:bg-gray-200 dark:hover:bg-gray-700
+                         transition-colors duration-200"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                Preview
+              </button>
             </div>
           </form>
         </div>
       </div>
+
+      {/* PDF 预览模态框 */}
+      {showPreview && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-5xl h-[80vh] flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold">Preview Invoice</h3>
+              <button
+                onClick={() => {
+                  setShowPreview(false);
+                  setPreviewUrl('');
+                }}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex-1 bg-gray-100 dark:bg-gray-900 p-4">
+              <iframe
+                src={previewUrl}
+                className="w-full h-full rounded-lg bg-white dark:bg-gray-800"
+                title="PDF Preview"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
