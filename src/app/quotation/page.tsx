@@ -66,7 +66,6 @@ export default function QuotationPage() {
       cents: '',
       hasDecimals: false
     },
-    bankInfo: '',
     showDescription: false,
     showRemarks: false,
     showBank: false,
@@ -179,13 +178,13 @@ export default function QuotationPage() {
                   <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
                     Bank Information:
                   </label>
-                  <textarea
-                    value={data.bankInfo}
-                    onChange={e => handleInputChange('bankInfo', e.target.value)}
-                    placeholder="Enter bank information"
-                    rows={3}
-                    className={inputClassName}
-                  />
+                  <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl text-sm">
+                    <p>Bank Name: The Hongkong and Shanghai Banking Corporation Limited</p>
+                    <p>Swift code: HSBCHKHHHKH</p>
+                    <p>Bank address: Head Office 1 Queen&apos;s Road Central Hong Kong</p>
+                    <p>A/C No.: 801470337838</p>
+                    <p>Beneficiary: Luo & Company Co., Limited</p>
+                  </div>
                 </div>
               )}
 

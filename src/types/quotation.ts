@@ -34,7 +34,6 @@ export interface QuotationData {
     cents: string;
     hasDecimals: boolean;
   };
-  bankInfo: string;
   showDescription: boolean;
   showRemarks: boolean;
   showBank: boolean;
