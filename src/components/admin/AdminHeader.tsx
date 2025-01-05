@@ -1,5 +1,4 @@
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { useState, useRef, useEffect } from 'react';
 import { ChevronDown, LogOut, ArrowLeft } from 'lucide-react';
 import { signOut } from 'next-auth/react';
