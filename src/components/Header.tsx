@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { ChevronDown, LogOut, Settings, User } from 'lucide-react';
+import { signOut } from 'next-auth/react';
+import { Avatar } from './Avatar';
 
 interface HeaderProps {
   user: {
@@ -28,6 +30,10 @@ export function Header({ user, onLogout, onProfile }: HeaderProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const handleLogout = async () => {
+    await signOut({ redirect: true, callbackUrl: '/' });
+  };
+
   return (
     <div className="bg-white dark:bg-[#1c1c1e] shadow">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16">
@@ -49,7 +55,10 @@ export function Header({ user, onLogout, onProfile }: HeaderProps) {
               className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 
                        dark:text-gray-300 dark:hover:text-white transition-colors"
             >
-              <span>{user.name}</span>
+              <div className="flex items-center space-x-2">
+                <Avatar name={user.name} size={32} />
+                <span>{user.name}</span>
+              </div>
               <ChevronDown className="w-4 h-4" />
             </button>
 
@@ -85,7 +94,7 @@ export function Header({ user, onLogout, onProfile }: HeaderProps) {
 
                 <button
                   onClick={() => {
-                    onLogout();
+                    handleLogout();
                     setShowDropdown(false);
                   }}
                   className="flex items-center w-full px-4 py-2 text-sm text-gray-700 

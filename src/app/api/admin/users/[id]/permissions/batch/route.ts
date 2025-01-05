@@ -10,13 +10,16 @@ interface Permission {
   canAccess: boolean;
 }
 
-type RouteParams = {
-  id: string;
+type Context = {
+  params: {
+    id: string;
+  };
+  searchParams: { [key: string]: string | string[] | undefined };
 };
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: RouteParams }
+  context: Context
 ) {
   try {
     // 验证管理员权限
@@ -28,7 +31,7 @@ export async function PUT(
       );
     }
 
-    const { id } = params;
+    const { id } = context.params;
 
     // 获取请求体中的权限数据
     const body = await request.json();

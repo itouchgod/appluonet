@@ -59,7 +59,9 @@ const authConfig = {
   ],
   session: { strategy: "jwt" },
   pages: {
-    signIn: "/login",
+    signIn: "/",
+    signOut: "/",
+    error: "/"
   },
   callbacks: {
     async jwt({ token, user }) {
@@ -75,6 +77,17 @@ const authConfig = {
         session.user.isAdmin = token.isAdmin as boolean
       }
       return session
+    }
+  },
+  cookies: {
+    csrfToken: {
+      name: 'next-auth.csrf-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production'
+      }
     }
   }
 } satisfies NextAuthConfig

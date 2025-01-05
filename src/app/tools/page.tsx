@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/Header';
 import { ProfileModal } from '@/components/profile/ProfileModal';
@@ -48,7 +48,7 @@ export default function ToolsPage() {
     if (status === 'loading') return;
 
     if (!session) {
-      router.push('/auth/signin');
+      router.push('/');
       return;
     }
 
@@ -72,16 +72,7 @@ export default function ToolsPage() {
   }, [session, status, router]);
 
   const handleLogout = async () => {
-    try {
-      const response = await fetch('/api/auth/signout', {
-        method: 'POST',
-      });
-      if (response.ok) {
-        router.push('/auth/signin');
-      }
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
+    await signOut({ redirect: true, callbackUrl: '/' });
   };
 
   if (status === 'loading' || loading) {
