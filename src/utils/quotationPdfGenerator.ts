@@ -2,6 +2,15 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { QuotationData } from '@/types/quotation';
 import { loadImage } from '@/utils/pdfHelpers';
+import { UserOptions } from 'jspdf-autotable';
+
+// 扩展jsPDF类型
+interface ExtendedJsPDF extends jsPDF {
+  lastAutoTable: {
+    finalY: number;
+  };
+  autoTable: (options: UserOptions) => void;
+}
 
 // 货币符号映射
 const currencySymbols: { [key: string]: string } = {
@@ -16,7 +25,7 @@ export const generateQuotationPDF = async (data: QuotationData, isPreview: boole
     orientation: 'portrait',
     unit: 'mm',
     format: 'a4'
-  });
+  }) as ExtendedJsPDF;
 
   // 添加字体
   doc.addFont('/fonts/NotoSansSC-Regular.ttf', 'NotoSansSC', 'normal');
@@ -69,35 +78,181 @@ export const generateQuotationPDF = async (data: QuotationData, isPreview: boole
     // 从 startY 开始绘制主体内容
     let currentY = startY;
 
-    // 客户信息区域
-    const leftMargin = 20;
-    doc.text('To:', leftMargin, currentY);
-    const toTextWidth = doc.getTextWidth('To: ');
-    
-    // 分行显示客户信息
-    const toLines = data.to.split('\n').filter(line => line.trim());
-    toLines.forEach(line => {
-      doc.text(line, leftMargin + toTextWidth, currentY);
-      currentY += 5;
-    });
+    // 右侧信息区域
+    const rightColumnWidth = 60;  // 右侧列宽度
+    const rightColumnStart = pageWidth - rightColumnWidth - margin;
+    const rightMargin = pageWidth - margin;
+    const colonX = rightMargin - 20;  // 设置冒号的固定X坐标位置
 
-    // 使用 autoTable
-    doc.autoTable({
-      startY: currentY + 5,
-      head: [['No.', 'Part Name', 'Q\'TY', 'Unit', 'U/Price', 'Amount']],
-      body: data.items.map((item, index) => [
-        index + 1,
-        item.partName,
-        item.quantity,
-        item.unit,
-        `${currencySymbols[data.currency]}${item.unitPrice.toFixed(2)}`,
-        `${currencySymbols[data.currency]}${item.amount.toFixed(2)}`
-      ]),
-      styles: {
-        fontSize: 9,
-        cellPadding: 2
+    // 定义右侧信息项
+    const infoItems = [
+      { label: 'Quotation No.', value: data.quotationNo, valueColor: [255, 0, 0] },
+      { label: 'Date', value: data.date },
+      { label: 'Currency', value: data.currency }
+    ];
+
+    // 绘制右侧信息
+    infoItems.forEach((item, index) => {
+      const y = startY + (index * 5);
+      doc.setFont('NotoSansSC', 'bold');
+      doc.text(item.label, colonX, y, { align: 'right' });
+      doc.setFont('NotoSansSC', 'normal');
+      doc.text(':', colonX + 1, y);
+      
+      // 设置文本颜色
+      if (item.valueColor) {
+        doc.setTextColor(item.valueColor[0], item.valueColor[1], item.valueColor[2]);
+      }
+      doc.text(item.value, colonX + 3, y);
+      // 重置回黑色
+      if (item.valueColor) {
+        doc.setTextColor(0, 0, 0);
       }
     });
+
+    // 客户信息区域
+    const leftMargin = 20;
+    doc.setFont('NotoSansSC', 'bold');
+    doc.text('To:', leftMargin, currentY);
+    doc.setFont('NotoSansSC', 'normal');
+    const toTextWidth = doc.getTextWidth('To: ') + 1.5;
+
+    // 计算左侧文本的最大宽度（考虑右侧信息区域）
+    const maxWidth = rightColumnStart - leftMargin - toTextWidth - 5; // 5mm作为安全间距
+    
+    // 处理客户信息自动换行
+    const toText = data.to.trim();
+    if (toText) {
+      const wrappedLines = doc.splitTextToSize(toText, maxWidth);
+      wrappedLines.forEach((line: string) => {
+        doc.text(line, leftMargin + toTextWidth, currentY);
+        currentY += 3.5;
+      });
+    }
+
+    // 显示询价编号（无论是否有值）
+    currentY += 2;
+    doc.setFont('NotoSansSC', 'bold');
+    doc.text('Inquiry No.:', leftMargin, currentY);
+    doc.setFont('NotoSansSC', 'normal');
+    const inquiryNoX = leftMargin + doc.getTextWidth('Inquiry No.: ') + 2; // 增加3mm间距
+    
+    const inquiryNoText = data.inquiryNo ? data.inquiryNo.trim() : '';
+    const wrappedInquiryNo = doc.splitTextToSize(inquiryNoText, maxWidth);
+    wrappedInquiryNo.forEach((line: string, index: number) => {
+      doc.text(line, inquiryNoX, currentY + (index * 3.5));
+    });
+    currentY += (wrappedInquiryNo.length * 3.5);
+
+    // 添加感谢语
+    currentY += 5;  // 增加一些间距
+    doc.setFont('NotoSansSC', 'normal');
+    doc.text('Thanks for your inquiry, and our best offer is as follows:', leftMargin, currentY);
+    
+    // 使用 autoTable
+    doc.autoTable({
+      startY: currentY + 3,  // 在感谢语下方留出空间
+      head: [['No.', 'Part Name', ...(data.showDescription ? ['Description'] : []), 'Q\'TY', 'Unit', 'U/Price', 'Amount', ...(data.showRemarks ? ['Remarks'] : [])]],
+      body: [
+        // 常规商品行
+        ...data.items.map((item, index) => [
+          index + 1,
+          item.partName,
+          ...(data.showDescription ? [item.description || ''] : []),
+          item.quantity,
+          item.unit,
+          `${currencySymbols[data.currency]}${item.unitPrice.toFixed(2)}`,
+          `${currencySymbols[data.currency]}${item.amount.toFixed(2)}`,
+          ...(data.showRemarks ? [item.remarks || ''] : [])
+        ]),
+        // Other Fees 行
+        ...(data.otherFees || []).map(fee => [
+          {
+            content: fee.description,
+            colSpan: data.showDescription ? 6 : 5,
+            styles: { halign: 'left' }
+          } as unknown as string,
+          fee.amount.toFixed(2),
+          ...(data.showRemarks ? [''] : [])
+        ])
+      ],
+      theme: 'plain',
+      styles: {
+        fontSize: 8,
+        cellPadding: 2,
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        textColor: [0, 0, 0],
+        font: 'NotoSansSC',
+        valign: 'middle'
+      },
+      headStyles: {
+        fontSize: 8,
+        fontStyle: 'bold',
+        halign: 'center',
+        font: 'NotoSansSC',
+        valign: 'middle'
+      },
+      columnStyles: {
+        0: { halign: 'center', cellWidth: 10 },  // No.
+        1: { halign: 'center', cellWidth: 'auto' },  // Part Name
+        ...(data.showDescription ? { 2: { halign: 'center', cellWidth: 'auto' } } : {}),  // Description
+        [data.showDescription ? 3 : 2]: { halign: 'center', cellWidth: 15 },  // Q'TY
+        [data.showDescription ? 4 : 3]: { halign: 'center', cellWidth: 15 },  // Unit
+        [data.showDescription ? 5 : 4]: { halign: 'center', cellWidth: 20 },  // U/Price
+        [data.showDescription ? 6 : 5]: { halign: 'center', cellWidth: 20 },  // Amount
+        ...(data.showRemarks ? { [data.showDescription ? 7 : 6]: { halign: 'center', cellWidth: 'auto' } } : {})  // Remarks
+      } as { [key: number]: { cellWidth: number | 'auto', halign: 'center' } },
+      margin: { left: 15, right: 15 },
+      tableWidth: pageWidth - 30  // 设置表格宽度为页面宽度减去左右边距
+    });
+
+    // 获取表格结束的Y坐标
+    const finalY = doc.lastAutoTable.finalY || currentY;
+    currentY = finalY + 10;
+
+    // 添加总金额
+    const itemsTotal = data.items.reduce((sum, item) => sum + item.amount, 0);
+    const feesTotal = (data.otherFees || []).reduce((sum, fee) => sum + fee.amount, 0);
+    const totalAmount = itemsTotal + feesTotal;
+
+    // 显示总金额
+    doc.setFontSize(10);
+    doc.setFont('NotoSansSC', 'bold');
+    const totalAmountLabel = 'Total Amount:';
+    const totalAmountValue = `${currencySymbols[data.currency]}${totalAmount.toFixed(2)}`;
+    const valueX = pageWidth - margin - 5;
+    const labelX = valueX - doc.getTextWidth(totalAmountValue) - 28;
+
+    doc.text(totalAmountLabel, labelX, currentY);
+    doc.text(totalAmountValue, valueX, currentY, { align: 'right' });
+
+    // 添加 Notes 区域
+    currentY += 10; // 在总金额下方留出空间
+    doc.setFontSize(8);
+    doc.setFont('NotoSansSC', 'bold');
+    doc.text('Notes:', leftMargin, currentY);
+    
+    // 设置普通字体用于条款内容
+    doc.setFont('NotoSansSC', 'normal');
+    
+    // 显示所有条款
+    if (data.notes && data.notes.length > 0) {
+      data.notes.forEach((note, index) => {
+        currentY += 5;
+        doc.text(`${index + 1}`, leftMargin, currentY);
+        
+        // 缩进处理条款内容
+        const noteContent = doc.splitTextToSize(note, pageWidth - leftMargin - margin - 10);
+        noteContent.forEach((line: string, lineIndex: number) => {
+          const lineY = currentY + (lineIndex * 4);
+          doc.text(line, leftMargin + 5, lineY);
+        });
+        
+        // 根据内容行数调整下一条款的位置
+        currentY += (noteContent.length - 1) * 4;
+      });
+    }
 
     // 根据模式选择保存或返回预览URL
     if (isPreview) {

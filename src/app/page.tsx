@@ -59,7 +59,6 @@ export default function LoginPage() {
             alt="LC APP Logo"
             width={80}
             height={80}
-            className="mx-auto"
             priority
           />
         </div>

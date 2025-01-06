@@ -3,6 +3,39 @@ import 'jspdf-autotable';
 import { PDFGeneratorData } from '@/types/pdf';
 import { getHeaderImage, getInvoiceTitle, getStampImage, loadImage } from '@/utils/pdfHelpers';
 
+interface AutoTableOptions {
+  startY: number;
+  head: string[][];
+  body: (string | number | undefined | { content: string; colSpan: number; styles: { halign: string } })[][];
+  theme: string;
+  styles: {
+    fontSize: number;
+    cellPadding: number;
+    lineColor: number[];
+    lineWidth: number;
+    textColor: number[];
+    font: string;
+    valign: string;
+  };
+  headStyles: {
+    fontSize: number;
+    fontStyle: string;
+    halign: string;
+    font: string;
+    valign: string;
+  };
+  columnStyles: Record<string, { halign: string; cellWidth: number | string }>;
+  margin: { left: number; right: number };
+  tableWidth: string;
+}
+
+interface AutoTableDoc extends jsPDF {
+  lastAutoTable: {
+    finalY: number;
+  };
+  autoTable: (options: AutoTableOptions) => void;
+}
+
 // 生成发票PDF
 export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolean = false) {
   const doc = new jsPDF({
@@ -141,7 +174,7 @@ export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolea
     currentY += 5;
 
     // 使用 autoTable
-    doc.autoTable({
+    (doc as AutoTableDoc).autoTable({
       startY: currentY,
       head: [['No.', data.showHsCode ? 'HS Code' : '', 'Description', 'Q\'TY', 'Unit', 'Unit Price', 'Amount']].map(row => 
         row.filter(cell => cell !== '')),
@@ -204,7 +237,7 @@ export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolea
     });
 
     // 获取表格结束位置
-    const finalY = doc.lastAutoTable.finalY;
+    const finalY = (doc as AutoTableDoc).lastAutoTable.finalY;
     
     // 设置字体和样式
     doc.setFontSize(10);

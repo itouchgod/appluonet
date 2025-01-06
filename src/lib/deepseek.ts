@@ -6,8 +6,9 @@ if (!process.env.DEEPSEEK_API_KEY) {
 
 // 创建 OpenAI 客户端实例
 const deepseek = new OpenAI({
-  baseURL: 'https://api.deepseek.com/v1',
+  baseURL: 'https://api.deepseek.com',
   apiKey: process.env.DEEPSEEK_API_KEY,
+  defaultHeaders: { 'Content-Type': 'application/json' }
 });
 
 interface GenerateMailOptions {
@@ -45,10 +46,14 @@ export async function generateMail({
         { role: "user", content: userPrompt }
       ],
       temperature: 0.7,
-      max_tokens: 2000,
+      max_tokens: 2000
     });
 
-    return completion.choices[0].message.content || '';
+    if (!completion.choices?.[0]?.message?.content) {
+      throw new Error('API 返回数据格式错误');
+    }
+
+    return completion.choices[0].message.content;
   } catch (error) {
     console.error('DeepSeek API Error:', error);
     throw new Error(error instanceof Error ? error.message : '生成失败，请稍后重试');
