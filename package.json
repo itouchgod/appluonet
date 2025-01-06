@@ -26,9 +26,9 @@
     "next-auth": "^4.24.11",
     "nodemailer": "^6.9.16",
     "openai": "^4.77.3",
+    "prisma": "^6.1.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "prisma": "^6.1.0"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
