@@ -116,4 +116,6 @@ export const config = {
   debug: process.env.NODE_ENV === "development",
 } satisfies AuthOptions
 
-export const { signIn, signOut } = NextAuth(config) 
+const auth = NextAuth(config)
+export const { signIn, signOut } = auth
+export { auth } 
