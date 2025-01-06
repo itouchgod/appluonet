@@ -235,28 +235,36 @@ export const generateQuotationPDF = async (data: QuotationData, isPreview: boole
 
     // 添加 Notes 区域
     currentY += 10; // 在总金额下方留出空间
-    doc.setFontSize(8);
-    doc.setFont('NotoSansSC', 'bold');
-    doc.text('Notes:', leftMargin, currentY);
-    
-    // 设置普通字体用于条款内容
-    doc.setFont('NotoSansSC', 'normal');
-    
-    // 显示所有条款
-    if (data.notes && data.notes.length > 0) {
-      data.notes.forEach((note, index) => {
+
+    // 过滤掉空行，并检查是否有有效的 notes
+    const validNotes = data.notes?.filter(note => note.trim() !== '') || [];
+
+    if (validNotes.length > 0) {
+      doc.setFontSize(8);
+      doc.setFont('NotoSansSC', 'bold');
+      doc.text('Notes:', leftMargin, currentY);
+      
+      // 设置普通字体用于条款内容
+      doc.setFont('NotoSansSC', 'normal');
+      
+      const numberWidth = doc.getTextWidth('10.'); // 预留序号宽度
+      const contentMaxWidth = pageWidth - leftMargin - margin - numberWidth - 5; // 内容最大宽度
+      
+      // 显示所有有效条款
+      validNotes.forEach((note, index) => {
         currentY += 5;
-        doc.text(`${index + 1}`, leftMargin, currentY);
+        // 显示序号
+        doc.text(`${index + 1}.`, leftMargin, currentY);
         
-        // 缩进处理条款内容
-        const noteContent = doc.splitTextToSize(note, pageWidth - leftMargin - margin - 10);
-        noteContent.forEach((line: string, lineIndex: number) => {
+        // 处理长文本自动换行
+        const wrappedText = doc.splitTextToSize(note.trim(), contentMaxWidth);
+        wrappedText.forEach((line: string, lineIndex: number) => {
           const lineY = currentY + (lineIndex * 4);
-          doc.text(line, leftMargin + 5, lineY);
+          doc.text(line, leftMargin + numberWidth, lineY);
         });
         
-        // 根据内容行数调整下一条款的位置
-        currentY += (noteContent.length - 1) * 4;
+        // 更新Y坐标，确保下一条款在当前条款所有行之后
+        currentY += (wrappedText.length - 1) * 4;
       });
     }
 

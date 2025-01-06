@@ -217,7 +217,7 @@ export const generateOrderConfirmationPDF = async (data: QuotationData, isPrevie
     doc.text(totalText, pageWidth - 20 - doc.getTextWidth(totalText), currentY);
 
     // 添加备注
-    if (data.notes) {
+    if (data.notes && data.notes.length > 0 && data.notes.some(note => note.trim() !== '')) {
       currentY += 8;  // 减小间距
       doc.setFontSize(9);
       doc.setFont('NotoSansSC', 'bold');
