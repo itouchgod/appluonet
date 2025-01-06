@@ -3,50 +3,13 @@ import 'jspdf-autotable';
 import { PDFGeneratorData } from '@/types/pdf';
 import { getHeaderImage, getInvoiceTitle, getStampImage, loadImage } from '@/utils/pdfHelpers';
 
-// 扩展jsPDF类型
-interface ExtendedJsPDF extends jsPDF {
-  lastAutoTable: {
-    finalY: number;
-  };
-  autoTable: (options: {
-    startY: number;
-    head: string[][];
-    body: (string | number | undefined | { content: string; colSpan: number; styles: { halign: string } })[][];
-    theme: string;
-    styles: {
-      fontSize: number;
-      cellPadding: number;
-      lineColor: number[];
-      lineWidth: number;
-      textColor: number[];
-      font: string;
-      valign: string;
-    };
-    headStyles: {
-      fontSize: number;
-      fontStyle: string;
-      halign: string;
-      font: string;
-      valign: string;
-    };
-    columnStyles: {
-      [key: number]: {
-        halign: string;
-        cellWidth: number | 'auto';
-      };
-    };
-    margin: { left: number; right: number };
-    tableWidth: number | 'auto';
-  }) => void;
-}
-
 // 生成发票PDF
 export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolean = false) {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
     format: 'a4'
-  }) as ExtendedJsPDF;
+  });
 
   // 添加字体
   doc.addFont('/fonts/NotoSansSC-Regular.ttf', 'NotoSansSC', 'normal');
@@ -249,8 +212,8 @@ export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolea
     
     // 显示总金额
     const totalAmountLabel = 'Total Amount:';
-    const itemsTotal = data.items.reduce((sum: number, item: { amount: number }) => sum + item.amount, 0);
-    const feesTotal = (data.otherFees || []).reduce((sum: number, fee: { amount: number }) => sum + fee.amount, 0);
+    const itemsTotal = data.items.reduce((sum, item) => sum + item.amount, 0);
+    const feesTotal = (data.otherFees || []).reduce((sum, fee) => sum + fee.amount, 0);
     const totalAmount = itemsTotal + feesTotal;
     const totalAmountValue = `${data.currency === 'USD' ? '$' : '¥'}${totalAmount.toFixed(2)}`;
     
@@ -284,8 +247,8 @@ export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolea
       doc.setFont('NotoSansSC', 'normal');
       bankY += 5;
       
-      const bankInfoLines = data.bankInfo.split('\n').filter((line: string) => line.trim());
-      bankInfoLines.forEach((line: string, index: number) => {
+      const bankInfoLines = data.bankInfo.split('\n').filter(line => line.trim());
+      bankInfoLines.forEach((line, index) => {
         doc.text(line, margin, bankY + (index * 5));
       });
       

@@ -2,7 +2,6 @@
 /// <reference lib="dom" />
 
 import { PDFGeneratorData } from '@/types/pdf';
-import { jsPDF } from 'jspdf';
 
 export interface ImageLoader {
   (src: string): Promise<HTMLImageElement>;
@@ -18,14 +17,6 @@ export interface StampImageGetter {
 
 export interface InvoiceTitleGetter {
   (data: PDFGeneratorData): string;
-}
-
-export interface PdfData {
-  templateConfig: {
-    stampType: string;
-  };
-  currency: string;
-  doc: jsPDF;
 }
 
 // 加载图片
@@ -53,7 +44,7 @@ export const getHeaderImage: HeaderImageGetter = async (headerType) => {
 };
 
 // 获取印章图片路径
-export const getStampImage: StampImageGetter = (stampType) => {
+export const getStampImage = (stampType: string) => {
   switch (stampType) {
     case 'shanghai':
       return '/images/stamp-shanghai.png';
@@ -69,8 +60,8 @@ export const getStampImage: StampImageGetter = (stampType) => {
 };
 
 // 获取发票标题
-export const getInvoiceTitle: InvoiceTitleGetter = (data: PdfData) => {
-  switch (data.templateConfig.stampType) {
+export const getInvoiceTitle: InvoiceTitleGetter = (data) => {
+  switch (data.templateConfig.invoiceType) {
     case 'commercial':
       return data.currency === 'USD' ? 'COMMERCIAL INVOICE' : '商业发票';
     case 'proforma':
