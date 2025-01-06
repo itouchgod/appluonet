@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Settings, Download, ArrowLeft, Eye } from 'lucide-react';
-import { generateQuotationPDF } from '@/utils/quotationPdfGenerator';
-import { generateOrderConfirmationPDF } from '@/utils/orderConfirmationPdfGenerator';
+import { generateQuotationPdf } from '@/utils/quotationPdfGenerator';
+import { generateOrderConfirmationPdf } from '@/utils/orderConfirmationPdfGenerator';
 import { TabButton } from '@/components/quotation/TabButton';
 import { getDefaultNotes } from '@/utils/getDefaultNotes';
 import { CustomerInfoSection } from '@/components/quotation/CustomerInfoSection';
@@ -116,9 +116,9 @@ export default function QuotationPage() {
     e.preventDefault();
     try {
       if (activeTab === 'quotation') {
-        await generateQuotationPDF(data);
+        await generateQuotationPdf(data);
       } else {
-        await generateOrderConfirmationPDF(data);
+        await generateOrderConfirmationPdf(data);
       }
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -130,9 +130,9 @@ export default function QuotationPage() {
     e.preventDefault();
     try {
       if (activeTab === 'quotation') {
-        await generateQuotationPDF(data, true);
+        await generateQuotationPdf(data, true);
       } else {
-        await generateOrderConfirmationPDF(data, true);
+        await generateOrderConfirmationPdf(data, true);
       }
     } catch (error) {
       console.error('Error generating PDF preview:', error);

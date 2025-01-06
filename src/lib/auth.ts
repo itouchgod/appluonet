@@ -1,77 +1,100 @@
 import NextAuth from "next-auth";
+import type { DefaultSession, AuthOptions } from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "./prisma";
 import CredentialsProvider from "next-auth/providers/credentials";
-import bcrypt from "bcryptjs";
-import type { NextAuthConfig } from "next-auth";
+import { compare } from "bcryptjs";
 
-export const config = {
+declare module "next-auth" {
+  interface Session extends DefaultSession {
+    user: {
+      id: string;
+      username: string;
+      isAdmin: boolean;
+    } & DefaultSession["user"]
+  }
+
+  interface User {
+    id: string;
+    username: string;
+    isAdmin: boolean;
+    email: string | null;
+    emailVerified: Date | null;
+    image: string | null;
+  }
+}
+
+export const authConfig = {
   adapter: PrismaAdapter(prisma),
-  session: {
-    strategy: "jwt",
-  },
-  pages: {
-    signIn: "/login",
-  },
   providers: [
     CredentialsProvider({
       name: "credentials",
       credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
+        email: { label: "Email", type: "text" },
+        password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error("请输入邮箱和密码")
+          return null;
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email }
-        })
+        const user = await prisma.user.findFirst({
+          where: { email: credentials.email },
+          select: {
+            id: true,
+            email: true,
+            username: true,
+            password: true,
+            isAdmin: true,
+          },
+        });
 
         if (!user) {
-          throw new Error("用户不存在")
+          return null;
         }
 
-        if (!user.password) {
-          throw new Error("请先设置密码")
-        }
+        const isPasswordValid = await compare(credentials.password, user.password);
 
-        const isValid = await bcrypt.compare(credentials.password, user.password)
-
-        if (!isValid) {
-          throw new Error("密码错误")
-        }
-
-        if (!user.status) {
-          throw new Error("账号已被禁用")
+        if (!isPasswordValid) {
+          return null;
         }
 
         return {
           id: user.id,
           email: user.email,
           name: user.username,
-          isAdmin: user.isAdmin
-        }
-      }
-    })
+          username: user.username,
+          isAdmin: user.isAdmin,
+          image: null,
+          emailVerified: new Date(),
+        };
+      },
+    }),
   ],
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id
-        token.isAdmin = user.isAdmin
+        token.id = user.id;
+        token.username = user.username;
+        token.isAdmin = user.isAdmin;
       }
-      return token
+      return token;
     },
     async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string
-        session.user.isAdmin = token.isAdmin as boolean
+      if (session?.user) {
+        session.user.id = token.id;
+        session.user.username = token.username as string;
+        session.user.isAdmin = token.isAdmin as boolean;
       }
-      return session
-    }
-  }
-} satisfies NextAuthConfig
+      return session;
+    },
+  },
+  session: {
+    strategy: "jwt",
+  },
+  pages: {
+    signIn: "/login",
+  },
+} satisfies AuthOptions;
 
-export const { auth, signIn, signOut } = NextAuth(config) 
+export const { auth, signIn, signOut } = NextAuth(authConfig); 

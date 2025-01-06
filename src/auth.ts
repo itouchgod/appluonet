@@ -1,21 +1,37 @@
 import NextAuth from "next-auth"
-import type { NextAuthConfig } from "next-auth"
+import type { DefaultSession, AuthOptions, Session, User } from "next-auth"
+import type { Adapter } from "next-auth/adapters"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "@/lib/prisma"
-import CredentialsProvider from "next-auth/providers/credentials"
+import Credentials from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
-import { User } from "next-auth"
+import type { JWT } from "next-auth/jwt"
 
-const authConfig = {
-  adapter: PrismaAdapter(prisma) as unknown as NextAuthConfig["adapter"],
+declare module "next-auth" {
+  interface Session extends DefaultSession {
+    user: {
+      id: string;
+      username: string;
+      isAdmin: boolean;
+    } & DefaultSession["user"]
+  }
+
+  interface User {
+    username: string;
+    isAdmin: boolean;
+  }
+}
+
+const authConfig: AuthOptions = {
+  adapter: PrismaAdapter(prisma) as Adapter,
   providers: [
-    CredentialsProvider({
+    Credentials({
       name: "credentials",
       credentials: {
         username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" }
       },
-      async authorize(credentials): Promise<User | null> {
+      async authorize(credentials: Record<"username" | "password", string> | undefined): Promise<User | null> {
         if (!credentials?.username || !credentials?.password) {
           throw new Error("请输入用户名和密码")
         }
@@ -52,7 +68,9 @@ const authConfig = {
           email: user.email,
           name: user.username,
           username: user.username,
-          isAdmin: user.isAdmin
+          isAdmin: user.isAdmin,
+          image: null,
+          emailVerified: new Date(),
         }
       }
     })
@@ -64,14 +82,14 @@ const authConfig = {
     error: "/"
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }: { token: JWT; user: User }) {
       if (user) {
         token.id = user.id
         token.isAdmin = user.isAdmin
       }
       return token
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: Session; token: JWT }) {
       if (session.user) {
         session.user.id = token.id as string
         session.user.isAdmin = token.isAdmin as boolean
@@ -90,6 +108,6 @@ const authConfig = {
       }
     }
   }
-} satisfies NextAuthConfig
+} satisfies AuthOptions
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig) 
