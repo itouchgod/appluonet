@@ -42,8 +42,8 @@ export function Header({ user, onLogout, onProfile }: HeaderProps) {
           <Image
             src="/images/logo.png"
             alt="LC APP Logo"
-            width={80}
-            height={80}
+            width={48}
+            height={48}
             priority
             className="object-contain"
           />
