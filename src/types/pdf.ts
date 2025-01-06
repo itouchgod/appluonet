@@ -74,8 +74,8 @@ export interface PDFGeneratorData {
   }>;
   bankInfo: string;
   paymentDate: string;
-  showPaymentTerms?: boolean;
-  additionalPaymentTerms?: string;
+  showPaymentTerms: boolean;
+  additionalPaymentTerms: string;
   amountInWords: {
     dollars: string;
     cents: string;
@@ -87,4 +87,9 @@ export interface PDFGeneratorData {
   showInvoiceReminder: boolean;
   currency: 'USD' | 'CNY';
   templateConfig: InvoiceTemplateConfig;
+  otherFees?: Array<{
+    id: number;
+    description: string;
+    amount: number;
+  }>;
 } 

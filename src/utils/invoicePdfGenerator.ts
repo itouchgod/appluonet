@@ -145,18 +145,27 @@ export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolea
       startY: currentY,
       head: [['No.', data.showHsCode ? 'HS Code' : '', 'Description', 'Q\'TY', 'Unit', 'Unit Price', 'Amount']].map(row => 
         row.filter(cell => cell !== '')),
-      body: data.items.map((item, index) => {
-        const row = [
+      body: [
+        // 常规商品行
+        ...data.items.map((item, index) => [
           index + 1,
           data.showHsCode ? item.hsCode : '',
           item.description,
           item.quantity,
           item.unit,
-          `${data.currency === 'USD' ? '$' : '¥'}${Number(item.unitPrice).toFixed(2)}`,
-          `${data.currency === 'USD' ? '$' : '¥'}${Number(item.amount).toFixed(2)}`
-        ];
-        return data.showHsCode ? row : row.filter((_, i) => i !== 1);
-      }),
+          Number(item.unitPrice).toFixed(2),
+          Number(item.amount).toFixed(2)
+        ].filter((_, i) => i === 0 || i === 2 || i === 3 || i === 4 || i === 5 || i === 6 || (data.showHsCode && i === 1))),
+        // Other Fees 行
+        ...(data.otherFees || []).map(fee => [
+          {
+            content: fee.description,
+            colSpan: data.showHsCode ? 6 : 5,
+            styles: { halign: 'center' }
+          } as unknown as string,
+          fee.amount.toFixed(2)
+        ])
+      ],
       theme: 'plain',
       styles: {
         fontSize: 8,
@@ -175,22 +184,22 @@ export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolea
         valign: 'middle'
       },
       columnStyles: data.showHsCode ? {
-        0: { halign: 'center', cellWidth: 15 },
-        1: { halign: 'center', cellWidth: 30 },
-        2: { halign: 'center', cellWidth: 'auto' },
-        3: { halign: 'center', cellWidth: 20 },
-        4: { halign: 'center', cellWidth: 20 },
-        5: { halign: 'center', cellWidth: 30 },
-        6: { halign: 'center', cellWidth: 30 }
+        0: { halign: 'center', cellWidth: 8 },  // No.
+        1: { halign: 'center', cellWidth: 25 }, // HS Code
+        2: { halign: 'left', cellWidth: 'auto' }, // Description
+        3: { halign: 'center', cellWidth: 15 },  // Q'TY
+        4: { halign: 'center', cellWidth: 12 },  // Unit
+        5: { halign: 'center', cellWidth: 25 },   // U/Price
+        6: { halign: 'center', cellWidth: 25 }    // Amount
       } : {
-        0: { halign: 'center', cellWidth: 15 },
-        1: { halign: 'center', cellWidth: 'auto' },
-        2: { halign: 'center', cellWidth: 20 },
-        3: { halign: 'center', cellWidth: 20 },
-        4: { halign: 'center', cellWidth: 30 },
-        5: { halign: 'center', cellWidth: 30 }
+        0: { halign: 'center', cellWidth: 8 },   // No.
+        1: { halign: 'left', cellWidth: 'auto' }, // Description
+        2: { halign: 'center', cellWidth: 15 },   // Q'TY
+        3: { halign: 'center', cellWidth: 12 },   // Unit
+        4: { halign: 'center', cellWidth: 25 },    // U/Price
+        5: { halign: 'center', cellWidth: 25 }     // Amount
       },
-      margin: { left: 15, right: 15 },
+      margin: { left: 20, right: 20 },
       tableWidth: 'auto'
     });
 
@@ -198,17 +207,21 @@ export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolea
     const finalY = doc.lastAutoTable.finalY;
     
     // 设置字体和样式
-    doc.setFontSize(8);
+    doc.setFontSize(10);
     doc.setFont('NotoSansSC', 'normal');
     
     // 显示总金额
     const totalAmountLabel = 'Total Amount:';
-    const totalAmount = data.items.reduce((sum, item) => sum + item.amount, 0);
+    const itemsTotal = data.items.reduce((sum, item) => sum + item.amount, 0);
+    const feesTotal = (data.otherFees || []).reduce((sum, fee) => sum + fee.amount, 0);
+    const totalAmount = itemsTotal + feesTotal;
     const totalAmountValue = `${data.currency === 'USD' ? '$' : '¥'}${totalAmount.toFixed(2)}`;
     
-    const valueX = pageWidth - margin - 3;  // 右边距增加到15mm
-    const labelX = valueX - doc.getTextWidth(totalAmountValue) - 23;  // 根据金额文本宽度动态计算标签位置
+    const valueX = pageWidth - margin - 5;  // 右边距增加到15mm
+    const labelX = valueX - doc.getTextWidth(totalAmountValue) - 28;  // 根据金额文本宽度动态计算标签位置
     
+  
+        
     // 绘制总金额行（使用粗体）
     doc.setFont('NotoSansSC', 'bold');
     doc.text(totalAmountLabel, labelX, finalY + 8);
@@ -216,6 +229,7 @@ export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolea
     doc.setFont('NotoSansSC', 'normal');
 
     // 显示大写金额
+    doc.setFontSize(8);
     doc.setFont('NotoSansSC', 'bold');
     const lines = doc.splitTextToSize(`SAY TOTAL ${data.currency === 'USD' ? 'US DOLLARS' : 'CHINESE YUAN'} ${data.amountInWords.dollars}${data.amountInWords.hasDecimals ? ` AND ${data.amountInWords.cents}` : ' ONLY'}`, pageWidth - (margin * 2));
     lines.forEach((line: string, index: number) => {
@@ -261,6 +275,7 @@ export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolea
       // 根据条款数量决定使用单数还是复数形式
       const titleText = totalTerms === 1 ? 'Payment Term:' : 'Payment Terms:';
       // 显示付款条款标题
+      doc.setFontSize(8);
       doc.setFont('NotoSansSC', 'bold');
       doc.text(titleText, margin, currentY);
       doc.setFont('NotoSansSC', 'normal');

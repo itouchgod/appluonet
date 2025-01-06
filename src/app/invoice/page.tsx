@@ -73,6 +73,11 @@ interface InvoiceData {
   showInvoiceReminder: boolean;
   currency: 'USD' | 'CNY';
   templateConfig: InvoiceTemplateConfig;
+  otherFees: Array<{
+    id: number;
+    description: string;
+    amount: number;
+  }>;
 }
 
 export default function InvoicePage() {
@@ -112,7 +117,8 @@ Beneficiary: Luo & Company Co., Limited`,
       headerType: 'none',
       invoiceType: 'invoice',
       stampType: 'none'
-    }
+    },
+    otherFees: []
   });
 
   const [showSettings, setShowSettings] = useState(false);
@@ -129,6 +135,8 @@ Beneficiary: Luo & Company Co., Limited`,
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [showPaymentTerms, setShowPaymentTerms] = useState(true);
   const [additionalPaymentTerms, setAdditionalPaymentTerms] = useState('');
+  const [editingFeeAmount, setEditingFeeAmount] = useState<string>('');
+  const [editingFeeIndex, setEditingFeeIndex] = useState<number | null>(null);
 
   const handleAddLine = () => {
     setInvoiceData(prev => ({
@@ -183,8 +191,10 @@ Beneficiary: Luo & Company Co., Limited`,
   };
 
   const getTotalAmount = useCallback(() => {
-    return invoiceData.items.reduce((sum, item) => sum + item.amount, 0);
-  }, [invoiceData.items]);
+    const itemsTotal = invoiceData.items.reduce((sum, item) => sum + item.amount, 0);
+    const feesTotal = (invoiceData.otherFees || []).reduce((sum, fee) => sum + fee.amount, 0);
+    return itemsTotal + feesTotal;
+  }, [invoiceData.items, invoiceData.otherFees]);
 
   // 计算付款日期（设置日期后一个月）
   const calculatePaymentDate = useCallback((date: string) => {
@@ -520,162 +530,254 @@ Beneficiary: Luo & Company Co., Limited`,
             </div>
 
             {/* 商品表格 */}
-            <div className="overflow-x-auto rounded-2xl border border-gray-200/30 dark:border-gray-700/30
-                          bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl shadow-lg">
-              <table className="w-full min-w-[800px]">
-                <thead>
-                  <tr className="border-b border-[#007AFF]/10 dark:border-[#0A84FF]/10
-                                bg-[#007AFF]/5 dark:bg-[#0A84FF]/5">
-                    <th className="py-2 px-1 text-center text-xs font-bold opacity-90" style={{ width: '50px' }}>No.</th>
-                    {invoiceData.showHsCode && (
-                      <th className="py-2 px-1 text-center text-xs font-bold opacity-90" style={{ width: '120px' }}>
-                        HS Code
-                      </th>
-                    )}
-                    <th className="py-2 px-1 text-center text-xs font-bold opacity-90" style={{ width: '40%' }}>Description</th>
-                    <th className="py-2 px-1 text-center text-xs font-bold opacity-90" style={{ width: '80px' }}>Q&apos;TY</th>
-                    <th className="py-2 px-1 text-center text-xs font-bold opacity-90" style={{ width: '80px' }}>Unit</th>
-                    <th className="py-2 px-1 text-center text-xs font-bold opacity-90" style={{ width: '120px' }}>U/Price</th>
-                    <th className="py-2 px-1 text-center text-xs font-bold opacity-90" style={{ width: '120px' }}>Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {invoiceData.items.map((item, index) => (
-                    <tr key={item.lineNo} 
-                        className="border-b border-[#007AFF]/10 dark:border-[#0A84FF]/10">
-                      <td className="py-1 px-1 text-sm">
-                        <span className="flex items-center justify-center w-6 h-6 rounded-full 
-                                       hover:bg-red-100 hover:text-red-600 cursor-pointer transition-colors"
-                              onClick={() => {
-                                if (invoiceData.items.length > 1) {
-                                  setInvoiceData(prev => ({
-                                    ...prev,
-                                    items: prev.items.filter((_, i) => i !== index).map((item, i) => ({
-                                      ...item,
-                                      lineNo: i + 1
-                                    }))
-                                  }));
-                                }
-                              }}>
-                          {item.lineNo}
-                        </span>
-                      </td>
+            <div className="space-y-2">
+              <div className="overflow-x-auto rounded-2xl border border-gray-200/30 dark:border-gray-700/30
+                            bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl shadow-lg">
+                <table className="w-full min-w-[800px]">
+                  <thead>
+                    <tr className="border-b border-[#007AFF]/10 dark:border-[#0A84FF]/10
+                                  bg-[#007AFF]/5 dark:bg-[#0A84FF]/5">
+                      <th className="py-2 px-1 text-center text-xs font-bold opacity-90" style={{ width: '50px' }}>No.</th>
                       {invoiceData.showHsCode && (
+                        <th className="py-2 px-1 text-center text-xs font-bold opacity-90" style={{ width: '120px' }}>
+                          HS Code
+                        </th>
+                      )}
+                      <th className="py-2 px-1 text-center text-xs font-bold opacity-90" style={{ width: '40%' }}>Description</th>
+                      <th className="py-2 px-1 text-center text-xs font-bold opacity-90" style={{ width: '80px' }}>Q&apos;TY</th>
+                      <th className="py-2 px-1 text-center text-xs font-bold opacity-90" style={{ width: '80px' }}>Unit</th>
+                      <th className="py-2 px-1 text-center text-xs font-bold opacity-90" style={{ width: '120px' }}>U/Price</th>
+                      <th className="py-2 px-1 text-center text-xs font-bold opacity-90" style={{ width: '120px' }}>Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invoiceData.items.map((item, index) => (
+                      <tr key={item.lineNo} 
+                          className="border-b border-[#007AFF]/10 dark:border-[#0A84FF]/10">
+                        <td className="py-1 px-1 text-sm">
+                          <span className="flex items-center justify-center w-6 h-6 rounded-full 
+                                         hover:bg-red-100 hover:text-red-600 cursor-pointer transition-colors"
+                                onClick={() => {
+                                  if (invoiceData.items.length > 1) {
+                                    setInvoiceData(prev => ({
+                                      ...prev,
+                                      items: prev.items.filter((_, i) => i !== index).map((item, i) => ({
+                                        ...item,
+                                        lineNo: i + 1
+                                      }))
+                                    }));
+                                  }
+                                }}>
+                            {item.lineNo}
+                          </span>
+                        </td>
+                        {invoiceData.showHsCode && (
+                          <td className="py-1.5 px-1">
+                            <input
+                              type="text"
+                              value={item.hsCode}
+                              onChange={e => updateLineItem(index, 'hsCode', e.target.value)}
+                              className={tableInputClassName}
+                              placeholder="HS Code"
+                            />
+                          </td>
+                        )}
+                        <td className="py-1 px-1">
+                          <textarea
+                            value={item.description}
+                            onChange={e => updateLineItem(index, 'description', e.target.value)}
+                            rows={1}
+                            className={`${tableInputClassName} resize min-h-[28px]`}
+                            placeholder="Enter description"
+                          />
+                        </td>
                         <td className="py-1.5 px-1">
                           <input
                             type="text"
-                            value={item.hsCode}
-                            onChange={e => updateLineItem(index, 'hsCode', e.target.value)}
-                            className={tableInputClassName}
-                            placeholder="HS Code"
+                            inputMode="numeric"
+                            value={editingQuantityIndex === index ? editingQuantity : (item.quantity || '')}
+                            onChange={e => {
+                              const inputValue = e.target.value;
+                              if (/^\d*$/.test(inputValue)) {
+                                setEditingQuantity(inputValue);
+                                const value = parseInt(inputValue);
+                                if (!isNaN(value) || inputValue === '') {
+                                  updateLineItem(index, 'quantity', value || 0);
+                                }
+                              }
+                            }}
+                            onFocus={(e) => {
+                              setEditingQuantityIndex(index);
+                              setEditingQuantity(item.quantity === 0 ? '' : item.quantity.toString());
+                              e.target.select();
+                            }}
+                            onBlur={() => {
+                              setEditingQuantityIndex(null);
+                              setEditingQuantity('');
+                            }}
+                            className={numberInputClassName}
                           />
                         </td>
-                      )}
-                      <td className="py-1 px-1">
-                        <textarea
-                          value={item.description}
-                          onChange={e => updateLineItem(index, 'description', e.target.value)}
-                          rows={1}
-                          className={`${tableInputClassName} resize min-h-[28px]`}
-                          placeholder="Enter description"
-                        />
-                      </td>
-                      <td className="py-1.5 px-1">
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          value={editingQuantityIndex === index ? editingQuantity : (item.quantity || '')}
-                          onChange={e => {
-                            const inputValue = e.target.value;
-                            if (/^\d*$/.test(inputValue)) {
-                              setEditingQuantity(inputValue);
-                              const value = parseInt(inputValue);
-                              if (!isNaN(value) || inputValue === '') {
-                                updateLineItem(index, 'quantity', value || 0);
+                        <td className="py-1.5 px-1">
+                          <select
+                            value={item.unit ? item.unit.replace(/s$/, '') : 'pc'}
+                            onChange={e => {
+                              const baseUnit = e.target.value;
+                              const unit = item.quantity <= 1 ? baseUnit : `${baseUnit}s`;
+                              updateLineItem(index, 'unit', unit);
+                            }}
+                            className={`${tableInputClassName} pr-8`}
+                          >
+                            <option value="pc">pc{item.quantity > 1 ? 's' : ''}</option>
+                            <option value="set">set{item.quantity > 1 ? 's' : ''}</option>
+                            <option value="length">length{item.quantity > 1 ? 's' : ''}</option>
+                          </select>
+                        </td>
+                        <td className="py-1 px-1">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={editingUnitPriceIndex === index ? editingUnitPrice : (item.unitPrice ? item.unitPrice.toFixed(2) : '')}
+                            onChange={e => {
+                              const inputValue = e.target.value;
+                              if (/^\d*\.?\d{0,2}$/.test(inputValue) || inputValue === '') {
+                                setEditingUnitPrice(inputValue);
+                                const value = parseFloat(inputValue);
+                                if (!isNaN(value)) {
+                                  updateLineItem(index, 'unitPrice', value);
+                                }
                               }
-                            }
+                            }}
+                            onFocus={(e) => {
+                              setEditingUnitPriceIndex(index);
+                              setEditingUnitPrice(item.unitPrice === 0 ? '' : item.unitPrice.toString());
+                              e.target.select();
+                            }}
+                            onBlur={() => {
+                              setEditingUnitPriceIndex(null);
+                              setEditingUnitPrice('');
+                            }}
+                            className={numberInputClassName}
+                          />
+                        </td>
+                        <td className="py-1 px-1">
+                          <input
+                            type="text"
+                            value={item.amount.toFixed(2)}
+                            readOnly
+                            className={numberInputClassName}
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Other Fees 区域 */}
+              {invoiceData.otherFees && invoiceData.otherFees.length > 0 && (
+                <div className="overflow-x-auto -mt-[1px] rounded-b-2xl
+                                border-x border-b border-gray-200/30 dark:border-gray-700/30
+                                bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
+                  {invoiceData.otherFees.map((fee, index) => (
+                    <div key={fee.id} 
+                      className={`flex items-center border-t border-[#007AFF]/10 dark:border-[#0A84FF]/10
+                                ${index % 2 === 0 ? 'bg-[#007AFF]/[0.02] dark:bg-[#0A84FF]/[0.02]' : ''}`}>
+                      <div className="px-4 py-3 w-[40px]">
+                        <span 
+                          className="flex items-center justify-center w-6 h-6 rounded-full 
+                                    text-xs text-[#86868B] hover:bg-red-500/10 hover:text-red-500 
+                                    cursor-pointer transition-all duration-200"
+                          onClick={() => {
+                            const newFees = invoiceData.otherFees?.filter(f => f.id !== fee.id) || [];
+                            setInvoiceData(prev => ({ ...prev, otherFees: newFees }));
                           }}
-                          onFocus={(e) => {
-                            setEditingQuantityIndex(index);
-                            setEditingQuantity(item.quantity === 0 ? '' : item.quantity.toString());
-                            e.target.select();
-                          }}
-                          onBlur={() => {
-                            setEditingQuantityIndex(null);
-                            setEditingQuantity('');
-                          }}
-                          className={numberInputClassName}
-                        />
-                      </td>
-                      <td className="py-1.5 px-1">
-                        <select
-                          value={item.unit ? item.unit.replace(/s$/, '') : 'pc'}
-                          onChange={e => {
-                            const baseUnit = e.target.value;
-                            const unit = item.quantity <= 1 ? baseUnit : `${baseUnit}s`;
-                            updateLineItem(index, 'unit', unit);
-                          }}
-                          className={`${tableInputClassName} pr-8`}
+                          title="Click to delete"
                         >
-                          <option value="pc">pc{item.quantity > 1 ? 's' : ''}</option>
-                          <option value="set">set{item.quantity > 1 ? 's' : ''}</option>
-                          <option value="length">length{item.quantity > 1 ? 's' : ''}</option>
-                        </select>
-                      </td>
-                      <td className="py-1 px-1">
+                          ×
+                        </span>
+                      </div>
+                      <div className="flex-1 px-4 py-2">
                         <input
                           type="text"
-                          inputMode="numeric"
-                          value={editingUnitPriceIndex === index ? editingUnitPrice : (item.unitPrice ? item.unitPrice.toFixed(2) : '')}
-                          onChange={e => {
-                            const inputValue = e.target.value;
-                            if (/^\d*\.?\d{0,2}$/.test(inputValue) || inputValue === '') {
-                              setEditingUnitPrice(inputValue);
-                              const value = parseFloat(inputValue);
-                              if (!isNaN(value)) {
-                                updateLineItem(index, 'unitPrice', value);
-                              }
+                          value={fee.description}
+                          onChange={(e) => {
+                            const newFees = [...(invoiceData.otherFees || [])];
+                            newFees[index] = { ...fee, description: e.target.value };
+                            setInvoiceData(prev => ({ ...prev, otherFees: newFees }));
+                          }}
+                          placeholder="Other Fee"
+                          className={`${tableInputClassName} text-center`}
+                        />
+                      </div>
+                      <div className="w-[120px] px-4 py-2" style={{ minWidth: '120px' }}>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={editingFeeIndex === index ? editingFeeAmount : (fee.amount === 0 ? '' : fee.amount.toFixed(2))}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (/^-?\d*\.?\d{0,2}$/.test(value) || value === '' || value === '-') {
+                              setEditingFeeAmount(value);
+                              const newFees = [...(invoiceData.otherFees || [])];
+                              newFees[index] = { ...fee, amount: value === '' || value === '-' ? 0 : parseFloat(value) || 0 };
+                              setInvoiceData(prev => ({ ...prev, otherFees: newFees }));
                             }
                           }}
                           onFocus={(e) => {
-                            setEditingUnitPriceIndex(index);
-                            setEditingUnitPrice(item.unitPrice === 0 ? '' : item.unitPrice.toString());
+                            setEditingFeeIndex(index);
+                            setEditingFeeAmount(fee.amount === 0 ? '' : fee.amount.toString());
                             e.target.select();
                           }}
                           onBlur={() => {
-                            setEditingUnitPriceIndex(null);
-                            setEditingUnitPrice('');
+                            setEditingFeeIndex(null);
+                            setEditingFeeAmount('');
                           }}
-                          className={numberInputClassName}
+                          placeholder="0.00"
+                          className={`${numberInputClassName} ${fee.amount < 0 ? 'text-red-500 dark:text-red-400' : ''}`}
                         />
-                      </td>
-                      <td className="py-1 px-1">
-                        <input
-                          type="text"
-                          value={item.amount.toFixed(2)}
-                          readOnly
-                          className={numberInputClassName}
-                        />
-                      </td>
-                    </tr>
+                      </div>
+                    </div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+              )}
             </div>
 
             {/* 添加行按钮和总金额 */}
             <div className="flex items-center justify-between gap-4 mt-6 mb-8">
-              <button
-                type="button"
-                onClick={handleAddLine}
-                className="px-5 py-2.5 rounded-xl
-                          bg-blue-500/10 text-blue-600 dark:text-blue-400
-                          hover:bg-blue-500/15 transition-all duration-300
-                          text-sm font-medium flex items-center gap-2"
-              >
-                <span className="text-lg leading-none">+</span>
-                Add Line
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleAddLine}
+                  className="px-5 py-2.5 rounded-xl
+                            bg-blue-500/10 text-blue-600 dark:text-blue-400
+                            hover:bg-blue-500/15 transition-all duration-300
+                            text-sm font-medium flex items-center gap-2"
+                >
+                  <span className="text-lg leading-none">+</span>
+                  Add Line
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newFees = [...(invoiceData.otherFees || [])];
+                    newFees.push({
+                      id: Date.now(),
+                      description: '',
+                      amount: 0
+                    });
+                    setInvoiceData(prev => ({ ...prev, otherFees: newFees }));
+                  }}
+                  className="px-5 py-2.5 rounded-xl
+                            bg-blue-500/10 text-blue-600 dark:text-blue-400
+                            hover:bg-blue-500/15 transition-all duration-300
+                            text-sm font-medium flex items-center gap-2"
+                >
+                  <span className="text-lg leading-none">+</span>
+                  Add Other Fee
+                </button>
+              </div>
               
               <div className="flex items-center gap-3" style={{ marginRight: '8.33%' }}>
                 <span className="text-sm font-medium text-gray-500">Total Amount</span>

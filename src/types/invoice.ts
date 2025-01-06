@@ -1,27 +1,35 @@
+export interface LineItem {
+  lineNo: number;
+  hsCode: string;
+  description: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  amount: number;
+}
+
+export interface OtherFee {
+  id: number;
+  description: string;
+  amount: number;
+}
+
 export interface InvoiceTemplateConfig {
-  headerType: 'bilingual' | 'english' | 'none';
+  headerType: 'none' | 'bilingual' | 'english';
   invoiceType: 'invoice' | 'commercial' | 'proforma';
-  stampType: 'shanghai' | 'hongkong' | 'none';
-} 
+  stampType: 'none' | 'shanghai' | 'hongkong';
+}
 
 export interface InvoiceData {
   invoiceNo: string;
   date: string;
   to: string;
   customerPO: string;
-  items: Array<{
-    lineNo: number;
-    hsCode: string;
-    description: string;
-    quantity: number;
-    unit: string;
-    unitPrice: number;
-    amount: number;
-  }>;
+  items: LineItem[];
   bankInfo: string;
   paymentDate: string;
-  showPaymentTerms?: boolean;
-  additionalPaymentTerms?: string;
+  showPaymentTerms: boolean;
+  additionalPaymentTerms: string;
   amountInWords: {
     dollars: string;
     cents: string;
@@ -33,4 +41,5 @@ export interface InvoiceData {
   showInvoiceReminder: boolean;
   currency: 'USD' | 'CNY';
   templateConfig: InvoiceTemplateConfig;
+  otherFees?: OtherFee[];
 } 

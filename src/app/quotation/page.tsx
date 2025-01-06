@@ -78,6 +78,14 @@ export default function QuotationPage() {
     customUnits: []
   });
 
+  // 监听 activeTab 变化，更新 notes
+  useEffect(() => {
+    setData(prev => ({
+      ...prev,
+      notes: getDefaultNotes(prev.from, activeTab)
+    }));
+  }, [activeTab]);
+
   // 添加PDF预览事件监听器
   useEffect(() => {
     const handlePdfPreview = (event: CustomEvent<string>) => {
@@ -92,10 +100,16 @@ export default function QuotationPage() {
   }, []);
 
   const handleInputChange = (field: string, value: string) => {
-    setData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setData(prev => {
+      const newData = { ...prev, [field]: value };
+      
+      // 当销售人员变化时，更新 notes
+      if (field === 'from') {
+        newData.notes = getDefaultNotes(value, activeTab);
+      }
+      
+      return newData;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
