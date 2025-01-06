@@ -3,7 +3,7 @@ import type { DefaultSession, AuthOptions, Session, User } from "next-auth"
 import type { Adapter } from "next-auth/adapters"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "@/lib/prisma"
-import Credentials from "next-auth/providers/credentials"
+import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import type { JWT } from "next-auth/jwt"
 
@@ -22,10 +22,9 @@ declare module "next-auth" {
   }
 }
 
-const authConfig: AuthOptions = {
-  adapter: PrismaAdapter(prisma) as Adapter,
+export const config = {
   providers: [
-    Credentials({
+    CredentialsProvider({
       name: "credentials",
       credentials: {
         username: { label: "Username", type: "text" },
@@ -75,6 +74,7 @@ const authConfig: AuthOptions = {
       }
     })
   ],
+  adapter: PrismaAdapter(prisma) as Adapter,
   session: { strategy: "jwt" },
   pages: {
     signIn: "/",
@@ -110,4 +110,4 @@ const authConfig: AuthOptions = {
   }
 } satisfies AuthOptions
 
-export const { handlers, auth, signIn, signOut } = NextAuth(authConfig) 
+export const { handlers, auth, signIn, signOut } = NextAuth(config) 
