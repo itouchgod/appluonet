@@ -132,18 +132,16 @@ export const generateOrderConfirmationPDF = async (data: QuotationData) => {
    // 恢复普通字体
    doc.setFont('NotoSansSC', 'normal');
     // 添加确认文本，增加与上方Order No.的间距
-    currentY += 8;  // 设置为5mm的间距
+    currentY = Math.max(currentY + 8, startY + 20);  // 设置最小起始位置为startY + 25
     doc.setFontSize(8);
     doc.text('We hereby confirm having sold to you the following goods on terms and condition as specified below:', leftMargin, currentY);
 
- 
-
-    // 确保表格与上方内容有足够间距
-    currentY = Math.max(currentY, startY + 25);
+    // 确保表格与确认文本有8mm的固定间距
+    currentY += 3;  // 固定8mm的间距
 
     // 使用 autoTable
     doc.autoTable({
-      startY: currentY + 3,
+      startY: currentY,
       head: [['No.', 'Part Name', ...(data.showDescription ? ['Description'] : []), 'Q\'TY', 'Unit', 'U/Price', 'Amount', ...(data.showRemarks ? ['Remarks'] : [])]],
       body: [
         // 常规商品行
