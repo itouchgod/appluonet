@@ -55,15 +55,14 @@ export default function LoginPage() {
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
           <Image
-            src="/images/logo.png"
+            src="/images/logo.svg"
             alt="LC APP Logo"
             width={80}
             height={80}
             priority
             onError={(e) => {
-              console.error('Logo 加载失败');
-              // 可以在这里设置一个备用图片
-             e.currentTarget.src = '/images/fallback-logo.png';
+              console.error('Logo SVG 加载失败');
+              e.currentTarget.src = '/images/logo.png';
             }}
             className="object-contain"
           />
