@@ -1,5 +1,6 @@
-import { auth } from "@/auth"
-import { NextRequest } from "next/server"
+import NextAuth from "next-auth"
+import { config } from "@/auth"
 
-export const GET = auth as (request: NextRequest) => Promise<Response>
-export const POST = auth as (request: NextRequest) => Promise<Response>
+const handler = NextAuth(config)
+
+export { handler as GET, handler as POST }

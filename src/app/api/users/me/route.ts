@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { getServerSession } from 'next-auth';
+import { config } from '@/auth';
 import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
-    const session = await auth();
+    const session = await getServerSession(config);
     if (!session?.user) {
       return NextResponse.json({ error: '未授权访问' }, { status: 401 });
     }

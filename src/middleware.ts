@@ -1,13 +1,19 @@
 import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { NextRequest } from 'next/server'
+import { getToken } from 'next-auth/jwt'
 
-export function middleware(request: NextRequest) {
-  // 检查 JWT token
-  const token = request.cookies.get('next-auth.session-token')?.value
+export async function middleware(request: NextRequest) {
+  const token = await getToken({ req: request })
+  const { pathname } = request.nextUrl
 
-  // 如果没有 token，重定向到登录页面
-  if (!token && !request.nextUrl.pathname.startsWith('/login')) {
-    return NextResponse.redirect(new URL('/login', request.url))
+  // 如果用户未登录且访问需要认证的页面
+  if (!token && pathname !== '/') {
+    return NextResponse.redirect(new URL('/', request.url))
+  }
+
+  // 如果用户已登录且访问登录页
+  if (token && pathname === '/') {
+    return NextResponse.redirect(new URL('/tools', request.url))
   }
 
   return NextResponse.next()
@@ -22,6 +28,7 @@ export const config = {
      * - 图片文件
      * - favicon.ico
      */
-    "/((?!api|_next/static|_next/image|favicon.ico).*)"
+    "/((?!api|_next/static|_next/image|favicon.ico).*)",
+    "/"
   ]
 } 
