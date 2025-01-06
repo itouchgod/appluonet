@@ -53,7 +53,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="relative w-20 h-20 mx-auto">
+        <div className="flex justify-center">
           <Image
             src="/images/logo.png"
             alt="LC APP Logo"
