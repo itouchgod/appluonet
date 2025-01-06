@@ -299,7 +299,7 @@ export const generateOrderConfirmationPDF = async (data: QuotationData, isPrevie
       // 触发自定义事件，通知前端更新预览URL
       window.dispatchEvent(new CustomEvent('pdf-preview', { detail: pdfUrl }));
     } else {
-      doc.save(`Sales-${data.quotationNo}-${data.date}.pdf`);
+      doc.save(`Sales Confirmation ${data.contractNo}-${data.date}.pdf`);
     }
   } catch (error) {
     console.error('Error generating PDF:', error);
