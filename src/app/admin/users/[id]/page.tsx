@@ -150,7 +150,7 @@ export default function UserDetailPage() {
         <div className="flex justify-between items-center mb-8">
           <div className="flex items-center">
             <Image
-              src="/images/logo.png"
+              src="/logo/logo.png"
               alt="Logo"
               width={40}
               height={40}

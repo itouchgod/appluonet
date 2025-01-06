@@ -40,7 +40,7 @@ export function Header({ user, onLogout, onProfile }: HeaderProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
         <div className="flex items-center space-x-4">
           <Image
-            src="/images/logo.png"
+            src="/logo/logo.png"
             alt="LC APP Logo"
             width={48}
             height={48}
