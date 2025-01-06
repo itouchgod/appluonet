@@ -224,7 +224,7 @@ export default function QuotationPage() {
                           value={editingFeeIndex === index ? editingFeeAmount : (fee.amount === 0 ? '' : fee.amount.toFixed(2))}
                           onChange={(e) => {
                             const value = e.target.value;
-                            if (/^[0-9]*\.?[0-9]*$/.test(value)) {
+                            if (/^-?\d*\.?\d*$/.test(value)) {
                               setEditingFeeAmount(value);
                               const newFees = [...(data.otherFees || [])];
                               newFees[index] = { ...fee, amount: value === '' ? 0 : parseFloat(value) };
