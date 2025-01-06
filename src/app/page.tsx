@@ -60,6 +60,12 @@ export default function LoginPage() {
             width={80}
             height={80}
             priority
+            onError={(e) => {
+              console.error('Logo 加载失败');
+              // 可以在这里设置一个备用图片
+             e.currentTarget.src = '/images/fallback-logo.png';
+            }}
+            className="object-contain"
           />
         </div>
         <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">
