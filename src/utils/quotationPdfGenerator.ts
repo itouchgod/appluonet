@@ -160,15 +160,15 @@ export const generateQuotationPDF = async (data: QuotationData, isPreview: boole
       startY: currentY + 3,  // 在感谢语下方留出空间
       head: [['No.', 'Part Name', ...(data.showDescription ? ['Description'] : []), 'Q\'TY', 'Unit', 'U/Price', 'Amount', ...(data.showRemarks ? ['Remarks'] : [])]],
       body: [
-        // 常规商品行
+        // 常规商品行 - 当数量为 0 时，数量和单位都显示空字符串
         ...data.items.map((item, index) => [
           index + 1,
           item.partName,
           ...(data.showDescription ? [item.description || ''] : []),
-          item.quantity,
-          item.unit,
-          `${currencySymbols[data.currency]}${item.unitPrice.toFixed(2)}`,
-          `${currencySymbols[data.currency]}${item.amount.toFixed(2)}`,
+          item.quantity || '',  // 数量为 0 时显示空字符串
+          item.quantity ? item.unit : '',  // 数量为 0 时单位显示空字符串
+          item.unitPrice === 0 ? '' : item.unitPrice.toFixed(2),
+          item.amount === 0 ? '' : item.amount.toFixed(2),
           ...(data.showRemarks ? [item.remarks || ''] : [])
         ]),
         // Other Fees 行
@@ -178,7 +178,7 @@ export const generateQuotationPDF = async (data: QuotationData, isPreview: boole
             colSpan: data.showDescription ? 6 : 5,
             styles: { halign: 'left' }
           } as unknown as string,
-          fee.amount.toFixed(2),
+          fee.amount === 0 ? '' : fee.amount.toFixed(2),  // 金额为 0 时显示空字符串
           ...(data.showRemarks ? [''] : [])
         ])
       ],

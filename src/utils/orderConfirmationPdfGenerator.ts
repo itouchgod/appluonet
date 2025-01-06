@@ -155,10 +155,10 @@ export const generateOrderConfirmationPDF = async (data: QuotationData, isPrevie
           index + 1,
           item.partName,
           ...(data.showDescription ? [item.description || ''] : []),
-          item.quantity,
-          item.unit,
-          item.unitPrice.toFixed(2),
-          item.amount.toFixed(2),
+          item.quantity === 0 ? '' : item.quantity,
+          item.quantity === 0 ? '' : item.unit,
+          item.unitPrice === 0 ? '' : item.unitPrice.toFixed(2),
+          item.amount === 0 ? '' : item.amount.toFixed(2),
           ...(data.showRemarks ? [item.remarks || ''] : [])
         ]),
         // Other Fees 行
@@ -168,7 +168,7 @@ export const generateOrderConfirmationPDF = async (data: QuotationData, isPrevie
             colSpan: data.showDescription ? 6 : 5,
             styles: { halign: 'left' }
           } as unknown as string,
-          fee.amount.toFixed(2),
+          fee.amount === 0 ? '' : fee.amount.toFixed(2),
           ...(data.showRemarks ? [''] : [])
         ])
       ],
