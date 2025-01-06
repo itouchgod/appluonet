@@ -10,6 +10,10 @@ interface ExtendedJsPDF extends jsPDF {
     finalY: number;
   };
   autoTable: (options: UserOptions) => void;
+  saveGraphicsState: () => void;
+  restoreGraphicsState: () => void;
+  GState: new (options: { opacity: number }) => unknown;
+  setGState: (gState: unknown) => void;
 }
 
 // 货币符号映射
@@ -216,32 +220,37 @@ export const generateOrderConfirmationPDF = async (data: QuotationData, isPrevie
     const totalText = `Total Amount: ${currencySymbols[data.currency]}${total.toFixed(2)}`;
     doc.text(totalText, pageWidth - 20 - doc.getTextWidth(totalText), currentY);
 
+    // 记录总金额的位置，用于后续定位印章
+    const totalAmountY = currentY;
+
     // 添加备注
     if (data.notes && data.notes.length > 0 && data.notes.some(note => note.trim() !== '')) {
-      currentY += 8;  // 减小间距
+      currentY += 8;
       doc.setFontSize(9);
       doc.setFont('NotoSansSC', 'bold');
       doc.text('Notes:', leftMargin, currentY);
       currentY += 5;
       
       doc.setFont('NotoSansSC', 'normal');
-      const numberWidth = doc.getTextWidth('10.');  // 仅使用序号的实际宽度，不添加额外间距
-      const notesMaxWidth = pageWidth - leftMargin - numberWidth - 20; // Notes内容的最大宽度
+      // 使用页面宽度减去左右边距作为 Notes 的最大宽度
+      const notesMaxWidth = pageWidth - (margin * 2);
       
       // 过滤掉空行，并重新计算序号
       const validNotes = data.notes.filter(line => line.trim() !== '');
       
       validNotes.forEach((line: string, index: number) => {
         // 添加编号
-        doc.text(`${index + 1}.`, leftMargin, currentY);
+        const numberText = `${index + 1}. `;
+        const numberWidth = doc.getTextWidth(numberText);
+        doc.text(numberText, leftMargin, currentY);
         
-        // 处理长文本自动换行
-        const wrappedText = doc.splitTextToSize(line, notesMaxWidth);
+        // 处理长文本自动换行，考虑编号的宽度
+        const wrappedText = doc.splitTextToSize(line, notesMaxWidth - numberWidth);
         wrappedText.forEach((textLine: string, lineIndex: number) => {
           doc.text(textLine, leftMargin + numberWidth, currentY + (lineIndex * 5));
         });
         
-        // 更新Y坐标到最后一行之后，统一使用5mm行间距
+        // 更新Y坐标到最后一行之后
         currentY += wrappedText.length * 5;
       });
     }
@@ -273,22 +282,44 @@ export const generateOrderConfirmationPDF = async (data: QuotationData, isPrevie
 
     // 添加签名区域
     if (data.showStamp) {
-      currentY += 5;  // 减小与上方内容的间距（从20mm改为10mm）
-      
       try {
         const stampImage = await loadImage('/images/stamp-hongkong.png');
         if (!stampImage) {
           throw new Error('Failed to load stamp image: Image is null');
         }
-        // 香港印章尺寸：73mm x 34mm
+
+        // 计算印章位置
+        const stampWidth = 73;  // 香港印章宽度：73mm
+        const stampHeight = 34; // 香港印章高度：34mm
+        
+        // 计算页面底部边界
+        const pageBottom = doc.internal.pageSize.height - margin;
+        
+        // 计算印章位置
+        let stampY = currentY + 5;  // 默认跟随左侧内容
+        let stampX = margin;  // 默认靠左
+        
+        // 如果印章放在左边会超出页面底部，就移到金额下方
+        if (stampY + stampHeight > pageBottom) {
+          stampY = totalAmountY + 5;  // 移到金额下方
+          stampX = pageWidth - stampWidth - margin;  // 靠右对齐
+        }
+
+        // 设置印章透明度为0.9，确保在文字下方
+        doc.saveGraphicsState();
+        doc.setGState(new doc.GState({ opacity: 0.9 }));
+        
         doc.addImage(
           stampImage,
           'PNG',
-          margin,  // 使用左边距
-          currentY,
-          73,
-          34
+          stampX,
+          stampY,
+          stampWidth,
+          stampHeight
         );
+
+        // 恢复透明度
+        doc.restoreGraphicsState();
       } catch (error) {
         console.error('Error loading stamp:', error instanceof Error ? error.message : 'Unknown error');
       }

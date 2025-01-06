@@ -13,11 +13,11 @@ export const ImportDataButton: React.FC<ImportDataButtonProps> = ({ onImport }) 
       const rows = pasteText.trim().split('\n');
       
       const newItems = rows
-        .map((row, index) => {
+        .map(row => {
           const columns = row.split('\t');
           if (columns.length < 2) return null;
           return {
-            id: Date.now() + index,
+            id: Date.now() + Math.random(),
             partName: columns[1]?.trim() || '',
             description: columns[2]?.trim() || '',
             quantity: Number(columns[3]) || 0,
