@@ -165,10 +165,7 @@ export function SettingsPanel({ data, onChange, activeTab }: SettingsPanelProps)
             <option value="Summer">Summer</option>
             <option value="Nina">Nina</option>
           </select>
-        </div>
 
-        {/* 第二行：Bank复选框和币种选择 */}
-        <div className="flex items-center justify-center gap-4">
           {/* 表格设置按钮 */}
           <button
             type="button"
@@ -188,7 +185,29 @@ export function SettingsPanel({ data, onChange, activeTab }: SettingsPanelProps)
               <line x1="15" y1="3" x2="15" y2="21"></line>
             </svg>
             <span>Table</span>
-          </button>
+          </button>          
+        </div>
+
+        {/* 第二行：Bank复选框和币种选择 */}
+        <div className="flex items-center justify-center gap-4">
+                {/* HK Stamp复选框 */}
+                {activeTab === 'confirmation' && (
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={data.showStamp}
+                      onChange={e => onChange({ ...data, showStamp: e.target.checked })}
+                      className="w-3.5 h-3.5 rounded 
+                        border-gray-300 dark:border-gray-600
+                        text-[#007AFF] dark:text-[#0A84FF]
+                        focus:ring-[#007AFF]/40 dark:focus:ring-[#0A84FF]/40
+                        cursor-pointer"
+                    />
+                    <span className="text-xs text-gray-600 dark:text-gray-400">
+                      HK Stamp
+                    </span>
+                  </label>
+                )}
 
           {/* Bank复选框 */}
           {activeTab === 'confirmation' && (
@@ -208,6 +227,8 @@ export function SettingsPanel({ data, onChange, activeTab }: SettingsPanelProps)
               </span>
             </label>
           )}
+
+
 
           {/* 币种选择 */}
           <div className={`${radioGroupClassName} h-[38px] w-[120px]`}>
@@ -303,31 +324,7 @@ export function SettingsPanel({ data, onChange, activeTab }: SettingsPanelProps)
                   </span>
                 </label>
 
-                {/* HK Stamp复选框 */}
-                {activeTab === 'confirmation' && (
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={data.showStamp}
-                      onChange={e => onChange({ ...data, showStamp: e.target.checked })}
-                      className="w-3.5 h-3.5 rounded 
-                        border-gray-300 dark:border-gray-600
-                        text-[#007AFF] dark:text-[#0A84FF]
-                        focus:ring-[#007AFF]/40 dark:focus:ring-[#0A84FF]/40
-                        cursor-pointer"
-                    />
-                    <span className="text-xs text-gray-600 dark:text-gray-400">
-                      HK Stamp
-                    </span>
-                  </label>
-                )}
-              </div>
-
-              {/* 自定义单位输入区域 */}
-              <div className="border-t border-[#007AFF]/10 dark:border-[#0A84FF]/10 pt-4">
-                <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                  Custom Units
-                </div>
+              {/* 自定义单位输入区域 */}  
                 {renderCustomUnitInput()}
                 {renderCustomUnits()}
               </div>
@@ -370,6 +367,43 @@ export function SettingsPanel({ data, onChange, activeTab }: SettingsPanelProps)
 
         {/* 第二行：Bank、复选框组、币种 */}
         <div className="flex items-center justify-center gap-4">
+
+                {/* HK Stamp复选框 */}
+                {activeTab === 'confirmation' && (
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={data.showStamp}
+                      onChange={e => onChange({ ...data, showStamp: e.target.checked })}
+                      className="w-3.5 h-3.5 rounded 
+                        border-gray-300 dark:border-gray-600
+                        text-[#007AFF] dark:text-[#0A84FF]
+                        focus:ring-[#007AFF]/40 dark:focus:ring-[#0A84FF]/40
+                        cursor-pointer"
+                    />
+                    <span className="text-xs text-gray-600 dark:text-gray-400">
+                      HK Stamp
+                    </span>
+                  </label>
+                )}
+          {/* Bank复选框 */}
+          {activeTab === 'confirmation' && (
+            <label className="flex items-center gap-2 cursor-pointer h-[38px] px-4 shrink-0">
+              <input
+                type="checkbox"
+                checked={data.showBank}
+                onChange={e => onChange({ ...data, showBank: e.target.checked })}
+                className="w-3.5 h-3.5 rounded 
+                  border-gray-300 dark:border-gray-600
+                  text-[#007AFF] dark:text-[#0A84FF]
+                  focus:ring-[#007AFF]/40 dark:focus:ring-[#0A84FF]/40
+                  cursor-pointer"
+              />
+              <span className="text-xs text-gray-600 dark:text-gray-400">
+                Bank
+              </span>
+            </label>
+          )}
           {/* 表格设置按钮 */}
           <button
             type="button"
@@ -390,26 +424,6 @@ export function SettingsPanel({ data, onChange, activeTab }: SettingsPanelProps)
             </svg>
             <span>Table</span>
           </button>
-
-          {/* Bank复选框 */}
-          {activeTab === 'confirmation' && (
-            <label className="flex items-center gap-2 cursor-pointer h-[38px] px-4 shrink-0">
-              <input
-                type="checkbox"
-                checked={data.showBank}
-                onChange={e => onChange({ ...data, showBank: e.target.checked })}
-                className="w-3.5 h-3.5 rounded 
-                  border-gray-300 dark:border-gray-600
-                  text-[#007AFF] dark:text-[#0A84FF]
-                  focus:ring-[#007AFF]/40 dark:focus:ring-[#0A84FF]/40
-                  cursor-pointer"
-              />
-              <span className="text-xs text-gray-600 dark:text-gray-400">
-                Bank
-              </span>
-            </label>
-          )}
-
           {/* 币种选择 */}
           <div className={`${radioGroupClassName} h-[38px] w-[120px] shrink-0`}>
             <label
@@ -468,7 +482,7 @@ export function SettingsPanel({ data, onChange, activeTab }: SettingsPanelProps)
           ${showTableSettings ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'}`}
         >
           <div className="pt-2 pb-4 px-4 bg-[#007AFF]/5 dark:bg-[#0A84FF]/5 rounded-xl">
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 items-center">
               <div className="flex flex-wrap gap-4">
                 {/* Description复选框 */}
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -504,31 +518,8 @@ export function SettingsPanel({ data, onChange, activeTab }: SettingsPanelProps)
                   </span>
                 </label>
 
-                {/* HK Stamp复选框 */}
-                {activeTab === 'confirmation' && (
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={data.showStamp}
-                      onChange={e => onChange({ ...data, showStamp: e.target.checked })}
-                      className="w-3.5 h-3.5 rounded 
-                        border-gray-300 dark:border-gray-600
-                        text-[#007AFF] dark:text-[#0A84FF]
-                        focus:ring-[#007AFF]/40 dark:focus:ring-[#0A84FF]/40
-                        cursor-pointer"
-                    />
-                    <span className="text-xs text-gray-600 dark:text-gray-400">
-                      HK Stamp
-                    </span>
-                  </label>
-                )}
-              </div>
 
-              {/* 自定义单位输入区域 */}
-              <div className="border-t border-[#007AFF]/10 dark:border-[#0A84FF]/10 pt-4">
-                <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                  Custom Units
-                </div>
+              {/* 自定义单位输入区域 */}             
                 {renderCustomUnitInput()}
                 {renderCustomUnits()}
               </div>
@@ -688,7 +679,7 @@ export function SettingsPanel({ data, onChange, activeTab }: SettingsPanelProps)
         ${showTableSettings ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'}`}
       >
         <div className="pt-2 pb-4 px-4 bg-[#007AFF]/5 dark:bg-[#0A84FF]/5 rounded-xl">
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 items-end">
             <div className="flex flex-wrap gap-4">
               {/* Description复选框 */}
               <label className="flex items-center gap-2 cursor-pointer">
