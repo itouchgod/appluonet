@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Settings, Download, ArrowLeft, Eye } from 'lucide-react';
+import { Settings, Download, ArrowLeft, Eye, Camera, Loader2 } from 'lucide-react';
 import { generateQuotationPDF } from '@/utils/quotationPdfGenerator';
 import { generateOrderConfirmationPDF } from '@/utils/orderConfirmationPdfGenerator';
 import { TabButton } from '@/components/quotation/TabButton';
@@ -12,6 +12,7 @@ import { ItemsTable } from '@/components/quotation/ItemsTable';
 import { NotesSection } from '@/components/quotation/NotesSection';
 import { SettingsPanel } from '@/components/quotation/SettingsPanel';
 import type { QuotationData } from '@/types/quotation';
+import { processImageOcr } from '@/utils/imageOcr';
 
 // 标题样式
 const titleClassName = `text-xl font-semibold text-gray-800 dark:text-gray-200`;
@@ -36,6 +37,8 @@ export default function QuotationPage() {
   const [activeTab, setActiveTab] = useState<'quotation' | 'confirmation'>('quotation');
   const [showSettings, setShowSettings] = useState(false);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<QuotationData>({
     to: '',
     inquiryNo: '',
@@ -129,6 +132,46 @@ export default function QuotationPage() {
     }
   };
 
+  const handlePhotoImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsProcessing(true);
+      setError(null);
+
+      // 处理图片OCR
+      const items = await processImageOcr(file);
+      
+      // 如果识别到商品信息，添加到现有列表中
+      if (items.length > 0) {
+        const maxId = data.items.reduce((max, item) => Math.max(max, item.id), 0);
+        const newItems = items.map((item, index) => ({
+          id: maxId + index + 1,
+          partName: item.partName || '',
+          description: '',
+          quantity: item.quantity || 0,
+          unit: item.unit || 'pc',
+          unitPrice: item.unitPrice || 0,
+          amount: item.amount || 0,
+          remarks: ''
+        }));
+
+        setData(prev => ({
+          ...prev,
+          items: [...prev.items, ...newItems]
+        }));
+      } else {
+        setError('未能识别商品信息，请尝试重新拍摄或手动输入');
+      }
+    } catch (error) {
+      console.error('Error processing image:', error);
+      setError('处理图片时出错，请重试');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -201,6 +244,46 @@ export default function QuotationPage() {
 
             {/* 商品表格 */}
             <div className="space-y-2">
+              <div className="flex items-center gap-3 mb-4">
+                <label className={`px-3 h-7 rounded-lg
+                  bg-[#007AFF]/[0.08] dark:bg-[#0A84FF]/[0.08]
+                  hover:bg-[#007AFF]/[0.12] dark:hover:bg-[#0A84FF]/[0.12]
+                  text-[#007AFF] dark:text-[#0A84FF]
+                  text-[13px] font-medium
+                  flex items-center gap-1
+                  cursor-pointer
+                  transition-all duration-200
+                  ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>处理中...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Camera className="w-4 h-4" />
+                      <span>拍照导入</span>
+                    </>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handlePhotoImport}
+                    disabled={isProcessing}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+
+              {error && (
+                <div className="mb-4 px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 
+                  text-sm rounded-lg border border-red-100 dark:border-red-800">
+                  {error}
+                </div>
+              )}
+
               <ItemsTable 
                 data={data}
                 onChange={setData}
@@ -242,8 +325,9 @@ export default function QuotationPage() {
                   type="button"
                   onClick={() => {
                     const newFees = [...(data.otherFees || [])];
+                    const maxId = newFees.reduce((max, fee) => Math.max(max, fee.id), 0);
                     newFees.push({
-                      id: Date.now(),
+                      id: maxId + 1,
                       description: '',
                       amount: 0
                     });
