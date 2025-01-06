@@ -22,7 +22,6 @@ const nextConfig = {
       },
     ];
   },
-  runtime: 'nodejs',
   webpack: (config) => {
     config.module.rules.push({
       test: /\.(ttf|woff|woff2|eot)$/,
@@ -37,4 +36,6 @@ const nextConfig = {
     });
     return config;
   }
-} 
+}
+
+module.exports = nextConfig; 
