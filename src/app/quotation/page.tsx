@@ -371,13 +371,15 @@ export default function QuotationPage() {
               </div>
 
               <div className="text-right">
-                <div className="text-sm text-[#86868B] dark:text-gray-400">Total Amount:</div>
-                <div className="text-2xl font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">
-                  {data.currency === 'USD' ? '$' : '¥'}
-                  {(
-                    data.items.reduce((sum, item) => sum + item.amount, 0) +
-                    (data.otherFees?.reduce((sum, fee) => sum + fee.amount, 0) || 0)
-                  ).toFixed(2)}
+                <div className="flex items-center justify-end gap-2 mr-5">
+                  <div className="text-sm text-[#86868B] dark:text-gray-400">Total Amount:</div>
+                  <div className="text-2xl font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">
+                    {data.currency === 'USD' ? '$' : '¥'}
+                    {(
+                      data.items.reduce((sum, item) => sum + item.amount, 0) +
+                      (data.otherFees?.reduce((sum, fee) => sum + fee.amount, 0) || 0)
+                    ).toFixed(2)}
+                  </div>
                 </div>
               </div>
             </div>
