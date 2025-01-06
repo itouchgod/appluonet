@@ -43,14 +43,11 @@ const numberInputClassName = `${inputClassName}
   [&::-webkit-outer-spin-button]:appearance-none
   [&::-webkit-inner-spin-button]:appearance-none`;
 
-const selectClassName = `${inputClassName}
-  appearance-none
-  bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%2386868B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3e%3cpolyline points="6 9 12 15 18 9"%3e%3c/polyline%3e%3c/svg%3e')]
-  bg-[length:1em_1em]
-  bg-[right_0.5rem_center]
-  bg-no-repeat
-  pr-8
-  text-center`;
+const defaultUnits = ['pc', 'set', 'length'];
+
+const isEnglishUnit = (unit: string) => {
+  return /^[a-zA-Z]+$/.test(unit);
+};
 
 export function ItemsTable({ data, onChange }: ItemsTableProps) {
   const [editingUnitPrice, setEditingUnitPrice] = useState<string>('');
@@ -61,15 +58,17 @@ export function ItemsTable({ data, onChange }: ItemsTableProps) {
 
   const updateLineItem = (index: number, field: keyof LineItem, value: string | number) => {
     const newItems = [...data.items];
+    const currentItem = newItems[index];
     newItems[index] = {
-      ...newItems[index],
+      ...currentItem,
       [field]: value,
       unit: field === 'quantity' ? 
-        (Number(value) <= 1 ? newItems[index].unit?.replace(/s$/, '') : `${newItems[index].unit?.replace(/s$/, '')}s`) :
-        newItems[index].unit,
+        (Number(value) <= 1 ? currentItem.unit?.replace(/s$/, '') : (isEnglishUnit(currentItem.unit?.replace(/s$/, '') || '') ? `${currentItem.unit?.replace(/s$/, '')}s` : currentItem.unit)) :
+        field === 'unit' ? value.toString() :
+        currentItem.unit,
       amount: field === 'quantity' || field === 'unitPrice'
-        ? Number(value) * (field === 'quantity' ? newItems[index].unitPrice : newItems[index].quantity)
-        : newItems[index].amount
+        ? Number(value) * (field === 'quantity' ? currentItem.unitPrice : currentItem.quantity)
+        : currentItem.amount
     };
     onChange({ ...data, items: newItems });
   };
@@ -96,7 +95,7 @@ export function ItemsTable({ data, onChange }: ItemsTableProps) {
           </thead>
           <tbody>
             {data.items.map((item, index) => (
-              <tr key={item.lineNo} className={tableRowClassName(index)}>
+              <tr key={item.id} className={tableRowClassName(index)}>
                 <td className={tableCellClassName}>
                   <span 
                     className="flex items-center justify-center w-6 h-6 rounded-full 
@@ -143,19 +142,34 @@ export function ItemsTable({ data, onChange }: ItemsTableProps) {
                   />
                 </td>
                 <td className={tableCellClassName}>
-                  <select
-                    value={item.unit ? item.unit.replace(/s$/, '') : 'pc'}
-                    onChange={e => {
-                      const baseUnit = e.target.value;
-                      const unit = item.quantity <= 1 ? baseUnit : `${baseUnit}s`;
-                      updateLineItem(index, 'unit', unit);
-                    }}
-                    className={`${selectClassName} text-center`}
-                  >
-                    <option value="pc">pc{item.quantity > 1 ? 's' : ''}</option>
-                    <option value="set">set{item.quantity > 1 ? 's' : ''}</option>
-                    <option value="length">length{item.quantity > 1 ? 's' : ''}</option>
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={item.unit ? item.unit.replace(/s$/, '') : ''}
+                      onChange={e => {
+                        const baseUnit = e.target.value;
+                        const unit = item.quantity <= 1 ? baseUnit : (isEnglishUnit(baseUnit) ? `${baseUnit}s` : baseUnit);
+                        updateLineItem(index, 'unit', unit);
+                      }}
+                      className={`${inputClassName} text-center appearance-none
+                        bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%2386868B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3e%3cpolyline points="6 9 12 15 18 9"%3e%3c/polyline%3e%3c/svg%3e')]
+                        bg-[length:1em_1em]
+                        bg-[right_0.5rem_center]
+                        bg-no-repeat
+                        pr-8`}
+                    >
+                      <option value="">Select unit</option>
+                      {defaultUnits.map((option) => (
+                        <option key={option} value={option}>
+                          {option}{item.quantity > 1 && isEnglishUnit(option) ? 's' : ''}
+                        </option>
+                      ))}
+                      {data.customUnits?.map((option) => (
+                        <option key={`custom-${option}`} value={option}>
+                          {option}{item.quantity > 1 && isEnglishUnit(option) ? 's' : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </td>
                 <td className={tableCellClassName}>
                   <input

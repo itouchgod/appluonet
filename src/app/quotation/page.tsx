@@ -54,7 +54,7 @@ export default function QuotationPage() {
     currency: 'USD',
     paymentDate: new Date().toISOString().split('T')[0],
     items: [{
-      lineNo: 1,
+      id: 1,
       partName: '',
       description: '',
       quantity: 0,
@@ -73,7 +73,8 @@ export default function QuotationPage() {
     showRemarks: false,
     showBank: false,
     showStamp: false,
-    contractNo: ''
+    contractNo: '',
+    customUnits: []
   });
 
   const handleInputChange = (field: string, value: string) => {
@@ -281,7 +282,7 @@ export default function QuotationPage() {
                   onClick={() => {
                     const newItems = [...data.items];
                     newItems.push({
-                      lineNo: newItems.length + 1,
+                      id: newItems.length + 1,
                       partName: '',
                       description: '',
                       quantity: 0,

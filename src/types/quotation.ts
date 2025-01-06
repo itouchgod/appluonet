@@ -18,23 +18,13 @@ export interface OtherFee {
 
 export interface QuotationData {
   to: string;
-  date: string;
-  from: string;
   inquiryNo: string;
   quotationNo: string;
-  contractNo?: string;
+  date: string;
+  from: string;
   currency: 'USD' | 'EUR' | 'CNY';
   paymentDate: string;
-  items: {
-    lineNo: number;
-    partName: string;
-    description?: string;
-    quantity: number;
-    unit: string;
-    unitPrice: number;
-    amount: number;
-    remarks?: string;
-  }[];
+  items: LineItem[];
   notes: string[];
   amountInWords: {
     dollars: string;
@@ -45,7 +35,7 @@ export interface QuotationData {
   showRemarks: boolean;
   showBank: boolean;
   showStamp: boolean;
-  packingFee?: number;
-  packingFeeDesc?: string;
+  contractNo: string;
   otherFees?: OtherFee[];
+  customUnits?: string[];
 } 
