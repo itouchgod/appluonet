@@ -120,6 +120,9 @@ export const generateQuotationPDF = async (data: QuotationData, isPreview: boole
     // 计算左侧文本的最大宽度（考虑右侧信息区域）
     const maxWidth = rightColumnStart - leftMargin - toTextWidth - 5; // 5mm作为安全间距
     
+    // 记录客户信息的初始Y位置
+    const customerInfoStartY = currentY;
+    
     // 处理客户信息自动换行
     const toText = data.to.trim();
     if (toText) {
@@ -130,13 +133,16 @@ export const generateQuotationPDF = async (data: QuotationData, isPreview: boole
       });
     }
 
-    // 显示询价编号（无论是否有值）
-    currentY += 2;
+    // 计算询价编号的起始位置
+    const inquiryNoStartY = Math.max(customerInfoStartY + 10, currentY + 2); // 至少在客户信息起始位置下方15mm
+    currentY = inquiryNoStartY;
+
+    // 显示询价编号
     doc.setFont('NotoSansSC', 'bold');
     doc.text('Inquiry No.:', leftMargin, currentY);
     doc.setFont('NotoSansSC', 'normal');
-    const inquiryNoX = leftMargin + doc.getTextWidth('Inquiry No.: ') + 2; // 增加3mm间距
-    
+    const inquiryNoX = leftMargin + doc.getTextWidth('Inquiry No.: ') + 2;
+
     const inquiryNoText = data.inquiryNo ? data.inquiryNo.trim() : '';
     const wrappedInquiryNo = doc.splitTextToSize(inquiryNoText, maxWidth);
     wrappedInquiryNo.forEach((line: string, index: number) => {
