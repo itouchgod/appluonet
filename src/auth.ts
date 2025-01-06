@@ -1,4 +1,4 @@
-import NextAuth from "next-auth"
+import NextAuth, { getServerSession } from "next-auth"
 import type { DefaultSession, AuthOptions, User } from "next-auth"
 import type { Adapter } from "next-auth/adapters"
 import { PrismaAdapter } from "@auth/prisma-adapter"
@@ -117,5 +117,12 @@ export const config = {
 } satisfies AuthOptions
 
 const auth = NextAuth(config)
+
+// 导出 auth 函数用于服务器端认证
+export const getAuth = async () => {
+  return await getServerSession(config)
+}
+
+// 导出客户端认证方法
 export const { signIn, signOut } = auth
 export { auth } 

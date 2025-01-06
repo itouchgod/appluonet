@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { getAuth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { hash } from 'bcryptjs';
 
 export async function GET() {
   try {
-    const session = await auth();
+    const session = await getAuth();
     if (!session || !session.user?.isAdmin) {
       return NextResponse.json(
         { error: '未授权访问' },
@@ -40,7 +40,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const session = await auth();
+    const session = await getAuth();
     if (!session || !session.user?.isAdmin) {
       return NextResponse.json(
         { error: '未授权访问' },
