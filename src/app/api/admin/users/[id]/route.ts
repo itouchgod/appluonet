@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { auth } from '@/lib/auth';
+import { getAuth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 
 export async function GET(
@@ -8,7 +8,7 @@ export async function GET(
 ) {
   try {
     // 验证管理员权限
-    const session = await auth();
+    const session = await getAuth();
     if (!session?.user?.isAdmin) {
       return NextResponse.json(
         { error: '需要管理员权限' },
@@ -16,7 +16,13 @@ export async function GET(
       );
     }
 
-    const { id } = params;
+    const id = params?.id;
+    if (!id) {
+      return NextResponse.json(
+        { error: '用户ID不能为空' },
+        { status: 400 }
+      );
+    }
 
     // 获取用户信息
     const user = await prisma.user.findUnique({
@@ -48,12 +54,12 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth();
+    const session = await getAuth();
     if (!session || !session.user?.isAdmin) {
       return NextResponse.json({ error: '未授权访问' }, { status: 401 });
     }
 
-    const id = params.id;
+    const id = params?.id;
     if (!id) {
       return NextResponse.json({ error: '无效的用户ID' }, { status: 400 });
     }
