@@ -2,7 +2,7 @@
 const nextConfig = {
   experimental: {
     serverActions: {
-      allowedOrigins: ['localhost:3000']
+      allowedOrigins: ['localhost:3000', 'luocompany.net']
     }
   },
   typescript: {
@@ -40,6 +40,7 @@ const nextConfig = {
   },
   images: {
     domains: ['luocompany.net'],
+    unoptimized: true
   },
 }
 
