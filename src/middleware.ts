@@ -28,7 +28,7 @@ export const config = {
      * - 图片文件
      * - favicon.ico
      */
-    "/((?!api|_next/static|_next/image|favicon.ico).*)",
+    "/((?!api|_next/static|_next/image|logo|favicon.ico).*)",
     "/"
   ]
 } 

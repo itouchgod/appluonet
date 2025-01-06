@@ -54,14 +54,14 @@ export default function LoginPage() {
     <div className="min-h-screen bg-white flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-        <Image
-  src="/images/logo.png"
-  alt="LC APP"
-  width={80}
-  height={80}
-  priority
-  className="object-contain"
-/>
+          <Image
+            src="/logo/logo.png"
+            alt="LC APP"
+            width={80}
+            height={80}
+            className="object-contain"
+            priority
+          />
         </div>
         <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">
           欢迎使用 LC APP
