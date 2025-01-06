@@ -17,7 +17,7 @@ const currencySymbols: { [key: string]: string } = {
   CNY: '¥'
 };
 
-export const generateOrderConfirmationPDF = async (data: QuotationData) => {
+export const generateOrderConfirmationPDF = async (data: QuotationData, isPreview: boolean = false) => {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -77,7 +77,9 @@ export const generateOrderConfirmationPDF = async (data: QuotationData) => {
     // Contract No.
     doc.text('Contract No.', colonX - 2, rightInfoY, { align: 'right' });
     doc.text(':', colonX, rightInfoY);
+    doc.setTextColor(255, 0, 0); // 设置文字颜色为红色
     doc.text(data.contractNo || '', colonX + 3, rightInfoY);
+    doc.setTextColor(0, 0, 0); // 恢复文字颜色为黑色
     
     // Date
     doc.text('Date', colonX - 2, rightInfoY + 5, { align: 'right' });
@@ -96,6 +98,8 @@ export const generateOrderConfirmationPDF = async (data: QuotationData) => {
 
     // 客户信息区域
     const leftMargin = 20;
+    
+    // To: 区域
     doc.text('To:', leftMargin, currentY);
     const toTextWidth = doc.getTextWidth('To: ');
     
@@ -116,8 +120,8 @@ export const generateOrderConfirmationPDF = async (data: QuotationData) => {
       });
     }
 
-    // 添加 Order No.
-    currentY += 2;
+    // Order No. 区域 - 设置固定的起始位置
+    currentY = Math.max(currentY + 2, startY + 10);  // 确保最小起始位置
     doc.text('Order No.:', leftMargin, currentY);
     const orderNoX = leftMargin + doc.getTextWidth('Order No.: ');
     
@@ -151,8 +155,8 @@ export const generateOrderConfirmationPDF = async (data: QuotationData) => {
           ...(data.showDescription ? [item.description || ''] : []),
           item.quantity,
           item.unit,
-          `${currencySymbols[data.currency]}${item.unitPrice.toFixed(2)}`,
-          `${currencySymbols[data.currency]}${item.amount.toFixed(2)}`,
+          item.unitPrice.toFixed(2),
+          item.amount.toFixed(2),
           ...(data.showRemarks ? [item.remarks || ''] : [])
         ]),
         // Other Fees 行
@@ -162,7 +166,7 @@ export const generateOrderConfirmationPDF = async (data: QuotationData) => {
             colSpan: data.showDescription ? 6 : 5,
             styles: { halign: 'left' }
           } as unknown as string,
-          `${currencySymbols[data.currency]}${fee.amount.toFixed(2)}`,
+          fee.amount.toFixed(2),
           ...(data.showRemarks ? [''] : [])
         ])
       ],
@@ -247,15 +251,20 @@ export const generateOrderConfirmationPDF = async (data: QuotationData) => {
       doc.setFont('NotoSansSC', 'bold');
       doc.text('Bank Information:', leftMargin, currentY);
       currentY += 5;
-      doc.setFont('NotoSansSC', 'normal');
-      [
-        'Bank Name: The Hongkong and Shanghai Banking Corporation Limited',
-        'Swift code: HSBCHKHHHKH',
-        'Bank address: Head Office 1 Queen\'s Road Central Hong Kong',
-        'A/C No.: 801470337838',
-        'Beneficiary: Luo & Company Co., Limited'
-      ].forEach(line => {
-        doc.text(line, leftMargin, currentY);
+      
+      const bankInfo = [
+        { label: 'Bank Name:', value: 'The Hongkong and Shanghai Banking Corporation Limited' },
+        { label: 'Swift code:', value: 'HSBCHKHHHKH' },
+        { label: 'Bank address:', value: 'Head Office 1 Queen\'s Road Central Hong Kong' },
+        { label: 'A/C No.:', value: '801470337838' },
+        { label: 'Beneficiary:', value: 'Luo & Company Co., Limited' }
+      ];
+
+      bankInfo.forEach(info => {
+        doc.setFont('NotoSansSC', 'bold');
+        doc.text(info.label, leftMargin, currentY);
+        doc.setFont('NotoSansSC', 'normal');
+        doc.text(info.value, leftMargin + doc.getTextWidth(info.label) + 2, currentY);
         currentY += 5;
       });
     }
@@ -283,7 +292,15 @@ export const generateOrderConfirmationPDF = async (data: QuotationData) => {
       }
     }
 
-    doc.save(`Sales-${data.quotationNo}-${data.date}.pdf`);
+    // 根据模式选择保存或返回预览URL
+    if (isPreview) {
+      const pdfBlob = doc.output('blob');
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      // 触发自定义事件，通知前端更新预览URL
+      window.dispatchEvent(new CustomEvent('pdf-preview', { detail: pdfUrl }));
+    } else {
+      doc.save(`Sales-${data.quotationNo}-${data.date}.pdf`);
+    }
   } catch (error) {
     console.error('Error generating PDF:', error);
     throw error;

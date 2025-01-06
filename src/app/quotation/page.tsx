@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Settings, Download, ArrowLeft } from 'lucide-react';
+import { Settings, Download, ArrowLeft, Eye } from 'lucide-react';
 import { generateQuotationPDF } from '@/utils/quotationPdfGenerator';
 import { generateOrderConfirmationPDF } from '@/utils/orderConfirmationPdfGenerator';
 import { TabButton } from '@/components/quotation/TabButton';
@@ -45,6 +45,7 @@ export default function QuotationPage() {
   const [showSettings, setShowSettings] = useState(false);
   const [editingFeeAmount, setEditingFeeAmount] = useState<string>('');
   const [editingFeeIndex, setEditingFeeIndex] = useState<number | null>(null);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [data, setData] = useState<QuotationData>({
     to: '',
     inquiryNo: '',
@@ -77,6 +78,19 @@ export default function QuotationPage() {
     customUnits: []
   });
 
+  // 添加PDF预览事件监听器
+  useEffect(() => {
+    const handlePdfPreview = (event: CustomEvent<string>) => {
+      setPdfPreviewUrl(event.detail);
+    };
+
+    window.addEventListener('pdf-preview', handlePdfPreview as EventListener);
+
+    return () => {
+      window.removeEventListener('pdf-preview', handlePdfPreview as EventListener);
+    };
+  }, []);
+
   const handleInputChange = (field: string, value: string) => {
     setData(prev => ({
       ...prev,
@@ -95,6 +109,19 @@ export default function QuotationPage() {
     } catch (error) {
       console.error('Error generating PDF:', error);
       // TODO: 添加错误提示
+    }
+  };
+
+  const handlePreview = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    try {
+      if (activeTab === 'quotation') {
+        await generateQuotationPDF(data, true);
+      } else {
+        await generateOrderConfirmationPDF(data, true);
+      }
+    } catch (error) {
+      console.error('Error generating PDF preview:', error);
     }
   };
 
@@ -365,19 +392,65 @@ export default function QuotationPage() {
               />
             </div>
 
-            {/* 生成按钮 */}
-            <button
-              type="submit"
-              className={`${primaryButtonClassName} mt-8`}
-            >
-              <div className="flex items-center gap-2">
-                <Download className="w-4 h-4" />
-                <span>Generate {activeTab === 'quotation' ? 'Quotation' : 'Order'}</span>
-              </div>
-            </button>
+            {/* 生成按钮和预览按钮 */}
+            <div className="flex gap-4 mt-8">
+              <button
+                type="submit"
+                className={`${primaryButtonClassName}`}
+              >
+                <div className="flex items-center gap-2">
+                  <Download className="w-4 h-4" />
+                  <span>Generate {activeTab === 'quotation' ? 'Quotation' : 'Order'}</span>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={handlePreview}
+                className={`${buttonClassName}
+                  bg-white dark:bg-gray-800
+                  text-gray-600 dark:text-gray-300
+                  border border-gray-200 dark:border-gray-700
+                  hover:bg-gray-50 dark:hover:bg-gray-700
+                  shadow-sm`}
+              >
+                <div className="flex items-center gap-2">
+                  <Eye className="w-4 h-4" />
+                  <span>Preview</span>
+                </div>
+              </button>
+            </div>
           </form>
         </div>
       </div>
+
+      {/* PDF预览弹窗 */}
+      {pdfPreviewUrl && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 w-full max-w-5xl h-[90vh] rounded-2xl flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                PDF Preview
+              </h3>
+              <button
+                onClick={() => setPdfPreviewUrl(null)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <span className="sr-only">Close</span>
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex-1 p-4">
+              <iframe
+                src={pdfPreviewUrl}
+                className="w-full h-full rounded-lg border border-gray-200 dark:border-gray-700"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
