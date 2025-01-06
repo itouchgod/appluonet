@@ -39,7 +39,14 @@ export function Header({ user, onLogout, onProfile }: HeaderProps) {
     <header className="bg-white shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
         <div className="flex items-center space-x-4">
-          <Image src="/images/logo.png" alt="Logo" width={45} height={45} />
+          <Image
+            src="/images/logo.png"
+            alt="LC APP Logo"
+            width={80}
+            height={80}
+            priority
+            className="object-contain"
+          />
           <h1 className="text-xl font-semibold text-gray-900">智能助手面板</h1>
         </div>
         

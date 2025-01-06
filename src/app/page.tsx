@@ -54,18 +54,14 @@ export default function LoginPage() {
     <div className="min-h-screen bg-white flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <Image
-            src="/images/logo.svg"
-            alt="LC APP Logo"
-            width={80}
-            height={80}
-            priority
-            onError={(e) => {
-              console.error('Logo SVG 加载失败');
-              e.currentTarget.src = '/images/logo.png';
-            }}
-            className="object-contain"
-          />
+        <Image
+  src="/images/logo.png"
+  alt="LC APP"
+  width={80}
+  height={80}
+  priority
+  className="object-contain"
+/>
         </div>
         <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">
           欢迎使用 LC APP
