@@ -217,7 +217,7 @@ export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolea
         valign: 'middle'
       },
       columnStyles: data.showHsCode ? {
-        0: { halign: 'center', cellWidth: 8 },  // No.
+        0: { halign: 'center', cellWidth: 10 },  // No.
         1: { halign: 'center', cellWidth: 25 }, // HS Code
         2: { halign: 'left', cellWidth: 'auto' }, // Description
         3: { halign: 'center', cellWidth: 15 },  // Q'TY
@@ -225,7 +225,7 @@ export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolea
         5: { halign: 'center', cellWidth: 25 },   // U/Price
         6: { halign: 'center', cellWidth: 25 }    // Amount
       } : {
-        0: { halign: 'center', cellWidth: 8 },   // No.
+        0: { halign: 'center', cellWidth: 10 },   // No.
         1: { halign: 'left', cellWidth: 'auto' }, // Description
         2: { halign: 'center', cellWidth: 15 },   // Q'TY
         3: { halign: 'center', cellWidth: 12 },   // Unit
