@@ -185,7 +185,7 @@ export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolea
           data.showHsCode ? item.hsCode : '',
           item.description,
           item.quantity || '',  // 如果为0则显示空字符串
-          item.unit,
+          item.unit ? (item.quantity <= 1 ? item.unit.replace(/s$/, '') : item.unit) : 'pc', // 根据数量自动处理单复数
           item.unitPrice ? Number(item.unitPrice).toFixed(2) : '',  // 如果为0则显示空字符串
           item.amount ? Number(item.amount).toFixed(2) : ''  // 如果为0则显示空字符串
         ].filter((_, i) => i === 0 || i === 2 || i === 3 || i === 4 || i === 5 || i === 6 || (data.showHsCode && i === 1))),
@@ -217,20 +217,20 @@ export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolea
         valign: 'middle'
       },
       columnStyles: data.showHsCode ? {
-        0: { halign: 'center', cellWidth: 10 },  // No.
-        1: { halign: 'center', cellWidth: 25 }, // HS Code
-        2: { halign: 'left', cellWidth: 'auto' }, // Description
-        3: { halign: 'center', cellWidth: 15 },  // Q'TY
-        4: { halign: 'center', cellWidth: 12 },  // Unit
+        0: { halign: 'center', cellWidth: 10 },   // No.
+        1: { halign: 'center', cellWidth: 25 },   // HS Code
+        2: { halign: 'center', cellWidth: 'auto' }, // Description
+        3: { halign: 'center', cellWidth: 15 },   // Q'TY
+        4: { halign: 'center', cellWidth: 20 },   // Unit
         5: { halign: 'center', cellWidth: 25 },   // U/Price
         6: { halign: 'center', cellWidth: 25 }    // Amount
       } : {
         0: { halign: 'center', cellWidth: 10 },   // No.
-        1: { halign: 'left', cellWidth: 'auto' }, // Description
+        1: { halign: 'center', cellWidth: 'auto' }, // Description
         2: { halign: 'center', cellWidth: 15 },   // Q'TY
-        3: { halign: 'center', cellWidth: 12 },   // Unit
-        4: { halign: 'center', cellWidth: 25 },    // U/Price
-        5: { halign: 'center', cellWidth: 25 }     // Amount
+        3: { halign: 'center', cellWidth: 20 },   // Unit
+        4: { halign: 'center', cellWidth: 25 },   // U/Price
+        5: { halign: 'center', cellWidth: 25 }    // Amount
       },
       margin: { left: 20, right: 20 },
       tableWidth: 'auto'
