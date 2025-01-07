@@ -15,16 +15,16 @@ export const ImportDataButton: React.FC<ImportDataButtonProps> = ({ onImport }) 
       const newItems = rows
         .map(row => {
           const columns = row.split('\t');
-          if (columns.length < 2) return null;
+          if (columns.length < 1) return null;
           return {
             id: Date.now() + Math.random(),
-            partName: columns[1]?.trim() || '',
-            description: columns[2]?.trim() || '',
-            quantity: Number(columns[3]) || 0,
+            partName: columns[0]?.trim() || '',
+            description: columns[1]?.trim() || '',
+            quantity: Number(columns[2]) || 0,
             unit: 'pc',
             unitPrice: 0,
             amount: 0,
-            remarks: columns[4]?.trim() || ''
+            remarks: columns[3]?.trim() || ''
           };
         })
         .filter((item): item is NonNullable<typeof item> => item !== null);
