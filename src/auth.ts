@@ -78,8 +78,7 @@ export const config = {
           name: user.username,
           username: user.username,
           isAdmin: user.isAdmin,
-          image: null,
-          emailVerified: null,
+          image: null
         }
       }
     })

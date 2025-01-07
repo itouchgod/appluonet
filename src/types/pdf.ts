@@ -4,6 +4,7 @@ export interface PDFGeneratorData {
   templateConfig: {
     headerType: string;
     stampType: string;
+    invoiceType?: 'invoice' | 'commercial' | 'proforma';
   };
   items: {
     hsCode?: string;

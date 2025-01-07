@@ -1,9 +1,10 @@
-import NextAuth from "next-auth";
-import type { DefaultSession, AuthOptions } from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import { prisma } from "./prisma";
+import { NextAuthOptions, DefaultSession } from "next-auth";
+import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { prisma } from "./prisma";
 import { compare } from "bcryptjs";
+import { Adapter } from "next-auth/adapters";
 
 declare module "next-auth" {
   interface Session extends DefaultSession {
@@ -13,88 +14,77 @@ declare module "next-auth" {
       isAdmin: boolean;
     } & DefaultSession["user"]
   }
-
-  interface User {
-    id: string;
-    username: string;
-    isAdmin: boolean;
-    email: string | null;
-    emailVerified: Date | null;
-    image: string | null;
-  }
 }
 
-export const authConfig = {
-  adapter: PrismaAdapter(prisma),
+export const authConfig: NextAuthOptions = {
+  adapter: PrismaAdapter(prisma) as Adapter,
   providers: [
     CredentialsProvider({
       name: "credentials",
       credentials: {
-        email: { label: "Email", type: "text" },
-        password: { label: "Password", type: "password" },
+        username: { label: "Username", type: "text" },
+        password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        if (!credentials?.username || !credentials?.password) {
           return null;
         }
 
-        const user = await prisma.user.findFirst({
-          where: { email: credentials.email },
-          select: {
-            id: true,
-            email: true,
-            username: true,
-            password: true,
-            isAdmin: true,
-          },
+        const user = await prisma.user.findUnique({
+          where: {
+            username: credentials.username
+          }
         });
 
         if (!user) {
           return null;
         }
 
-        const isPasswordValid = await compare(credentials.password, user.password);
+        const isValid = await compare(credentials.password, user.password);
 
-        if (!isPasswordValid) {
+        if (!isValid) {
           return null;
         }
 
         return {
           id: user.id,
-          email: user.email,
-          name: user.username,
           username: user.username,
-          isAdmin: user.isAdmin,
-          image: null,
-          emailVerified: new Date(),
+          email: user.email,
+          isAdmin: user.isAdmin
         };
-      },
-    }),
+      }
+    })
   ],
+  session: {
+    strategy: "jwt"
+  },
+  pages: {
+    signIn: "/login"
+  },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
-        token.username = user.username;
-        token.isAdmin = user.isAdmin;
+        return {
+          ...token,
+          id: user.id,
+          username: user.username,
+          isAdmin: user.isAdmin
+        };
       }
       return token;
     },
     async session({ session, token }) {
-      if (session?.user) {
-        session.user.id = token.id;
-        session.user.username = token.username as string;
-        session.user.isAdmin = token.isAdmin as boolean;
-      }
-      return session;
-    },
-  },
-  session: {
-    strategy: "jwt",
-  },
-  pages: {
-    signIn: "/login",
-  },
-} satisfies AuthOptions;
+      return {
+        ...session,
+        user: {
+          ...session.user,
+          id: token.id as string,
+          username: token.username as string,
+          isAdmin: token.isAdmin as boolean
+        }
+      };
+    }
+  }
+};
 
 export const { auth, signIn, signOut } = NextAuth(authConfig); 

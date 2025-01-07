@@ -5,13 +5,13 @@ import { loadImage } from '@/utils/pdfHelpers';
 import { UserOptions } from 'jspdf-autotable';
 
 // 扩展jsPDF类型
-interface ExtendedJsPDF extends jsPDF {
+type ExtendedJsPDF = jsPDF & {
   lastAutoTable: {
     finalY: number;
   };
   autoTable: (options: UserOptions) => void;
-  saveGraphicsState: () => void;
-  restoreGraphicsState: () => void;
+  saveGraphicsState: () => jsPDF;
+  restoreGraphicsState: () => jsPDF;
   GState: new (options: { opacity: number }) => unknown;
   setGState: (gState: unknown) => void;
 }

@@ -61,11 +61,13 @@ export const getStampImage = (stampType: string) => {
 
 // 获取发票标题
 export const getInvoiceTitle: InvoiceTitleGetter = (data) => {
-  switch (data.templateConfig.invoiceType) {
+  const invoiceType = data.templateConfig.invoiceType || 'invoice';
+  switch (invoiceType) {
     case 'commercial':
       return data.currency === 'USD' ? 'COMMERCIAL INVOICE' : '商业发票';
     case 'proforma':
       return data.currency === 'USD' ? 'PROFORMA INVOICE' : '形式发票';
+    case 'invoice':
     default:
       return data.currency === 'USD' ? 'INVOICE' : '发票';
   }
