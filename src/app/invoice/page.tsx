@@ -379,19 +379,22 @@ Beneficiary: Luo & Company Co., Limited`,
       // 更新发票数据
       setInvoiceData(prev => ({
         ...prev,
-        items: parsedRows.map((row, index) => ({
-          lineNo: index + 1,
-          description: row!.description,
-          quantity: row!.quantity,
-          unit: row!.unit,
-          unitPrice: row!.unitPrice,
-          amount: 0, // 不自动计算金额
-          hsCode: ''
-        }))
+        items: parsedRows.map((row, index) => {
+          const baseUnit = row!.unit.replace(/s$/, '');
+          return {
+            lineNo: index + 1,
+            description: row!.description,
+            quantity: row!.quantity,
+            unit: row!.quantity > 1 ? `${baseUnit}s` : baseUnit, // 根据数量设置单复数
+            unitPrice: row!.unitPrice,
+            amount: row!.quantity * row!.unitPrice,
+            hsCode: ''
+          };
+        })
       }));
 
     } catch (error) {
-      console.error('Failed to import data:', error);
+      console.error('Error importing data:', error);
     }
   }, []);
 
