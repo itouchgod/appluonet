@@ -299,75 +299,91 @@ Beneficiary: Luo & Company Co., Limited`,
   // 处理导入数据
   const handleImportData = useCallback((text: string) => {
     try {
-      // 尝试解析数据
-      const rows = text.trim().split('\n').map(row => {
-        // 使用制表符分割，保留空字符串以保持列位置
+      // 按行分割，过滤掉空白行
+      const rows = text.trim().split('\n').filter(row => row.trim() !== '');
+      
+      // 解析每一行数据
+      const parsedRows = rows.map(row => {
+        // 使用制表符分割，保留空字符串
         const columns = row.split('\t');
         
-        // 过滤掉空白列，保留实际有内容的列
-        const validColumns = columns.filter(col => col.trim() !== '');
-        
+        // 基本数据结构
+        let result = {
+          description: '',
+          quantity: 0,
+          unit: 'pc',
+          unitPrice: 0
+        };
+
+        // 根据不同的列数处理不同的格式
+        switch (columns.length) {
+          case 4: // 描述 tab 数量 tab 单位 tab 单价
+            result = {
+              description: columns[0].trim(),
+              quantity: parseFloat(columns[1]) || 0,
+              unit: columns[2].trim() || 'pc',
+              unitPrice: parseFloat(columns[3]) || 0
+            };
+            break;
+
+          case 3: // 描述 tab tab 数量 tab 单价
+            if (columns[1].trim() === '') { // 确认是双tab的情况
+              result = {
+                description: columns[0].trim(),
+                quantity: parseFloat(columns[2]) || 0,
+                unit: 'pc',
+                unitPrice: 0
+              };
+            }
+            break;
+
+          case 2: // 描述 tab 数量
+            result = {
+              description: columns[0].trim(),
+              quantity: parseFloat(columns[1]) || 0,
+              unit: 'pc',
+              unitPrice: 0
+            };
+            break;
+
+          default:
+            // 如果列数不符合预期，检查是否是双tab的情况
+            if (columns.some(col => col.trim() === '')) {
+              // 处理可能包含多个连续tab的情况
+              const cleanColumns = columns.filter(col => col.trim() !== '');
+              if (cleanColumns.length >= 2) {
+                result = {
+                  description: cleanColumns[0].trim(),
+                  quantity: parseFloat(cleanColumns[1]) || 0,
+                  unit: 'pc',
+                  unitPrice: 0
+                };
+              }
+            }
+        }
+
         // 确保至少有描述和数量
-        if (validColumns.length < 2) {
+        if (!result.description.trim()) {
           return null;
         }
 
-        // 根据不同格式解析数据
-        const description = columns[0].trim();
-        let quantity, unit, unitPrice;
-
-        switch (validColumns.length) {
-          case 5: // 完整格式：描述 [tab] [tab] 数量 单位 单价
-            quantity = validColumns[2];
-            unit = validColumns[3];
-            unitPrice = validColumns[4];
-            break;
-          case 3: // 部分格式：描述 [tab] [tab] 数量
-            quantity = validColumns[2];
-            unit = 'pc';
-            unitPrice = '0';
-            break;
-          case 2: // 最少格式：描述 [tab] 数量
-            quantity = validColumns[1];
-            unit = 'pc';
-            unitPrice = '0';
-            break;
-          default:
-            quantity = validColumns[1];
-            unit = 'pc';
-            unitPrice = '0';
-        }
-        
-        return {
-          description,
-          quantity,
-          unit,
-          unitPrice
-        };
+        return result;
       }).filter(row => row !== null); // 过滤掉无效的行
-      
-      // 更新发票数据
-      setInvoiceData(prev => {
-        const newItems = rows.map((row, index) => {
-          const quantity = parseFloat(row!.quantity) || 0;
-          const unitPrice = parseFloat(row!.unitPrice) || 0;
-          
-          return {
-            lineNo: index + 1,
-            description: row!.description,
-            quantity: quantity,
-            unit: row!.unit.toLowerCase() === 'pcs' ? 'pc' : row!.unit.toLowerCase(),
-            unitPrice: unitPrice,
-            amount: quantity * unitPrice,
-            hsCode: ''
-          };
-        });
 
-        return {
-          ...prev,
-          items: newItems
-        };
-      });
+      // 更新发票数据
+      setInvoiceData(prev => ({
+        ...prev,
+        items: parsedRows.map((row, index) => ({
+          lineNo: index + 1,
+          description: row!.description,
+          quantity: row!.quantity,
+          unit: row!.unit,
+          unitPrice: row!.unitPrice,
+          amount: 0, // 不自动计算金额
+          hsCode: ''
+        }))
+      }));
+
     } catch (error) {
       console.error('Failed to import data:', error);
     }

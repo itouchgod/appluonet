@@ -5,6 +5,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "@/lib/prisma"
 import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
+import { cache } from 'react'
 
 declare module "next-auth" {
   interface Session extends DefaultSession {
@@ -21,6 +22,21 @@ declare module "next-auth" {
   }
 }
 
+// 缓存用户查询
+const findUser = cache(async (username: string) => {
+  return await prisma.user.findUnique({
+    where: { username },
+    select: {
+      id: true,
+      username: true,
+      password: true,
+      email: true,
+      isAdmin: true,
+      status: true,
+    }
+  });
+});
+
 export const config = {
   providers: [
     CredentialsProvider({
@@ -31,26 +47,16 @@ export const config = {
       },
       async authorize(credentials: Record<"username" | "password", string> | undefined): Promise<User | null> {
         if (!credentials?.username || !credentials?.password) {
-          console.log("缺少用户名或密码");
           throw new Error("请输入用户名和密码")
         }
 
-        console.log("正在查找用户:", credentials.username);
-        const user = await prisma.user.findUnique({
-          where: { 
-            username: credentials.username
-          }
-        })
+        const user = await findUser(credentials.username);
 
         if (!user) {
-          console.log("用户不存在:", credentials.username);
           throw new Error("用户不存在")
         }
 
-        console.log("找到用户:", user.username);
-
         if (!user.password) {
-          console.log("用户密码未设置");
           throw new Error("请先设置密码")
         }
 
@@ -59,18 +65,13 @@ export const config = {
           user.password
         )
 
-        console.log("密码验证结果:", isValid);
-
         if (!isValid) {
           throw new Error("密码错误")
         }
 
         if (!user.status) {
-          console.log("账号已被禁用");
           throw new Error("账号已被禁用")
         }
-
-        console.log("登录成功，返回用户信息");
 
         return {
           id: user.id,
@@ -112,7 +113,7 @@ export const config = {
       return session
     }
   },
-  debug: process.env.NODE_ENV === "development",
+  debug: false,  // 禁用调试模式
 } satisfies AuthOptions
 
 const auth = NextAuth(config)
