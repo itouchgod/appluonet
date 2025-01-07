@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { flushSync } from 'react-dom';
 import Link from 'next/link';
 import { Settings, Download, ArrowLeft, Eye, Clipboard } from 'lucide-react';
 import { generateQuotationPDF } from '@/utils/quotationPdfGenerator';
@@ -81,10 +82,13 @@ export default function QuotationPage() {
     };
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleGenerate = useCallback(async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    try {
+    flushSync(() => {
       setIsGenerating(true);
+    });
+    
+    try {
       if (activeTab === 'quotation') {
         await generateQuotationPDF(data);
       } else {
@@ -92,14 +96,20 @@ export default function QuotationPage() {
       }
     } catch (error) {
       console.error('Error generating PDF:', error);
-      // TODO: 添加错误提示
     } finally {
       setIsGenerating(false);
     }
-  };
+  }, [activeTab, data]);
 
-  const handlePreview = async () => {
-    setIsLoading(true);
+  const handleSubmit = useCallback((e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+  }, []);
+
+  const handlePreview = useCallback(async () => {
+    flushSync(() => {
+      setIsLoading(true);
+    });
+    
     try {
       if (activeTab === 'quotation') {
         const pdfBlob = await generateQuotationPDF(data, true);
@@ -112,11 +122,10 @@ export default function QuotationPage() {
       }
     } catch (error) {
       console.error('PDF generation failed:', error);
-      // 可以添加错误提示
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [activeTab, data]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -379,7 +388,8 @@ export default function QuotationPage() {
             <div className="px-4 sm:px-6 py-4 border-t border-gray-100 dark:border-gray-700">
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={handleGenerate}
                   disabled={isGenerating}
                   className={`${buttonClassName}
                     bg-[#007AFF] hover:bg-[#0063CC] dark:bg-[#0A84FF] dark:hover:bg-[#0070E0]
