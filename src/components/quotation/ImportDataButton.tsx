@@ -9,24 +9,77 @@ export const ImportDataButton: React.FC<ImportDataButtonProps> = ({ onImport }) 
   // 处理粘贴数据
   const handlePasteData = useCallback((pasteText: string) => {
     try {
-      const rows = pasteText.trim().split('\n');
+      // 1. 首先按硬回车分割行
+      const rows = pasteText.split(/\r?\n/);
       
-      const newItems = rows
-        .map(row => {
-          const columns = row.split('\t');
-          if (columns.length < 1) return null;
-          return {
-            id: Date.now() + Math.random(),
-            partName: columns[0]?.trim() || '',
-            description: columns[1]?.trim() || '',
-            quantity: Number(columns[2]) || 0,
-            unit: 'pc',
-            unitPrice: 0,
-            amount: 0,
-            remarks: columns[3]?.trim() || ''
-          };
-        })
-        .filter((item): item is NonNullable<typeof item> => item !== null);
+      // 2. 初始化数据结构来存储处理后的行
+      const processedRows: string[][] = [];
+      let currentRow: string[] = [];
+      let isInQuotes = false;
+      let currentCell = '';
+      
+      // 3. 处理每一行
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        
+        // 如果不在引号内且行为空，跳过
+        if (!isInQuotes && !row.trim()) {
+          if (currentRow.length > 0) {
+            processedRows.push([...currentRow]);
+            currentRow = [];
+          }
+          continue;
+        }
+        
+        // 处理每个字符
+        for (let j = 0; j < row.length; j++) {
+          const char = row[j];
+          
+          if (char === '"') {
+            isInQuotes = !isInQuotes;
+          } else if (char === '\t' && !isInQuotes) {
+            currentRow.push(currentCell.trim());
+            currentCell = '';
+          } else {
+            currentCell += char;
+          }
+        }
+        
+        // 处理行尾
+        if (!isInQuotes) {
+          currentRow.push(currentCell.trim());
+          processedRows.push([...currentRow]);
+          currentRow = [];
+          currentCell = '';
+        } else {
+          // 在引号内，添加一个软回车
+          currentCell += '\n';
+        }
+      }
+      
+      // 4. 如果还有未处理完的数据
+      if (currentRow.length > 0 || currentCell) {
+        if (currentCell) {
+          currentRow.push(currentCell.trim());
+        }
+        if (currentRow.length > 0) {
+          processedRows.push(currentRow);
+        }
+      }
+
+      // 5. 转换为 LineItem 对象
+      const newItems = processedRows
+        .filter(columns => columns.length > 0 && columns.some(col => col.trim()))
+        .map(columns => ({
+          id: Date.now() + Math.random(),
+          partName: columns[0]?.replace(/^"(.*)"$/, '$1').trim() || '',
+          description: columns[1]?.replace(/^"(.*)"$/, '$1').trim() || '',
+          quantity: Number(columns[2]?.replace(/^"(.*)"$/, '$1')) || 0,
+          unit: 'pc',
+          unitPrice: 0,
+          amount: 0,
+          remarks: columns[3]?.replace(/^"(.*)"$/, '$1').trim() || ''
+        }));
 
       if (newItems.length > 0) {
         onImport(newItems);
