@@ -34,16 +34,7 @@ export default function QuotationPage() {
     inquiryNo: '',
     quotationNo: '',
     date: new Date().toISOString().split('T')[0],
-    from: (() => {
-      const username = window?.localStorage?.getItem('username');
-      switch(username) {
-        case 'sharon': return 'Sharon';
-        case 'emily': return 'Emily';
-        case 'nina': return 'Nina';
-        case 'summer': return 'Summer';
-        default: return 'Roger';
-      }
-    })(),
+    from: 'Roger',
     currency: 'USD',
     paymentDate: new Date().toISOString().split('T')[0],
     items: [{
@@ -56,16 +47,7 @@ export default function QuotationPage() {
       amount: 0,
       remarks: ''
     }],
-    notes: getDefaultNotes((() => {
-      const username = window?.localStorage?.getItem('username');
-      switch(username) {
-        case 'sharon': return 'Sharon';
-        case 'emily': return 'Emily';
-        case 'nina': return 'Nina';
-        case 'summer': return 'Summer';
-        default: return 'Roger';
-      }
-    })(), 'quotation'),
+    notes: getDefaultNotes('Roger', 'quotation'),
     amountInWords: {
       dollars: 'ZERO',
       cents: '',
@@ -78,6 +60,23 @@ export default function QuotationPage() {
     contractNo: '',
     customUnits: []
   });
+
+  // 初始化时根据用户名设置报价人和备注
+  useEffect(() => {
+    const username = window?.localStorage?.getItem('username');
+    let from = 'Roger';
+    switch(username) {
+      case 'sharon': from = 'Sharon'; break;
+      case 'emily': from = 'Emily'; break;
+      case 'nina': from = 'Nina'; break;
+      case 'summer': from = 'Summer'; break;
+    }
+    setData(prev => ({
+      ...prev,
+      from,
+      notes: getDefaultNotes(from, activeTab)
+    }));
+  }, [activeTab]);
 
   // 监听 activeTab 变化，更新 notes
   useEffect(() => {
