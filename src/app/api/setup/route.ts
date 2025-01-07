@@ -2,6 +2,17 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 
+// 定义默认模块列表
+const DEFAULT_MODULES = [
+  'ai-email',
+  'quotation',
+  'invoice',
+  'feature1',
+  'feature2',
+  'feature3',
+  'feature4',
+];
+
 export async function GET() {
   try {
     // 检查是否已有管理员用户
@@ -23,7 +34,16 @@ export async function GET() {
         password: hashedPassword,
         email: 'admin@example.com',
         isAdmin: true,
-        status: true
+        status: true,
+        permissions: {
+          create: DEFAULT_MODULES.map(moduleId => ({
+            moduleId,
+            canAccess: true
+          }))
+        }
+      },
+      include: {
+        permissions: true
       }
     });
 

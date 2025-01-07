@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { getAuth } from '@/auth';
+import { getToken } from 'next-auth/jwt';
 import { prisma } from '@/lib/prisma';
 import { hash } from 'bcryptjs';
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const session = await getAuth();
-    if (!session || !session.user?.isAdmin) {
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    if (!token?.sub || !token.isAdmin) {
       return NextResponse.json(
         { error: '未授权访问' },
         { status: 401 }
@@ -40,8 +40,8 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const session = await getAuth();
-    if (!session || !session.user?.isAdmin) {
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    if (!token?.sub || !token.isAdmin) {
       return NextResponse.json(
         { error: '未授权访问' },
         { status: 401 }

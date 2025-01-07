@@ -1,15 +1,14 @@
-import { NextResponse, NextRequest } from 'next/server';
-import { getAuth } from '@/auth';
+import { NextResponse } from 'next/server';
+import { getToken } from 'next-auth/jwt';
 import { prisma } from '@/lib/prisma';
 
 export async function GET(
-  request: Request,
+  req: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    // 验证管理员权限
-    const session = await getAuth();
-    if (!session?.user?.isAdmin) {
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    if (!token?.sub || !token.isAdmin) {
       return NextResponse.json(
         { error: '需要管理员权限' },
         { status: 403 }
@@ -50,12 +49,12 @@ export async function GET(
 }
 
 export async function PUT(
-  req: NextRequest,
+  req: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getAuth();
-    if (!session || !session.user?.isAdmin) {
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    if (!token?.sub || !token.isAdmin) {
       return NextResponse.json({ error: '未授权访问' }, { status: 401 });
     }
 
@@ -127,13 +126,12 @@ export async function PUT(
 }
 
 export async function DELETE(
-  request: Request,
+  req: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    // 验证管理员权限
-    const session = await getAuth();
-    if (!session?.user?.isAdmin) {
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    if (!token?.sub || !token.isAdmin) {
       return NextResponse.json(
         { error: '需要管理员权限' },
         { status: 403 }

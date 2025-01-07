@@ -14,7 +14,11 @@ export const metadata: Metadata = {
   title: 'LC APP',
   description: '一个用于处理报价单、销售确认单和发票等商业文档的生成和管理系统',
   icons: {
-    icon: '/favicon.ico'
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icon.png', type: 'image/png', sizes: '192x192' },
+    ],
+    apple: '/apple-icon.png',
   }
 }
 

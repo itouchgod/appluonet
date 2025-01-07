@@ -10,12 +10,6 @@ export const prisma = globalForPrisma.prisma ?? new PrismaClient({
     db: {
       url: process.env.DIRECT_URL
     },
-  },
-  connection: {
-    pool: {
-      min: 2,
-      max: 10
-    }
   }
 });
 

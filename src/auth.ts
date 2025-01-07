@@ -1,7 +1,5 @@
-import NextAuth, { getServerSession } from "next-auth"
+import NextAuth from "next-auth"
 import type { DefaultSession, AuthOptions, User } from "next-auth"
-import type { Adapter } from "next-auth/adapters"
-import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "@/lib/prisma"
 import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
@@ -84,32 +82,9 @@ export const config = {
       }
     })
   ],
-  adapter: PrismaAdapter(prisma) as Adapter,
   session: { 
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
-    updateAge: 24 * 60 * 60, // 24 hours - 减少更新频率
-  },
-  jwt: {
-    maxAge: 30 * 24 * 60 * 60, // 30 days - 与 session maxAge 保持一致
-  },
-  cookies: {
-    sessionToken: {
-      name: `__Secure-next-auth.session-token`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: true,
-        maxAge: 30 * 24 * 60 * 60 // 30 days
-      }
-    }
-  },
-  pages: {
-    signIn: "/",
-    signOut: "/",
-    error: "/",
-    newUser: "/"
   },
   callbacks: {
     async jwt({ token, user }) {
@@ -129,16 +104,20 @@ export const config = {
       return session
     }
   },
-  debug: false,  // 禁用调试模式
+  pages: {
+    signIn: "/",
+    signOut: "/",
+    error: "/",
+    newUser: "/"
+  },
+  debug: process.env.NODE_ENV === 'development',
 } satisfies AuthOptions
 
 const auth = NextAuth(config)
 
-// 导出 auth 函数用于服务器端认证
 export const getAuth = async () => {
-  return await getServerSession(config)
+  return await auth()
 }
 
-// 导出客户端认证方法
-export const { signIn, signOut } = auth
-export { auth } 
+export { auth }
+export const { signIn, signOut } = auth 

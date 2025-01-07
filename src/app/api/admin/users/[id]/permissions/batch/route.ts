@@ -1,60 +1,37 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
+import { getToken } from 'next-auth/jwt';
 import { prisma } from '@/lib/prisma';
-import { getAuth } from '@/auth';
 
 interface PermissionUpdate {
   moduleId: string;
   canAccess: boolean;
 }
 
-interface RequestBody {
-  permissions: PermissionUpdate[];
-}
-
-interface ErrorResponse {
-  error: string;
-  details?: unknown;
-}
-
 export async function PUT(
-  request: Request,
-  { params }: { params: { id: string | string[] } }
-): Promise<Response> {
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const session = await getAuth();
-    if (!session?.user?.isAdmin) {
-      console.warn('非管理员尝试访问权限管理:', session?.user?.id);
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    if (!token?.sub || !token.isAdmin) {
       return NextResponse.json(
         { error: '需要管理员权限' },
         { status: 403 }
       );
     }
 
-    const { id } = params;
-    if (!id || Array.isArray(id)) {
-      console.warn('无效的用户ID:', { id });
+    const userId = params.id;
+    if (!userId) {
       return NextResponse.json(
-        { error: '无效的用户ID' },
+        { error: '用户ID不能为空' },
         { status: 400 }
       );
     }
 
-    const userId: string = id;
-    let body: RequestBody;
+    const body = await req.json();
+    const permissions = body.permissions as PermissionUpdate[];
     
-    try {
-      body = await request.json() as RequestBody;
-    } catch (e) {
-      console.error('解析请求体失败:', e);
-      return NextResponse.json(
-        { error: '无效的请求数据格式' },
-        { status: 400 }
-      );
-    }
-
-    const { permissions } = body;
     if (!Array.isArray(permissions)) {
-      console.warn('无效的权限数据格式:', { permissions });
       return NextResponse.json(
         { error: '无效的权限数据格式' },
         { status: 400 }
@@ -62,57 +39,49 @@ export async function PUT(
     }
 
     // 使用事务确保数据一致性
-    try {
-      await prisma.$transaction(async (tx) => {
-        // 删除现有权限
-        await tx.permission.deleteMany({
-          where: { userId }
-        });
-
-        // 创建新的权限记录
-        if (permissions.length > 0) {
-          await tx.permission.createMany({
-            data: permissions.map(p => ({
-              userId,
-              moduleId: p.moduleId,
-              canAccess: p.canAccess
-            }))
-          });
-        }
+    await prisma.$transaction(async (tx) => {
+      // 删除现有权限
+      await tx.permission.deleteMany({
+        where: { userId }
       });
-    } catch (e) {
-      console.error('权限更新事务失败:', e);
-      throw e;
-    }
 
-    const updatedUser = await prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        permissions: true
+      // 只创建被启用的权限
+      const enabledPermissions = permissions
+        .filter(p => p.canAccess)
+        .map(p => ({
+          userId,
+          moduleId: p.moduleId,
+          canAccess: true,
+        }));
+
+      if (enabledPermissions.length > 0) {
+        await tx.permission.createMany({
+          data: enabledPermissions,
+        });
       }
     });
 
-    if (!updatedUser) {
-      console.warn('用户不存在:', { userId });
+    // 获取更新后的用户信息
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        permissions: true,
+      },
+    });
+
+    if (!user) {
       return NextResponse.json(
         { error: '用户不存在' },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(updatedUser);
+    return NextResponse.json(user);
   } catch (error) {
-    console.error('批量更新权限错误:', {
-      error,
-      userId: params.id,
-      stack: error instanceof Error ? error.stack : undefined
-    });
-    
-    const response: ErrorResponse = {
-      error: '更新权限失败',
-      details: process.env.NODE_ENV === 'development' ? error : undefined
-    };
-    
-    return NextResponse.json(response, { status: 500 });
+    console.error('批量更新权限错误:', error);
+    return NextResponse.json(
+      { error: '更新权限失败', userId: params.id, stack: (error as Error).stack },
+      { status: 500 }
+    );
   }
 } 
