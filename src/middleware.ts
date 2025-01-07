@@ -29,7 +29,7 @@ export const config = {
      * - manifest 文件
      * - 特定的图标文件（精确匹配）
      */
-    "/((?!api|_next/static|_next/image|manifest.ts|logo|favicon.ico|icon.png|icon-512x512.png|apple-icon.png).*)",
+    "/((?!api|_next/static|_next/image|manifest.ts|logo|favicon.ico|icon.png|icon-512x512.png|apple-icon.png|fonts|images|doc).*)",
     "/"
   ]
 } 
