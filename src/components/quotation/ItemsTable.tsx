@@ -162,10 +162,10 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-0">
       <ImportDataButton onImport={handleImport} />
 
-      <div className="overflow-hidden rounded-2xl border border-[#E5E5EA] dark:border-[#2C2C2E]
+      <div className="overflow-hidden rounded-t-2xl border border-[#E5E5EA] dark:border-[#2C2C2E]
         bg-white/90 dark:bg-[#1C1C1E]/90 backdrop-blur-xl">
         <table className="w-full">
           <thead>
@@ -188,14 +188,13 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
           <tbody>
             {data.items.map((item, index) => (
               <tr key={item.id} 
-                className={`border-t border-[#E5E5EA] dark:border-[#2C2C2E]
-                  ${index % 2 === 0 ? 'bg-white/50 dark:bg-[#1C1C1E]/50' : 'bg-[#F5F5F7]/50 dark:bg-[#2C2C2E]/50'}`}
-              >
-                <td className="w-[60px] px-4 py-2 text-sm">
+                className="border-t border-[#E5E5EA] dark:border-[#2C2C2E]">
+                <td className="w-[60px] px-4 py-2 text-center text-sm">
                   <span 
                     className="flex items-center justify-center w-6 h-6 rounded-full 
-                      text-xs text-[#86868B] hover:bg-red-500/10 hover:text-red-500 
-                      cursor-pointer transition-all duration-200"
+                      text-xs text-gray-400
+                      hover:bg-red-100 hover:text-red-600 
+                      cursor-pointer transition-colors"
                     onClick={() => handleSoftDelete(index)}
                     title="Click to delete"
                   >
@@ -319,6 +318,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                       setEditingPriceIndex(null);
                       setEditingPriceAmount('');
                     }}
+                    placeholder="0.00"
                     className="w-full px-3 py-1.5 bg-transparent border border-transparent
                       focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
                       hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50

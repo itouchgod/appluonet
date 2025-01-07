@@ -36,6 +36,8 @@ export default function QuotationPage() {
   const [activeTab, setActiveTab] = useState<'quotation' | 'confirmation'>('quotation');
   const [showSettings, setShowSettings] = useState(false);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isPreviewing, setIsPreviewing] = useState(false);
   const [data, setData] = useState<QuotationData>({
     to: '',
     inquiryNo: '',
@@ -105,6 +107,7 @@ export default function QuotationPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      setIsGenerating(true);
       if (activeTab === 'quotation') {
         await generateQuotationPDF(data);
       } else {
@@ -113,12 +116,15 @@ export default function QuotationPage() {
     } catch (error) {
       console.error('Error generating PDF:', error);
       // TODO: 添加错误提示
+    } finally {
+      setIsGenerating(false);
     }
   };
 
   const handlePreview = async (e: React.MouseEvent) => {
     e.preventDefault();
     try {
+      setIsPreviewing(true);
       if (activeTab === 'quotation') {
         await generateQuotationPDF(data, true);
       } else {
@@ -126,6 +132,8 @@ export default function QuotationPage() {
       }
     } catch (error) {
       console.error('Error generating PDF preview:', error);
+    } finally {
+      setIsPreviewing(false);
     }
   };
 
@@ -246,7 +254,8 @@ export default function QuotationPage() {
                     newFees.push({
                       id: maxId + 1,
                       description: '',
-                      amount: 0
+                      amount: 0,
+                      remarks: ''
                     });
                     setData({ ...data, otherFees: newFees });
                   }}
@@ -305,6 +314,7 @@ export default function QuotationPage() {
             <div className="flex gap-4 mt-8">
               <button
                 type="submit"
+                disabled={isGenerating}
                 className={`${buttonClassName}
                   bg-[#007AFF] hover:bg-[#0063CC] dark:bg-[#0A84FF] dark:hover:bg-[#0070E0]
                   text-white font-medium
@@ -312,31 +322,58 @@ export default function QuotationPage() {
                   hover:shadow-lg hover:shadow-[#007AFF]/25 dark:hover:shadow-[#0A84FF]/25
                   active:scale-[0.98] active:shadow-inner
                   transform transition-all duration-200 ease-out
-                  min-w-[180px] h-10`}
+                  min-w-[180px] h-10
+                  disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 <div className="flex items-center justify-center gap-2">
-                  <Download className="w-4 h-4" />
-                  <span>Generate {activeTab === 'quotation' ? 'Quotation' : 'Order'}</span>
+                  {isGenerating ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>Generating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      <span>Generate {activeTab === 'quotation' ? 'Quotation' : 'Order'}</span>
+                    </>
+                  )}
                 </div>
               </button>
 
               <button
                 type="button"
                 onClick={handlePreview}
+                disabled={isPreviewing}
                 className={`${buttonClassName}
-                  bg-white dark:bg-gray-800
-                  text-gray-700 dark:text-gray-300 font-medium
-                  border border-gray-200 dark:border-gray-700
-                  hover:bg-gray-50 dark:hover:bg-gray-700
-                  hover:border-gray-300 dark:hover:border-gray-600
-                  active:bg-gray-100 dark:active:bg-gray-600
+                  bg-[#007AFF]/[0.08] dark:bg-[#0A84FF]/[0.08]
+                  text-[#007AFF] dark:text-[#0A84FF] font-medium
+                  border border-[#007AFF]/20 dark:border-[#0A84FF]/20
+                  hover:bg-[#007AFF]/[0.12] dark:hover:bg-[#0A84FF]/[0.12]
+                  hover:border-[#007AFF]/30 dark:hover:border-[#0A84FF]/30
+                  active:bg-[#007AFF]/[0.16] dark:active:bg-[#0A84FF]/[0.16]
                   active:scale-[0.98]
                   transform transition-all duration-200 ease-out
-                  min-w-[120px] h-10`}
+                  min-w-[120px] h-10
+                  disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 <div className="flex items-center justify-center gap-2">
-                  <Eye className="w-4 h-4" />
-                  <span>Preview</span>
+                  {isPreviewing ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>Previewing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="w-4 h-4" />
+                      <span>Preview</span>
+                    </>
+                  )}
                 </div>
               </button>
             </div>

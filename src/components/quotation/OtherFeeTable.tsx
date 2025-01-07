@@ -98,16 +98,15 @@ export const OtherFeeTable: React.FC<OtherFeeTableProps> = ({ data, onChange }) 
   if (!data.otherFees?.length) return null;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-[#E5E5EA] dark:border-[#2C2C2E]
-      bg-white/90 dark:bg-[#1C1C1E]/90 backdrop-blur-xl -mt-[1px]">
+    <div className="overflow-hidden border-t-0 border border-[#E5E5EA] dark:border-[#2C2C2E]
+      bg-white/90 dark:bg-[#1C1C1E]/90 backdrop-blur-xl rounded-b-2xl">
       <table className="w-full">
         <tbody>
           {data.otherFees.map((fee, index) => (
             <tr key={fee.id}
-              className={`border-t border-[#E5E5EA] dark:border-[#2C2C2E]
-                ${index % 2 === 0 ? 'bg-white/50 dark:bg-[#1C1C1E]/50' : 'bg-[#F5F5F7]/50 dark:bg-[#2C2C2E]/50'}`}
+              className="border-t border-[#E5E5EA] dark:border-[#2C2C2E]"
             >
-              <td className="w-[40px] px-4 py-2">
+              <td className="w-[60px] px-4 py-2 text-center text-sm text-[#86868B] dark:text-gray-500">
                 <span
                   className="flex items-center justify-center w-6 h-6 rounded-full 
                     text-xs text-[#86868B] hover:bg-red-500/10 hover:text-red-500 
@@ -118,7 +117,7 @@ export const OtherFeeTable: React.FC<OtherFeeTableProps> = ({ data, onChange }) 
                   ×
                 </span>
               </td>
-              <td className="flex-1 px-4 py-2">
+              <td className="px-4 py-2" style={{ width: 'calc(280px + 180px + 100px + 100px + 120px)' }}>
                 <input
                   type="text"
                   value={fee.description}
@@ -178,7 +177,6 @@ export const OtherFeeTable: React.FC<OtherFeeTableProps> = ({ data, onChange }) 
                     data-fee-field="remarks"
                     onChange={(e) => handleFeeChange(index, 'remarks', e.target.value)}
                     onKeyDown={(e) => handleKeyDown(e, index, 'remarks')}
-                    placeholder="Enter remarks"
                     className="w-full px-3 py-1.5 bg-transparent border border-transparent
                       focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
                       hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
