@@ -184,10 +184,10 @@ export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolea
           index + 1,
           data.showHsCode ? item.hsCode : '',
           item.description,
-          item.quantity,
+          item.quantity || '',  // 如果为0则显示空字符串
           item.unit,
-          Number(item.unitPrice).toFixed(2),
-          Number(item.amount).toFixed(2)
+          item.unitPrice ? Number(item.unitPrice).toFixed(2) : '',  // 如果为0则显示空字符串
+          item.amount ? Number(item.amount).toFixed(2) : ''  // 如果为0则显示空字符串
         ].filter((_, i) => i === 0 || i === 2 || i === 3 || i === 4 || i === 5 || i === 6 || (data.showHsCode && i === 1))),
         // Other Fees 行
         ...(data.otherFees || []).map(fee => [
@@ -196,7 +196,7 @@ export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolea
             colSpan: data.showHsCode ? 6 : 5,
             styles: { halign: 'center' }
           } as unknown as string,
-          fee.amount.toFixed(2)
+          fee.amount ? fee.amount.toFixed(2) : ''  // 如果为0则显示空字符串
         ])
       ],
       theme: 'plain',
