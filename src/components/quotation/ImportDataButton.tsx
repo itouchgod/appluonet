@@ -1,5 +1,5 @@
 import React from 'react';
-import { Upload } from 'lucide-react';
+import { Upload, Camera } from 'lucide-react';
 import type { LineItem } from '@/types/quotation';
 
 interface ImportDataButtonProps {
@@ -38,27 +38,50 @@ export const ImportDataButton: React.FC<ImportDataButtonProps> = ({ onImport }) 
     }
   };
 
+  // 打开微信搜一搜
+  const openWeChatSearch = () => {
+    // 使用自定义协议打开微信
+    window.location.href = 'weixin://';
+  };
+
   return (
-    <button
-      type="button"
-      className="px-3 py-1.5 rounded-lg
-        bg-[#007AFF]/[0.08] dark:bg-[#0A84FF]/[0.08]
-        hover:bg-[#007AFF]/[0.12] dark:hover:bg-[#0A84FF]/[0.12]
-        text-[#007AFF] dark:text-[#0A84FF]
-        text-[13px] font-medium
-        flex items-center gap-2
-        transition-all duration-200"
-      onClick={() => {
-        navigator.clipboard.readText()
-          .then(handlePasteData)
-          .catch(err => {
-            console.error('Failed to read clipboard:', err);
-            alert('无法读取剪贴板，请确保已授予权限');
-          });
-      }}
-    >
-      <Upload className="w-4 h-4" />
-      从剪贴板导入
-    </button>
+    <div className="flex gap-2">
+      <button
+        type="button"
+        className="px-3 py-1.5 rounded-lg
+          bg-[#07C160]/[0.08] dark:bg-[#07C160]/[0.08]
+          hover:bg-[#07C160]/[0.12] dark:hover:bg-[#07C160]/[0.12]
+          text-[#07C160] dark:text-[#07C160]
+          text-[13px] font-medium
+          flex items-center gap-2
+          transition-all duration-200"
+        onClick={openWeChatSearch}
+      >
+        <Camera className="w-4 h-4" />
+        微信识别
+      </button>
+
+      <button
+        type="button"
+        className="px-3 py-1.5 rounded-lg
+          bg-[#007AFF]/[0.08] dark:bg-[#0A84FF]/[0.08]
+          hover:bg-[#007AFF]/[0.12] dark:hover:bg-[#0A84FF]/[0.12]
+          text-[#007AFF] dark:text-[#0A84FF]
+          text-[13px] font-medium
+          flex items-center gap-2
+          transition-all duration-200"
+        onClick={() => {
+          navigator.clipboard.readText()
+            .then(handlePasteData)
+            .catch(err => {
+              console.error('Failed to read clipboard:', err);
+              alert('无法读取剪贴板，请确保已授予权限');
+            });
+        }}
+      >
+        <Upload className="w-4 h-4" />
+        从剪贴板导入
+      </button>
+    </div>
   );
 }; 
