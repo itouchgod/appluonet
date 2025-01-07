@@ -124,4 +124,66 @@ export async function PUT(
       { status: 500 }
     );
   }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    // 验证管理员权限
+    const session = await getAuth();
+    if (!session?.user?.isAdmin) {
+      return NextResponse.json(
+        { error: '需要管理员权限' },
+        { status: 403 }
+      );
+    }
+
+    const id = params?.id;
+    if (!id) {
+      return NextResponse.json(
+        { error: '用户ID不能为空' },
+        { status: 400 }
+      );
+    }
+
+    // 检查是否是最后一个管理员
+    const targetUser = await prisma.user.findUnique({
+      where: { id },
+      select: { isAdmin: true },
+    });
+
+    if (targetUser?.isAdmin) {
+      const adminCount = await prisma.user.count({
+        where: { isAdmin: true },
+      });
+      if (adminCount <= 1) {
+        return NextResponse.json(
+          { error: '不能删除最后一个管理员账号' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // 删除用户相关数据
+    await prisma.$transaction([
+      // 删除用户的权限
+      prisma.permission.deleteMany({
+        where: { userId: id },
+      }),
+      // 删除用户
+      prisma.user.delete({
+        where: { id },
+      }),
+    ]);
+
+    return new NextResponse(null, { status: 204 });
+  } catch (error) {
+    console.error('删除用户时出错:', error);
+    return NextResponse.json(
+      { error: '删除用户失败' },
+      { status: 500 }
+    );
+  }
 } 

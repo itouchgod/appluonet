@@ -48,6 +48,8 @@ export default function UserDetailPage() {
   const [saving, setSaving] = useState(false);
   const [pendingPermissions, setPendingPermissions] = useState<Map<string, boolean>>(new Map());
   const [hasChanges, setHasChanges] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -124,6 +126,37 @@ export default function UserDetailPage() {
     }
   };
 
+  const handleDeleteUser = async () => {
+    if (!user) return;
+    
+    try {
+      setIsDeleting(true);
+      const response = await fetch(`/api/admin/users/${user.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        let errorMessage = '删除用户失败';
+        try {
+          const data = await response.json();
+          errorMessage = data.error || errorMessage;
+        } catch (e) {
+          errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
+
+      router.push('/admin');
+      alert('用户已成功删除');
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      alert(error instanceof Error ? error.message : '删除用户失败');
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -146,6 +179,32 @@ export default function UserDetailPage() {
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-black">
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-sm w-full mx-4">
+            <h3 className="text-lg font-medium mb-4">确认删除</h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">
+              确定要删除该用户吗？此操作不可恢复。
+            </p>
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                disabled={isDeleting}
+              >
+                取消
+              </button>
+              <button
+                onClick={handleDeleteUser}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:bg-red-400 disabled:cursor-not-allowed"
+              >
+                {isDeleting ? '删除中...' : '确认删除'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-8">
           <div className="flex items-center">
@@ -224,6 +283,16 @@ export default function UserDetailPage() {
                     <div className="mt-1 text-sm text-gray-900 dark:text-white">
                       {new Date(user.createdAt).toLocaleString()}
                     </div>
+                  </div>
+
+                  <div className="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button
+                      onClick={() => setShowDeleteConfirm(true)}
+                      disabled={isDeleting}
+                      className="w-full px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:bg-red-400 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {isDeleting ? '删除中...' : '删除用户'}
+                    </button>
                   </div>
                 </div>
               </div>

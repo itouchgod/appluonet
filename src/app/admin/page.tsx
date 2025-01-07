@@ -89,26 +89,6 @@ export default function AdminPage() {
     }
   };
 
-  const handleResetPassword = async (userId: string) => {
-    if (!confirm('确定要重置该用户的密码吗？')) return;
-
-    try {
-      const response = await fetch(`/api/admin/users/${userId}/reset-password`, {
-        method: 'POST',
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || '重置密码失败');
-      }
-
-      alert('密码重置成功，新密码已发送到管理员邮箱');
-    } catch (error) {
-      console.error('Error resetting password:', error);
-      alert(error instanceof Error ? error.message : '重置密码失败');
-    }
-  };
-
   const handleToggleAdmin = async (userId: string, currentIsAdmin: boolean) => {
     try {
       const response = await fetch(`/api/admin/users/${userId}`, {
@@ -236,12 +216,6 @@ export default function AdminPage() {
                           className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                         >
                           编辑
-                        </button>
-                        <button
-                          onClick={() => handleResetPassword(user.id)}
-                          className="hidden md:inline-block text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300"
-                        >
-                          重置密码
                         </button>
                       </td>
                     </tr>
