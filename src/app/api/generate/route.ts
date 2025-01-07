@@ -1,15 +1,8 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
 import { generateMail } from '@/lib/deepseek';
 
 export async function POST(req: Request) {
   try {
-    // 验证用户是否登录
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: '未登录' }, { status: 401 });
-    }
-
     // 获取请求数据
     const data = await req.json();
     const { language, type, content, originalMail, mode } = data;

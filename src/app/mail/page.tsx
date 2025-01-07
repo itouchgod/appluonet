@@ -48,7 +48,6 @@ export default function MailPage() {
             errorMessage = errorData.error;
           }
         } catch (e) {
-          // 如果解析 JSON 失败，使用默认错误信息
           console.error('Error parsing error response:', e);
         }
         throw new Error(errorMessage);
@@ -57,9 +56,9 @@ export default function MailPage() {
       const data = await response.json();
       setGeneratedContent(data.result);
 
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error('Generate Error:', error);
-      setError(error instanceof Error ? error.message : '生成失败，请稍后重试');
+      setError(error?.message || '生成失败，请稍后重试');
     } finally {
       setIsLoading(false);
     }

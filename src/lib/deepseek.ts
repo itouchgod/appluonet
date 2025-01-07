@@ -4,7 +4,7 @@ if (!process.env.DEEPSEEK_API_KEY) {
   throw new Error('Missing DEEPSEEK_API_KEY environment variable');
 }
 
-// 创建 OpenAI 客户端实例
+// 创建 DeepSeek API 客户端
 const deepseek = new OpenAI({
   baseURL: 'https://api.deepseek.com',
   apiKey: process.env.DEEPSEEK_API_KEY,
@@ -27,6 +27,8 @@ export async function generateMail({
   mode
 }: GenerateMailOptions): Promise<string> {
   try {
+    console.log('Generating mail with params:', { content, language, type, mode });
+    
     // 构建系统提示词
     const systemPrompt = mode === 'mail' 
       ? `You are a professional business email assistant. Help users write business emails in ${language}. 
@@ -34,10 +36,14 @@ export async function generateMail({
       : `You are a professional business email assistant. Help users reply to business emails in ${language}. 
          The tone should be ${type}. Ensure the reply is contextually appropriate and professional.`;
 
+    console.log('System prompt:', systemPrompt);
+
     // 构建用户提示词
     const userPrompt = mode === 'mail'
       ? `Please help me write a business email with the following content: ${content}`
       : `Please help me reply to this email:\n\nOriginal email:\n${originalMail}\n\nMy reply draft:\n${content}`;
+
+    console.log('User prompt:', userPrompt);
 
     const completion = await deepseek.chat.completions.create({
       model: "deepseek-chat",
@@ -48,6 +54,8 @@ export async function generateMail({
       temperature: 0.7,
       max_tokens: 2000
     });
+
+    console.log('API response:', completion);
 
     if (!completion.choices?.[0]?.message?.content) {
       throw new Error('API 返回数据格式错误');
