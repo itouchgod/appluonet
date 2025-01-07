@@ -130,21 +130,22 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-black">
+    <div className="min-h-screen bg-gray-50 dark:bg-black">
       <AdminHeader 
         username={session.user.name || 'Admin'}
         onLogout={handleLogout}
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white dark:bg-[#1c1c1e] shadow rounded-lg">
+        <div className="bg-white dark:bg-[#1c1c1e] shadow-sm rounded-lg border border-gray-200 dark:border-gray-800">
           <div className="px-4 py-5 sm:p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-medium text-gray-900 dark:text-white">用户管理</h2>
               <button
                 onClick={() => setShowCreateModal(true)}
                 className="flex items-center px-3 py-2 text-sm font-medium text-white 
-                         bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                         bg-blue-600 dark:bg-blue-500 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 
+                         transition-colors"
               >
                 <UserPlus className="w-4 h-4 mr-2" />
                 添加用户
@@ -176,7 +177,7 @@ export default function AdminPage() {
                 </thead>
                 <tbody className="bg-white dark:bg-[#1c1c1e] divide-y divide-gray-200 dark:divide-gray-800">
                   {users.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-[#2c2c2e]">
+                    <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-[#2c2c2e] transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                         {user.username}
                       </td>

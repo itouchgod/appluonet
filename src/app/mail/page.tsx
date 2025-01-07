@@ -75,7 +75,7 @@ export default function MailPage() {
   };
 
   return (
-    <div className="flex flex-1 flex-col bg-[var(--background)]">
+    <div className="flex flex-1 flex-col bg-gray-50 dark:bg-[#000000]">
       <div className="w-full max-w-6xl mx-auto px-6 py-10 flex-grow">
         <div className="flex items-center mb-8">
           <button
@@ -107,8 +107,8 @@ export default function MailPage() {
                 onClick={() => setActiveTab('mail')}
                 className={`px-8 py-2.5 rounded-full text-sm font-medium transition-all ${
                   activeTab === 'mail' 
-                    ? 'bg-[var(--blue-accent)] text-white' 
-                    : 'text-[var(--foreground)] hover:bg-black/5 dark:hover:bg-white/5'
+                    ? 'bg-blue-600 dark:bg-blue-500 text-white' 
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/50'
                 }`}
               >
                 Mail
@@ -117,28 +117,28 @@ export default function MailPage() {
                 onClick={() => setActiveTab('reply')}
                 className={`px-8 py-2.5 rounded-full text-sm font-medium transition-all ${
                   activeTab === 'reply' 
-                    ? 'bg-[var(--blue-accent)] text-white' 
-                    : 'text-[var(--foreground)] hover:bg-black/5 dark:hover:bg-white/5'
+                    ? 'bg-blue-600 dark:bg-blue-500 text-white' 
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/50'
                 }`}
               >
                 Reply
               </button>
             </div>
 
-            <div className="bg-[var(--card-bg)] shadow-sm border border-[var(--card-border)] rounded-xl p-6">
+            <div className="bg-white dark:bg-[#1c1c1e] shadow-sm border border-gray-200 dark:border-gray-800/80 rounded-xl p-6">
               {activeTab === 'mail' ? (
                 <div className="space-y-6">
                   {/* 邮件内容输入框 */}
                   <div className="space-y-2">
                     <label className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                      <span className="text-red-500 mr-1">*</span>
+                      <span className="text-red-500 dark:text-red-400 mr-1">*</span>
                       Write your email content
                     </label>
                     <textarea 
                       value={userInput.mail}
                       onChange={(e) => setUserInput({ ...userInput, mail: e.target.value })}
                       placeholder="请在这里输入邮件内容... / Type your email content here..."
-                      className="w-full h-[200px] md:h-[300px] p-4 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200/50 dark:border-gray-800/50 focus:ring-1 focus:ring-[var(--blue-accent)] focus:outline-none transition-all resize-y text-sm font-['.SFNSText-Regular', 'SF Pro Text', 'SF Pro Icons', 'Helvetica Neue', 'Arial', sans-serif] placeholder:text-gray-400/80"
+                      className="w-full h-[200px] md:h-[300px] p-4 rounded-xl bg-gray-50/50 dark:bg-[#2c2c2e] border border-gray-200/50 dark:border-gray-700/50 focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 focus:outline-none transition-all resize-y text-sm text-gray-900 dark:text-gray-100 font-['.SFNSText-Regular', 'SF Pro Text', 'SF Pro Icons', 'Helvetica Neue', 'Arial', sans-serif] placeholder:text-gray-400/80 dark:placeholder:text-gray-500/80"
                     />
                   </div>
 
@@ -152,7 +152,7 @@ export default function MailPage() {
                         id="language-select"
                         value={userInput.language}
                         onChange={(e) => setUserInput({ ...userInput, language: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200/50 dark:border-gray-800/50 focus:ring-1 focus:ring-[var(--blue-accent)] focus:outline-none transition-all text-sm font-medium appearance-none"
+                        className="w-full px-4 py-2.5 rounded-xl bg-gray-50/50 dark:bg-[#2c2c2e] border border-gray-200/50 dark:border-gray-700/50 focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 focus:outline-none transition-all text-sm font-medium text-gray-900 dark:text-gray-100 appearance-none"
                       >
                         <option value="both English and Chinese">Both EN & CN</option>
                         <option value="English">English</option>
@@ -171,7 +171,7 @@ export default function MailPage() {
                         id="style-select"
                         value={mailType}
                         onChange={(e) => setMailType(e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200/50 dark:border-gray-800/50 focus:ring-1 focus:ring-[var(--blue-accent)] focus:outline-none transition-all text-sm font-medium appearance-none"
+                        className="w-full px-4 py-2.5 rounded-xl bg-gray-50/50 dark:bg-[#2c2c2e] border border-gray-200/50 dark:border-gray-700/50 focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 focus:outline-none transition-all text-sm font-medium text-gray-900 dark:text-gray-100 appearance-none"
                       >
                         <option value="formal">📝 Formal</option>
                         <option value="professional">💼 Professional</option>
@@ -188,7 +188,7 @@ export default function MailPage() {
                   <button 
                     onClick={handleGenerate}
                     disabled={isLoading || !userInput.mail?.trim()}
-                    className="w-full py-3 rounded-xl bg-[var(--blue-accent)] text-white text-sm font-medium hover:opacity-90 transition-all disabled:opacity-50 shadow-sm"
+                    className="w-full py-3 rounded-xl bg-blue-600 dark:bg-blue-500 text-white text-sm font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-all disabled:opacity-50 disabled:hover:bg-blue-600 dark:disabled:hover:bg-blue-500 shadow-sm"
                   >
                     {isLoading ? (
                       <span className="flex items-center justify-center space-x-2">
@@ -208,19 +208,19 @@ export default function MailPage() {
                   <textarea 
                     value={userInput.replyTo}
                     onChange={(e) => setUserInput({ ...userInput, replyTo: e.target.value })}
-                    className="w-full h-[200px] p-3 rounded-lg bg-[var(--background)] border border-[var(--card-border)] focus:ring-1 focus:ring-[var(--blue-accent)] focus:outline-none transition-all resize-y text-sm placeholder:text-gray-400 font-['.SFNSText-Regular', 'SF Pro Text', 'SF Pro Icons', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif]"
+                    className="w-full h-[200px] p-4 rounded-xl bg-gray-50/50 dark:bg-[#2c2c2e] border border-gray-200/50 dark:border-gray-700/50 focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 focus:outline-none transition-all resize-y text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400/80 dark:placeholder:text-gray-500/80 font-['.SFNSText-Regular', 'SF Pro Text', 'SF Pro Icons', 'Helvetica Neue', 'Arial', sans-serif]"
                     placeholder="请粘贴需要回复的邮件内容... / Paste the email content you need to reply to..."
                   />
                   <textarea 
                     value={userInput.reply}
                     onChange={(e) => setUserInput({ ...userInput, reply: e.target.value })}
-                    className="w-full h-[200px] p-3 rounded-lg bg-[var(--background)] border border-[var(--card-border)] focus:ring-1 focus:ring-[var(--blue-accent)] focus:outline-none transition-all resize-y text-sm placeholder:text-gray-400 font-['.SFNSText-Regular', 'SF Pro Text', 'SF Pro Icons', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif]"
+                    className="w-full h-[200px] p-4 rounded-xl bg-gray-50/50 dark:bg-[#2c2c2e] border border-gray-200/50 dark:border-gray-700/50 focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 focus:outline-none transition-all resize-y text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400/80 dark:placeholder:text-gray-500/80 font-['.SFNSText-Regular', 'SF Pro Text', 'SF Pro Icons', 'Helvetica Neue', 'Arial', sans-serif]"
                     placeholder="请输入您的回复草稿... / Enter your reply draft..."
                   />
                   <button 
                     onClick={handleGenerate}
                     disabled={isLoading || !userInput.replyTo.trim() || !userInput.reply.trim()}
-                    className="w-full py-2.5 rounded-lg bg-[var(--blue-accent)] text-white text-sm font-medium hover:opacity-90 transition-all disabled:opacity-50 shadow-sm"
+                    className="w-full py-3 rounded-xl bg-blue-600 dark:bg-blue-500 text-white text-sm font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-all disabled:opacity-50 disabled:hover:bg-blue-600 dark:disabled:hover:bg-blue-500 shadow-sm"
                   >
                     {isLoading ? 'Generating...' : 'Generate Optimized Reply'}
                   </button>
@@ -230,8 +230,12 @@ export default function MailPage() {
           </div>
 
           {/* 右侧预览区 */}
-          <div className="w-full md:w-1/2 order-2 md:order-1">
-            <div className="bg-[var(--card-bg)] shadow-sm border border-[var(--card-border)] rounded-xl p-6 min-h-[200px] max-h-[80vh] overflow-y-auto preview-box">
+          <div className="w-full md:w-1/2 order-2">
+            <div className={`bg-white dark:bg-[#1c1c1e] shadow-sm border border-gray-200 dark:border-gray-800/80 rounded-xl p-6 ${
+              generatedContent 
+                ? 'md:min-h-[710px] h-auto' 
+                : 'md:h-[710px] min-h-[200px]'
+            } overflow-y-auto`}>
               <div className="flex justify-end mb-4">
                 <button
                   aria-label="Copy content"
@@ -313,7 +317,7 @@ export default function MailPage() {
           </div>
         </div>
         {error && (
-          <div className="mt-4 p-3 bg-red-50 text-red-500 rounded-lg text-sm">
+          <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 rounded-lg text-sm">
             {error}
           </div>
         )}
