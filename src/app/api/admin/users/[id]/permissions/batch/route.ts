@@ -11,15 +11,9 @@ interface Permission {
   canAccess: boolean;
 }
 
-type RouteContext = {
-  params: {
-    id: string;
-  };
-};
-
 export async function PUT(
   request: NextRequest,
-  { params }: RouteContext
+  { params }: { params: { id: string } }
 ) {
   try {
     // 验证管理员权限
