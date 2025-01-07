@@ -1,6 +1,5 @@
 import type { QuotationData } from '@/types/quotation';
 import { useState } from 'react';
-import { getDefaultNotes } from '@/utils/getDefaultNotes';
 
 interface SettingsPanelProps {
   data: QuotationData;
