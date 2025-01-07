@@ -90,6 +90,21 @@ export const config = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
     updateAge: 24 * 60 * 60, // 24 hours - 减少更新频率
   },
+  jwt: {
+    maxAge: 30 * 24 * 60 * 60, // 30 days - 与 session maxAge 保持一致
+  },
+  cookies: {
+    sessionToken: {
+      name: `__Secure-next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: true,
+        maxAge: 30 * 24 * 60 * 60 // 30 days
+      }
+    }
+  },
   pages: {
     signIn: "/",
     signOut: "/",
