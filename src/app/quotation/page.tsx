@@ -27,6 +27,7 @@ export default function QuotationPage() {
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPreviewing, setIsPreviewing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [data, setData] = useState<QuotationData>({
     to: '',
     inquiryNo: '',
@@ -97,19 +98,23 @@ export default function QuotationPage() {
     }
   };
 
-  const handlePreview = async (e: React.MouseEvent) => {
-    e.preventDefault();
+  const handlePreview = async () => {
+    setIsLoading(true);
     try {
-      setIsPreviewing(true);
       if (activeTab === 'quotation') {
-        await generateQuotationPDF(data, true);
+        const pdfBlob = await generateQuotationPDF(data, true);
+        const url = URL.createObjectURL(pdfBlob);
+        setPdfPreviewUrl(url);
       } else {
-        await generateOrderConfirmationPDF(data, true);
+        const pdfBlob = await generateOrderConfirmationPDF(data, true);
+        const url = URL.createObjectURL(pdfBlob);
+        setPdfPreviewUrl(url);
       }
     } catch (error) {
-      console.error('Error generating PDF preview:', error);
+      console.error('PDF generation failed:', error);
+      // 可以添加错误提示
     } finally {
-      setIsPreviewing(false);
+      setIsLoading(false);
     }
   };
 
@@ -406,7 +411,7 @@ export default function QuotationPage() {
                 <button
                   type="button"
                   onClick={handlePreview}
-                  disabled={isPreviewing}
+                  disabled={isLoading}
                   className={`${buttonClassName}
                     bg-[#007AFF]/[0.08] dark:bg-[#0A84FF]/[0.08]
                     text-[#007AFF] dark:text-[#0A84FF] font-medium
@@ -420,7 +425,7 @@ export default function QuotationPage() {
                     disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   <div className="flex items-center justify-center gap-2">
-                    {isPreviewing ? (
+                    {isLoading ? (
                       <>
                         <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

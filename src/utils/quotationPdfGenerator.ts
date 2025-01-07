@@ -20,7 +20,7 @@ const currencySymbols: { [key: string]: string } = {
 };
 
 // 生成报价单PDF
-export const generateQuotationPDF = async (data: QuotationData, isPreview: boolean = false) => {
+export const generateQuotationPDF = async (data: QuotationData, preview = false): Promise<Blob> => {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -268,15 +268,14 @@ export const generateQuotationPDF = async (data: QuotationData, isPreview: boole
       });
     }
 
-    // 根据模式选择保存或返回预览URL
-    if (isPreview) {
-      const pdfBlob = doc.output('blob');
-      const pdfUrl = URL.createObjectURL(pdfBlob);
-      // 触发自定义事件，通知前端更新预览URL
-      window.dispatchEvent(new CustomEvent('pdf-preview', { detail: pdfUrl }));
-    } else {
-      doc.save(`Quotation-${data.quotationNo}-${data.date}.pdf`);
+    // 如果是预览模式，返回 blob
+    if (preview) {
+      return doc.output('blob');
     }
+    
+    // 如果不是预览模式，下载文件
+    doc.save(`Quotation-${data.quotationNo}.pdf`);
+    return new Blob(); // 返回空 Blob 以满足类型要求
   } catch (error) {
     console.error('Error generating PDF:', error);
     throw error;

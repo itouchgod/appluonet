@@ -23,7 +23,7 @@ const currencySymbols: { [key: string]: string } = {
   CNY: '¥'
 };
 
-export const generateOrderConfirmationPDF = async (data: QuotationData, isPreview: boolean = false) => {
+export const generateOrderConfirmationPDF = async (data: QuotationData, preview = false): Promise<Blob> => {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -326,14 +326,12 @@ export const generateOrderConfirmationPDF = async (data: QuotationData, isPrevie
     }
 
     // 根据模式选择保存或返回预览URL
-    if (isPreview) {
-      const pdfBlob = doc.output('blob');
-      const pdfUrl = URL.createObjectURL(pdfBlob);
-      // 触发自定义事件，通知前端更新预览URL
-      window.dispatchEvent(new CustomEvent('pdf-preview', { detail: pdfUrl }));
-    } else {
-      doc.save(`Sales Confirmation ${data.contractNo}-${data.date}.pdf`);
+    if (preview) {
+      return doc.output('blob');
     }
+    
+    doc.save(`Order-${data.quotationNo}.pdf`);
+    return new Blob();
   } catch (error) {
     console.error('Error generating PDF:', error);
     throw error;
