@@ -1,3 +1,4 @@
+import type { NextApiRequest } from 'next';
 import { NextResponse } from 'next/server';
 import { getAuth } from '@/auth';
 import { prisma } from '@/lib/prisma';
@@ -12,8 +13,8 @@ interface Permission {
 }
 
 export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextApiRequest,
+  context: { params: { id: string } }
 ) {
   try {
     // 验证管理员权限
@@ -25,7 +26,7 @@ export async function PUT(
       );
     }
 
-    const { id } = params;
+    const { id } = context.params;
     if (!id) {
       return NextResponse.json({ error: "用户ID不能为空" }, { status: 400 });
     }
