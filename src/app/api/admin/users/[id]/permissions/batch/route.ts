@@ -1,70 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-
-interface Permission {
-  moduleId: string;
-  canAccess: boolean;
-}
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 export async function PUT(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
-    // 验证管理员权限
-    const session = await getAuth();
-    if (!session?.user?.isAdmin) {
-      return NextResponse.json(
-        { error: '需要管理员权限' },
-        { status: 403 }
-      );
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: '未授权访问' }, { status: 401 });
     }
 
-    const { params } = context;
-    const { id } = params;
-    if (!id) {
-      return NextResponse.json({ error: "用户ID不能为空" }, { status: 400 });
-    }
-
+    const userId = params.id;
     const { permissions } = await request.json();
-    if (!Array.isArray(permissions)) {
-      return NextResponse.json({ error: "权限数据格式错误" }, { status: 400 });
-    }
 
-    await prisma.$transaction(async (tx) => {
-      // 删除现有权限
-      await tx.permission.deleteMany({
-        where: { userId: id }
-      });
-
-      // 添加新权限
-      await tx.permission.createMany({
-        data: permissions.map((permission: Permission) => ({
-          userId: id,
-          moduleId: permission.moduleId,
-          canAccess: permission.canAccess
-        }))
-      });
+    // 更新用户权限
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        permissions: {
+          set: permissions,
+        },
+      },
     });
 
-    // 返回更新后的用户信息
-    const updatedUser = await prisma.user.findUnique({
-      where: { id },
-      include: {
-        permissions: true
-      }
-    });
-
-    return NextResponse.json(updatedUser);
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('更新权限失败:', error);
+    console.error('批量更新权限错误:', error);
     return NextResponse.json(
-      { error: '更新权限失败' }, 
+      { error: '更新权限失败' },
       { status: 500 }
     );
   }
