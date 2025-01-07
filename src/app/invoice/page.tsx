@@ -856,7 +856,7 @@ Beneficiary: Luo & Company Co., Limited`,
                                 const unit = item.quantity <= 1 ? baseUnit : `${baseUnit}s`;
                                 updateLineItem(index, 'unit', unit);
                               }}
-                              className={`${tableInputClassName} pr-8`}
+                              className={`${tableInputClassName} appearance-none`}
                             >
                               <option value="pc">pc{item.quantity > 1 ? 's' : ''}</option>
                               <option value="set">set{item.quantity > 1 ? 's' : ''}</option>
