@@ -187,7 +187,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
     <div className="space-y-0">
       <ImportDataButton onImport={handleImport} />
 
-      <div className={`overflow-hidden border border-[#E5E5EA] dark:border-[#2C2C2E]
+      <div className={`overflow-x-auto overflow-hidden border border-[#E5E5EA] dark:border-[#2C2C2E]
         bg-white/90 dark:bg-[#1C1C1E]/90 backdrop-blur-xl
         ${(data.otherFees ?? []).length > 0 ? 'rounded-t-2xl' : 'rounded-2xl'}`}>
         <table className="w-full border-collapse border-spacing-0">
@@ -195,7 +195,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
             <tr className="bg-[#F5F5F7] dark:bg-[#2C2C2E]
               border-b border-[#E5E5EA] dark:border-[#3C3C3E]">
               <th className="sticky left-0 z-10 w-[50px] px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7] bg-[#F5F5F7] dark:bg-[#2C2C2E]">No.</th>
-              <th className="sticky left-[50px] z-10 min-w-[180px] max-w-[300px] w-fit px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7] bg-[#F5F5F7] dark:bg-[#2C2C2E] whitespace-nowrap">Part Name</th>
+              <th className="left-[50px] z-10 min-w-[180px] max-w-[300px] w-fit px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7] bg-[#F5F5F7] dark:bg-[#2C2C2E] whitespace-nowrap">Part Name</th>
               {data.showDescription && (
                 <th className="min-w-[180px] w-fit px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Description</th>
               )}
@@ -387,7 +387,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
       </div>
 
       {(data.otherFees ?? []).length > 0 && (
-        <div className="overflow-hidden rounded-b-2xl border border-t-0 border-[#E5E5EA] dark:border-[#2C2C2E]
+        <div className="overflow-x-auto overflow-hidden rounded-b-2xl border border-t-0 border-[#E5E5EA] dark:border-[#2C2C2E]
           bg-white/90 dark:bg-[#1C1C1E]/90 backdrop-blur-xl">
           <table className="w-full">
             <tbody>
