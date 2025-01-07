@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
-import { cookies } from 'next/headers';
+import type { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { cache } from 'react';
 
@@ -21,7 +21,7 @@ const getUserInfo = cache(async (userId: string) => {
   });
 });
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
     if (!token?.sub) {

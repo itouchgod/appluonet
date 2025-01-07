@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
-import { prisma } from '@/lib/prisma';
+import type { NextRequest } from 'next/server';
+import prisma from '@/lib/prisma';
 
 export async function GET(
-  req: Request,
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -49,7 +50,7 @@ export async function GET(
 }
 
 export async function PUT(
-  req: Request,
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -126,7 +127,7 @@ export async function PUT(
 }
 
 export async function DELETE(
-  req: Request,
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
