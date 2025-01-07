@@ -1,5 +1,4 @@
-import { type NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 
@@ -12,13 +11,9 @@ interface Permission {
   canAccess: boolean;
 }
 
-type RouteParams = {
-  id: string;
-};
-
 export async function PUT(
-  request: Request | NextRequest,
-  { params }: { params: RouteParams }
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
     // 验证管理员权限
