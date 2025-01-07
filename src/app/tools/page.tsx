@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Header } from '@/components/Header';
 import { ProfileModal } from '@/components/profile/ProfileModal';
 import { Mail, FileText, Receipt, Star } from 'lucide-react';
+import dynamic from 'next/dynamic';
 
 interface Permission {
   id: string;
@@ -66,15 +67,29 @@ const MODULES = [
   { id: 'feature9', name: '功能9', description: '待开发功能', path: '/tools/feature9' },
 ];
 
+// 使用dynamic导入避免hydration问题
+const DynamicHeader = dynamic(() => import('@/components/Header').then(mod => mod.Header), {
+  ssr: false
+});
+
 export default function ToolsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (status === 'loading') return;
+    setMounted(true);
+  }, []);
+
+  const handleLogout = async () => {
+    await signOut({ redirect: true, callbackUrl: '/' });
+  };
+
+  useEffect(() => {
+    if (!mounted || status === 'loading') return;
 
     if (!session) {
       router.push('/');
@@ -98,11 +113,12 @@ export default function ToolsPage() {
     };
 
     fetchUser();
-  }, [session, status, router]);
+  }, [mounted, session, status, router]);
 
-  const handleLogout = async () => {
-    await signOut({ redirect: true, callbackUrl: '/' });
-  };
+  // 避免闪烁，在客户端渲染前返回空内容
+  if (!mounted) {
+    return null;
+  }
 
   if (status === 'loading' || loading) {
     return (
@@ -126,7 +142,7 @@ export default function ToolsPage() {
     <div className="min-h-screen bg-gray-100 dark:bg-black">
       {user && (
         <>
-          <Header 
+          <DynamicHeader 
             user={{
               name: user.username,
               isAdmin: user.isAdmin
@@ -156,18 +172,19 @@ export default function ToolsPage() {
                 className="group relative bg-white dark:bg-[#1c1c1e] shadow-sm hover:shadow-xl 
                          rounded-xl overflow-hidden transition-all duration-300 ease-in-out
                          hover:-translate-y-1 cursor-pointer
-                         border border-gray-200/30 dark:border-gray-800/30"
+                         border border-gray-200/30 dark:border-gray-800/30
+                         dark:hover:border-gray-700/50"
                 onClick={() => router.push(module.path)}
               >
                 <div 
-                  className={`absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-10 transition-opacity duration-300 ease-in-out ${module.color || 'from-gray-500 to-gray-600'}`}
+                  className={`absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-10 dark:group-hover:opacity-20 transition-opacity duration-300 ease-in-out ${module.color || 'from-gray-500 to-gray-600'}`}
                 ></div>
                 <div className="p-6">
                   <div className="flex items-center space-x-4 mb-4">
                     <div className={`p-3 rounded-lg bg-gradient-to-br ${module.color || 'from-gray-500 to-gray-600'}`}>
                       <Icon className="w-6 h-6 text-white" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                       {module.name}
                     </h3>
                   </div>

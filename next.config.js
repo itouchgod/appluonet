@@ -1,65 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    serverActions: {
-      allowedOrigins: ['localhost:3000', 'luocompany.net']
-    }
-  },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  async headers() {
-    return [
-      {
-        source: '/api/:path*',
-        headers: [
-          { key: 'Access-Control-Allow-Credentials', value: 'true' },
-          { key: 'Access-Control-Allow-Origin', value: '*' },
-          { key: 'Access-Control-Allow-Methods', value: 'GET,DELETE,PATCH,POST,PUT' },
-          { key: 'Access-Control-Allow-Headers', value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version' },
-        ],
-      },
-      {
-        source: '/manifest.ts',
-        headers: [
-          { key: 'Access-Control-Allow-Origin', value: '*' },
-          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
-        ],
-      },
-      {
-        source: '/:icon(favicon.ico|icon.png|icon-512x512.png|apple-icon.png)',
-        headers: [
-          { key: 'Access-Control-Allow-Origin', value: '*' },
-          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
-          { key: 'Content-Type', value: 'image/png' },
-        ],
-      },
-    ];
-  },
-  webpack: (config) => {
-    config.module.rules.push({
-      test: /\.(ttf|woff|woff2|eot)$/,
-      use: {
-        loader: 'file-loader',
-        options: {
-          name: '[name].[ext]',
-          outputPath: 'static/fonts/',
-          publicPath: '/_next/static/fonts/'
-        }
-      }
-    });
-    return config;
-  },
-  images: {
-    domains: ['luocompany.net'],
-    unoptimized: true,
-    dangerouslyAllowSVG: true,
-    contentDispositionType: 'attachment',
-    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
-  },
+  experimental: {}
 }
 
-module.exports = nextConfig; 
+module.exports = nextConfig 
