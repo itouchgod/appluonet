@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { CreateUserModal } from '@/components/admin/CreateUserModal';
 import { UserPlus } from 'lucide-react';
+import { Footer } from '@/components/Footer'; 
 
 interface User {
   id: string;
@@ -130,7 +131,8 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-black">
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-black">
+    <div className="flex-1">
       <AdminHeader 
         username={session.user.name || 'Admin'}
         onLogout={handleLogout}
@@ -233,6 +235,8 @@ export default function AdminPage() {
         onClose={() => setShowCreateModal(false)}
         onSuccess={fetchUsers}
       />
+    </div>
+    <Footer />
     </div>
   );
 }

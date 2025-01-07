@@ -3,10 +3,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { ChevronDown, LogOut, Settings, User, Moon, Sun } from 'lucide-react';
+import { ChevronDown, LogOut, Settings, User } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { Avatar } from './Avatar';
-import { useTheme } from 'next-themes';
 
 interface HeaderProps {
   user: {
@@ -21,12 +20,6 @@ export function Header({ user, onLogout, onProfile }: HeaderProps) {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-  const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -60,20 +53,6 @@ export function Header({ user, onLogout, onProfile }: HeaderProps) {
         </div>
 
         <div className="flex items-center space-x-4">
-          {mounted && (
-            <button
-              onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-              className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300
-                       hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-              aria-label="切换主题模式"
-            >
-              {resolvedTheme === 'dark' ? (
-                <Sun className="h-5 w-5" />
-              ) : (
-                <Moon className="h-5 w-5" />
-              )}
-            </button>
-          )}
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setShowDropdown(!showDropdown)}

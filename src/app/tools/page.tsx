@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ProfileModal } from '@/components/profile/ProfileModal';
 import { Mail, FileText, Receipt, Star } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import { Footer } from '@/components/Footer';
 
 interface Permission {
   id: string;
@@ -138,7 +139,8 @@ export default function ToolsPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-black">
+    <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-black">
+    <div className="flex-1">
       {user && (
         <>
           <DynamicHeader 
@@ -208,6 +210,8 @@ export default function ToolsPage() {
           })}
         </div>
       </div>
+      </div>
+      <Footer />
     </div>
   );
-} 
+}

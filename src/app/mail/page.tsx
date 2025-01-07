@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Copy } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { Footer } from '@/components/Footer';
 
 export default function MailPage() {
   const router = useRouter();
@@ -75,7 +76,8 @@ export default function MailPage() {
   };
 
   return (
-    <div className="flex flex-1 flex-col bg-gray-50 dark:bg-[#000000]">
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-black">
+    <div className="flex-1">
       <div className="w-full max-w-6xl mx-auto px-6 py-10 flex-grow">
         <div className="flex items-center mb-8">
           <button
@@ -334,6 +336,8 @@ export default function MailPage() {
           }
         }
       `}</style>
+    </div>
+    <Footer />
     </div>
   );
 }

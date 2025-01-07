@@ -13,6 +13,7 @@ import { NotesSection } from '@/components/quotation/NotesSection';
 import { SettingsPanel } from '@/components/quotation/SettingsPanel';
 import { ImportDataButton } from '@/components/quotation/ImportDataButton';
 import type { QuotationData } from '@/types/quotation';
+import { Footer } from '@/components/Footer';
 
 // 标题样式
 const titleClassName = `text-xl font-semibold text-gray-800 dark:text-gray-200`;
@@ -26,7 +27,6 @@ export default function QuotationPage() {
   const [showSettings, setShowSettings] = useState(false);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isPreviewing, setIsPreviewing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [data, setData] = useState<QuotationData>({
     to: '',
@@ -120,6 +120,7 @@ export default function QuotationPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+         <div className="flex-1">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
         {/* 返回按钮 */}
         <Link href="/tools" className="inline-flex items-center text-gray-600 hover:text-gray-900">
@@ -474,6 +475,8 @@ export default function QuotationPage() {
           </div>
         </div>
       )}
+    </div>
+    <Footer />
     </div>
   );
 }
