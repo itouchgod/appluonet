@@ -1,4 +1,4 @@
-import type { NextApiRequest } from 'next';
+import { type NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getAuth } from '@/auth';
 import { prisma } from '@/lib/prisma';
@@ -13,7 +13,7 @@ interface Permission {
 }
 
 export async function PUT(
-  request: NextApiRequest,
+  request: Request | NextRequest,
   context: { params: { id: string } }
 ) {
   try {
