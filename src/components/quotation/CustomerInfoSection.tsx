@@ -30,16 +30,25 @@ export function CustomerInfoSection({ data, onChange, type }: CustomerInfoSectio
             value={data.quotationNo}
             onChange={e => onChange({ ...data, quotationNo: e.target.value })}
             placeholder={type === 'quotation' ? "Quotation No. *" : "Quotation No."}
-            className={`${inputClassName} ${
-              type === 'quotation' 
-                ? `border-[#007AFF]/20 dark:border-[#0A84FF]/20
-                   focus:border-[#007AFF]/30 dark:focus:border-[#0A84FF]/30
+            className={`w-full px-4 py-2.5 rounded-xl backdrop-blur-lg
+              ${type === 'quotation' 
+                ? `bg-[#007AFF]/[0.03] dark:bg-[#0A84FF]/[0.03]
+                   border border-[#007AFF]/20 dark:border-[#0A84FF]/20
                    focus:ring-[#007AFF]/20 dark:focus:ring-[#0A84FF]/20
-                   bg-[#007AFF]/[0.03] dark:bg-[#0A84FF]/[0.03]
+                   hover:border-[#007AFF]/30 dark:hover:border-[#0A84FF]/30
+                   text-[#007AFF] dark:text-[#0A84FF]
                    placeholder:text-[#007AFF]/60 dark:placeholder:text-[#0A84FF]/60
                    font-medium`
-                : ''
-            }`}
+                : `bg-white/90 dark:bg-[#1c1c1e]/90
+                   border border-gray-200/30 dark:border-[#2c2c2e]/50
+                   focus:ring-[#007AFF]/40 dark:focus:ring-[#0A84FF]/40
+                   hover:border-[#007AFF]/30 dark:hover:border-[#0A84FF]/30
+                   text-gray-800 dark:text-gray-200
+                   placeholder:text-gray-400/60 dark:placeholder:text-gray-500/40`
+              }
+              focus:outline-none focus:ring-2 
+              text-[15px] leading-relaxed
+              transition-all duration-300`}
             required={type === 'quotation'}
           />
         </div>
@@ -75,7 +84,6 @@ export function CustomerInfoSection({ data, onChange, type }: CustomerInfoSectio
         {type === 'confirmation' && (
           <div className="flex-1">
             <label className="flex items-center gap-2 text-sm font-medium mb-1.5">
-              <span className="text-[#34C759] dark:text-[#30D158]">*</span>
               <span className="text-[#1D1D1F] dark:text-[#F5F5F7]">Contract No.</span>
             </label>
             <input
@@ -83,12 +91,16 @@ export function CustomerInfoSection({ data, onChange, type }: CustomerInfoSectio
               value={data.contractNo}
               onChange={e => onChange({ ...data, contractNo: e.target.value })}
               placeholder="Contract No."
-              className={`${inputClassName} 
-                border-[#34C759]/20 dark:border-[#30D158]/20
-                focus:border-[#34C759]/30 dark:focus:border-[#30D158]/30
-                focus:ring-[#34C759]/20 dark:focus:ring-[#30D158]/20
-                bg-[#34C759]/[0.03] dark:bg-[#30D158]/[0.03]
-                placeholder:text-[#34C759]/40 dark:placeholder:text-[#30D158]/40`}
+              className={`w-full px-4 py-2.5 rounded-xl
+                bg-[#007AFF]/[0.03] dark:bg-[#0A84FF]/[0.03] backdrop-blur-lg
+                border border-[#007AFF]/20 dark:border-[#0A84FF]/20
+                focus:outline-none focus:ring-2 
+                focus:ring-[#007AFF]/20 dark:focus:ring-[#0A84FF]/20
+                hover:border-[#007AFF]/30 dark:hover:border-[#0A84FF]/30
+                text-[15px] leading-relaxed font-medium
+                text-[#007AFF] dark:text-[#0A84FF]
+                placeholder:text-[#007AFF]/40 dark:placeholder:text-[#0A84FF]/40
+                transition-all duration-300`}
               required
             />
           </div>
