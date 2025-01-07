@@ -305,7 +305,7 @@ Beneficiary: Luo & Company Co., Limited`,
   // 处理导入数据
   const handleImportData = useCallback((text: string) => {
     try {
-      // 按行分割，过滤掉空白行
+      // 按行分割，过滤掉空行
       const rows = text.trim().split('\n').filter(row => row.trim() !== '');
       
       // 解析每一行数据
@@ -321,56 +321,51 @@ Beneficiary: Luo & Company Co., Limited`,
           unitPrice: 0
         };
 
-        // 根据不同的列数处理不同的格式
-        switch (columns.length) {
-          case 4: // 描述 tab 数量 tab 单位 tab 单价
-            result = {
-              description: columns[0].trim(),
-              quantity: parseFloat(columns[1]) || 0,
-              unit: columns[2].trim() || 'pc',
-              unitPrice: parseFloat(columns[3]) || 0
-            };
-            break;
-
-          case 3: // 描述 tab tab 数量 tab 单价
-            if (columns[1].trim() === '') { // 确认是双tab的情况
-              result = {
-                description: columns[0].trim(),
-                quantity: parseFloat(columns[2]) || 0,
-                unit: 'pc',
-                unitPrice: 0
-              };
-            }
-            break;
-
-          case 2: // 描述 tab 数量
-            result = {
-              description: columns[0].trim(),
-              quantity: parseFloat(columns[1]) || 0,
-              unit: 'pc',
-              unitPrice: 0
-            };
-            break;
-
-          default:
-            // 如果列数不符合预期，检查是否是双tab的情况
-            if (columns.some(col => col.trim() === '')) {
-              // 处理可能包含多个连续tab的情况
-              const cleanColumns = columns.filter(col => col.trim() !== '');
-              if (cleanColumns.length >= 2) {
-                result = {
-                  description: cleanColumns[0].trim(),
-                  quantity: parseFloat(cleanColumns[1]) || 0,
-                  unit: 'pc',
-                  unitPrice: 0
-                };
-              }
-            }
+        // 清理数组，移除空字符串但保留位置
+        const cleanColumns = columns.map(col => col.trim());
+        
+        // 如果描述为空，返回 null
+        if (!cleanColumns[0]) {
+          return null;
         }
 
-        // 确保至少有描述和数量
-        if (!result.description.trim()) {
-          return null;
+        // 设置描述
+        result.description = cleanColumns[0];
+
+        // 根据不同的格式处理数据
+        if (cleanColumns.length >= 5) {
+          // 描述 tab tab 数量 tab 单位 tab 单价
+          // 或 描述 tab 数量 tab 单位 tab 单价
+          result = {
+            description: cleanColumns[0],
+            quantity: parseFloat(cleanColumns[cleanColumns.length - 3]) || 0,
+            unit: cleanColumns[cleanColumns.length - 2] || 'pc',
+            unitPrice: parseFloat(cleanColumns[cleanColumns.length - 1]) || 0
+          };
+        } else if (cleanColumns.length === 4) {
+          // 描述 tab tab 数量 tab 单价
+          result = {
+            description: cleanColumns[0],
+            quantity: parseFloat(cleanColumns[2]) || 0,
+            unit: 'pc',
+            unitPrice: parseFloat(cleanColumns[3]) || 0
+          };
+        } else if (cleanColumns.length === 3 && cleanColumns[1] === '') {
+          // 描述 tab tab 数量
+          result = {
+            description: cleanColumns[0],
+            quantity: parseFloat(cleanColumns[2]) || 0,
+            unit: 'pc',
+            unitPrice: 0
+          };
+        } else if (cleanColumns.length === 2) {
+          // 描述 tab 数量
+          result = {
+            description: cleanColumns[0],
+            quantity: parseFloat(cleanColumns[1]) || 0,
+            unit: 'pc',
+            unitPrice: 0
+          };
         }
 
         return result;
@@ -379,18 +374,15 @@ Beneficiary: Luo & Company Co., Limited`,
       // 更新发票数据
       setInvoiceData(prev => ({
         ...prev,
-        items: parsedRows.map((row, index) => {
-          const baseUnit = row!.unit.replace(/s$/, '');
-          return {
-            lineNo: index + 1,
-            description: row!.description,
-            quantity: row!.quantity,
-            unit: row!.quantity > 1 ? `${baseUnit}s` : baseUnit, // 根据数量设置单复数
-            unitPrice: row!.unitPrice,
-            amount: row!.quantity * row!.unitPrice,
-            hsCode: ''
-          };
-        })
+        items: parsedRows.map((row, index) => ({
+          lineNo: index + 1,
+          description: row!.description,
+          quantity: row!.quantity,
+          unit: row!.unit, // 保持原始单位格式
+          unitPrice: row!.unitPrice,
+          amount: 0, // 不自动计算金额
+          hsCode: ''
+        }))
       }));
 
     } catch (error) {
