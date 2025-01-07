@@ -13,7 +13,7 @@ interface Permission {
 
 export async function PUT(
   request: NextRequest,
-  context: { params?: Promise<Record<string, string | string[] | undefined>> }
+  context: Promise<{ params: { id: string } }>
 ) {
   try {
     // 验证管理员权限
@@ -25,8 +25,8 @@ export async function PUT(
       );
     }
 
-    const params = await context.params;
-    const id = params?.id;
+    const { params } = await context;
+    const { id } = params;
     if (!id) {
       return NextResponse.json({ error: "用户ID不能为空" }, { status: 400 });
     }
