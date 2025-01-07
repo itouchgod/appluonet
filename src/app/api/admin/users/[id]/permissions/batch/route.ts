@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getAuth } from '@/lib/auth';
+import { getAuth } from '@/auth';
 
 interface PermissionUpdate {
   moduleId: string;
   canAccess: boolean;
 }
 
+type Props = {
+  params: { id: string }
+}
+
 export async function PUT(
-  req: NextRequest,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  props: Props
 ) {
   try {
     const session = await getAuth();
@@ -17,8 +21,8 @@ export async function PUT(
       return NextResponse.json({ error: '需要管理员权限' }, { status: 403 });
     }
 
-    const userId = params.id;
-    const { permissions } = (await req.json()) as { permissions: PermissionUpdate[] };
+    const userId = props.params.id;
+    const { permissions } = (await request.json()) as { permissions: PermissionUpdate[] };
 
     // 使用事务确保数据一致性
     await prisma.$transaction(async (tx) => {
