@@ -21,42 +21,79 @@ const labelClassName = `block text-sm font-medium text-gray-500 dark:text-gray-4
 
 export function CustomerInfoSection({ data, onChange, type }: CustomerInfoSectionProps) {
   return (
-    <div className="grid grid-cols-12 gap-6 mb-6">
-      <div className="col-span-5">
-        <textarea
-          value={data.to}
-          onChange={e => onChange({ ...data, to: e.target.value })}
-          placeholder="Enter customer name and address"
-          rows={3}
-          className={inputClassName}
-        />
-      </div>
-      <div className="col-span-4">
-        <label className={labelClassName}>
-          Inquiry No.
-        </label>
-        <input
-          type="text"
-          value={data.inquiryNo}
-          onChange={e => onChange({ ...data, inquiryNo: e.target.value })}
-          placeholder="Inquiry No."
-          className={inputClassName}
-        />
-      </div>
-      {type === 'confirmation' && (
-        <div className="col-span-3">
-          <label className={labelClassName}>
-            Contract No.
-          </label>
+    <div className="space-y-4">
+      {/* 第一行：报价单号 */}
+      <div className="flex gap-4">
+        <div className="flex-1">
           <input
             type="text"
-            value={data.contractNo}
-            onChange={e => onChange({ ...data, contractNo: e.target.value })}
-            placeholder="Contract No."
+            value={data.quotationNo}
+            onChange={e => onChange({ ...data, quotationNo: e.target.value })}
+            placeholder={type === 'quotation' ? "Quotation No. *" : "Quotation No."}
+            className={`${inputClassName} ${
+              type === 'quotation' 
+                ? `border-[#007AFF]/20 dark:border-[#0A84FF]/20
+                   focus:border-[#007AFF]/30 dark:focus:border-[#0A84FF]/30
+                   focus:ring-[#007AFF]/20 dark:focus:ring-[#0A84FF]/20
+                   bg-[#007AFF]/[0.03] dark:bg-[#0A84FF]/[0.03]
+                   placeholder:text-[#007AFF]/60 dark:placeholder:text-[#0A84FF]/60
+                   font-medium`
+                : ''
+            }`}
+            required={type === 'quotation'}
+          />
+        </div>
+      </div>
+
+      {/* 第二行：客户信息 */}
+      <div className="flex gap-4">
+        <div className="flex-1">
+          <textarea
+            value={data.to}
+            onChange={e => onChange({ ...data, to: e.target.value })}
+            placeholder="Enter customer name and address"
+            rows={3}
             className={inputClassName}
           />
         </div>
-      )}
+      </div>
+
+      {/* 第三行：询价单号和合同号 */}
+      <div className="flex gap-4">
+        <div className="flex-1">
+          <label className={labelClassName}>
+            Inquiry No.
+          </label>
+          <input
+            type="text"
+            value={data.inquiryNo}
+            onChange={e => onChange({ ...data, inquiryNo: e.target.value })}
+            placeholder="Inquiry No."
+            className={inputClassName}
+          />
+        </div>
+        {type === 'confirmation' && (
+          <div className="flex-1">
+            <label className="flex items-center gap-2 text-sm font-medium mb-1.5">
+              <span className="text-[#34C759] dark:text-[#30D158]">*</span>
+              <span className="text-[#1D1D1F] dark:text-[#F5F5F7]">Contract No.</span>
+            </label>
+            <input
+              type="text"
+              value={data.contractNo}
+              onChange={e => onChange({ ...data, contractNo: e.target.value })}
+              placeholder="Contract No."
+              className={`${inputClassName} 
+                border-[#34C759]/20 dark:border-[#30D158]/20
+                focus:border-[#34C759]/30 dark:focus:border-[#30D158]/30
+                focus:ring-[#34C759]/20 dark:focus:ring-[#30D158]/20
+                bg-[#34C759]/[0.03] dark:bg-[#30D158]/[0.03]
+                placeholder:text-[#34C759]/40 dark:placeholder:text-[#30D158]/40`}
+              required
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 } 

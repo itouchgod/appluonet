@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { ImportDataButton } from './ImportDataButton';
-import { OtherFeeTable } from './OtherFeeTable';
 import type { QuotationData, LineItem } from '@/types/quotation';
 
 interface ItemsTableProps {
@@ -161,18 +160,40 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
     });
   };
 
+  // 处理其他费用的更改
+  const handleOtherFeeChange = (index: number, field: 'description' | 'amount', value: string | number) => {
+    const newFees = [...(data.otherFees ?? [])];
+    newFees[index] = {
+      ...newFees[index],
+      [field]: value
+    };
+    onChange({
+      ...data,
+      otherFees: newFees
+    });
+  };
+
+  // 处理其他费用的删除
+  const handleOtherFeeSoftDelete = (index: number) => {
+    onChange({
+      ...data,
+      otherFees: data.otherFees?.filter((_, i) => i !== index)
+    });
+  };
+
   return (
     <div className="space-y-0">
       <ImportDataButton onImport={handleImport} />
 
-      <div className="overflow-hidden rounded-t-2xl border border-[#E5E5EA] dark:border-[#2C2C2E]
-        bg-white/90 dark:bg-[#1C1C1E]/90 backdrop-blur-xl">
+      <div className={`overflow-hidden border border-[#E5E5EA] dark:border-[#2C2C2E]
+        bg-white/90 dark:bg-[#1C1C1E]/90 backdrop-blur-xl
+        ${(data.otherFees ?? []).length > 0 ? 'rounded-t-2xl' : 'rounded-2xl'}`}>
         <table className="w-full">
           <thead>
             <tr className="bg-[#F5F5F7] dark:bg-[#2C2C2E]
               border-b border-[#E5E5EA] dark:border-[#3C3C3E]">
-              <th className="w-[60px] px-4 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">No.</th>
-              <th className="w-[280px] px-4 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Part Name</th>
+              <th className="sticky left-0 z-10 w-[60px] px-4 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7] bg-[#F5F5F7] dark:bg-[#2C2C2E]">No.</th>
+              <th className="sticky left-[60px] z-10 w-[160px] px-4 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7] bg-[#F5F5F7] dark:bg-[#2C2C2E]">Part Name</th>
               {data.showDescription && (
                 <th className="w-[180px] px-4 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Description</th>
               )}
@@ -189,7 +210,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
             {data.items.map((item, index) => (
               <tr key={item.id} 
                 className="border-t border-[#E5E5EA] dark:border-[#2C2C2E]">
-                <td className="w-[60px] px-4 py-2 text-center text-sm">
+                <td className="sticky left-0 z-10 w-[60px] px-4 py-2 text-center text-sm bg-white/90 dark:bg-[#1C1C1E]/90">
                   <span 
                     className="flex items-center justify-center w-6 h-6 rounded-full 
                       text-xs text-gray-400
@@ -201,7 +222,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                     {index + 1}
                   </span>
                 </td>
-                <td className="w-[280px] px-4 py-2">
+                <td className="sticky left-[60px] z-10 w-[160px] px-4 py-2 bg-white/90 dark:bg-[#1C1C1E]/90">
                   <input
                     type="text"
                     value={item.partName}
@@ -363,8 +384,69 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
         </table>
       </div>
 
-      {/* 使用新的 OtherFeeTable 组件 */}
-      <OtherFeeTable data={data} onChange={onChange} />
+      {(data.otherFees ?? []).length > 0 && (
+        <div className="overflow-hidden rounded-b-2xl border border-t-0 border-[#E5E5EA] dark:border-[#2C2C2E]
+          bg-white/90 dark:bg-[#1C1C1E]/90 backdrop-blur-xl">
+          <table className="w-full">
+            <tbody>
+              {(data.otherFees ?? []).map((fee, index) => (
+                <tr key={fee.id} 
+                  className="border-t border-[#E5E5EA] dark:border-[#2C2C2E]">
+                  <td className="sticky left-0 z-10 w-[60px] px-4 py-2 text-center text-sm bg-white/90 dark:bg-[#1C1C1E]/90">
+                    <span 
+                      className="flex items-center justify-center w-6 h-6 rounded-full 
+                        text-xs text-gray-400
+                        hover:bg-red-100 hover:text-red-600 
+                        cursor-pointer transition-colors"
+                      onClick={() => handleOtherFeeSoftDelete(index)}
+                      title="Click to delete"
+                    >
+                      ×
+                    </span>
+                  </td>
+                  <td colSpan={data.showDescription ? 6 : 5} className="px-4 py-2">
+                    <input
+                      type="text"
+                      value={fee.description}
+                      onChange={(e) => handleOtherFeeChange(index, 'description', e.target.value)}
+                      placeholder="Other Fee Description"
+                      className="w-full px-3 py-1.5 bg-transparent border border-transparent
+                        focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
+                        hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
+                        text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
+                        placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
+                        transition-all duration-200 text-center"
+                    />
+                  </td>
+                  <td className="w-[120px] px-4 py-2">
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={fee.amount === 0 ? '' : fee.amount.toString()}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (/^-?\d*\.?\d*$/.test(value)) {
+                          handleOtherFeeChange(index, 'amount', value === '' ? 0 : parseFloat(value));
+                        }
+                      }}
+                      placeholder="0.00"
+                      className={`w-full px-3 py-1.5 bg-transparent border border-transparent
+                        focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
+                        hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
+                        text-[13px] text-center
+                        placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
+                        transition-all duration-200
+                        ${fee.amount < 0 
+                          ? 'text-[#FF3B30] dark:text-[#FF453A]' 
+                          : 'text-[#1D1D1F] dark:text-[#F5F5F7]'}`}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }; 
