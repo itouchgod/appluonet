@@ -88,6 +88,7 @@ export const generateQuotationPDF = async (data: QuotationData, preview = false)
     const infoItems = [
       { label: 'Quotation No.', value: data.quotationNo, valueColor: [255, 0, 0] },
       { label: 'Date', value: data.date },
+      { label: 'From', value: data.from },
       { label: 'Currency', value: data.currency }
     ];
 

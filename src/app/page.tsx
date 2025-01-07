@@ -41,6 +41,7 @@ export default function LoginPage() {
         return;
       }
 
+      localStorage.setItem('username', username.toLowerCase());
       router.push('/tools');
     } catch (error) {
       console.error('登录错误:', error);

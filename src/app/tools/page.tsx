@@ -85,6 +85,7 @@ export default function ToolsPage() {
   }, []);
 
   const handleLogout = async () => {
+    localStorage.removeItem('username');
     await signOut({ redirect: true, callbackUrl: '/' });
   };
 

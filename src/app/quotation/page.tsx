@@ -34,7 +34,16 @@ export default function QuotationPage() {
     inquiryNo: '',
     quotationNo: '',
     date: new Date().toISOString().split('T')[0],
-    from: 'Roger',
+    from: (() => {
+      const username = window?.localStorage?.getItem('username');
+      switch(username) {
+        case 'sharon': return 'Sharon';
+        case 'emily': return 'Emily';
+        case 'nina': return 'Nina';
+        case 'summer': return 'Summer';
+        default: return 'Roger';
+      }
+    })(),
     currency: 'USD',
     paymentDate: new Date().toISOString().split('T')[0],
     items: [{
@@ -47,7 +56,16 @@ export default function QuotationPage() {
       amount: 0,
       remarks: ''
     }],
-    notes: getDefaultNotes('Roger', 'quotation'),
+    notes: getDefaultNotes((() => {
+      const username = window?.localStorage?.getItem('username');
+      switch(username) {
+        case 'sharon': return 'Sharon';
+        case 'emily': return 'Emily';
+        case 'nina': return 'Nina';
+        case 'summer': return 'Summer';
+        default: return 'Roger';
+      }
+    })(), 'quotation'),
     amountInWords: {
       dollars: 'ZERO',
       cents: '',

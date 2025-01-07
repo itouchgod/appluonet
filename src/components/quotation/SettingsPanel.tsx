@@ -148,52 +148,6 @@ export function SettingsPanel({ data, onChange, activeTab }: SettingsPanelProps)
             onChange={e => onChange({ ...data, date: e.target.value })}
             className={`${inputClassName} w-[130px]`}
           />
-          
-          <select
-            value={data.from}
-            onChange={e => {
-              const newValue = e.target.value;
-              onChange({
-                ...data,
-                from: newValue,
-                notes: getDefaultNotes(newValue, activeTab)
-              });
-            }}
-            className={`${inputClassName} appearance-none 
-              bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3e%3cpolyline points="6 9 12 15 18 9"%3e%3c/polyline%3e%3c/svg%3e')] 
-              bg-[length:1em_1em] 
-              bg-[right_0.5rem_center] 
-              bg-no-repeat
-              pr-8
-              w-[120px]`}
-          >
-            <option value="Roger">Roger</option>
-            <option value="Sharon">Sharon</option>
-            <option value="Emily">Emily</option>
-            <option value="Summer">Summer</option>
-            <option value="Nina">Nina</option>
-          </select>
-
-          {/* 表格设置按钮 */}
-          <button
-            type="button"
-            onClick={() => setShowTableSettings(!showTableSettings)}
-            className={`h-[38px] px-4 rounded-lg
-              ${showTableSettings ? 'bg-[#007AFF]/10 dark:bg-[#0A84FF]/10' : 'hover:bg-[#007AFF]/5 dark:hover:bg-[#0A84FF]/5'}
-              text-[#007AFF] dark:text-[#0A84FF]
-              text-xs font-medium
-              transition-all duration-200
-              flex items-center gap-2`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-              <line x1="3" y1="9" x2="21" y2="9"></line>
-              <line x1="3" y1="15" x2="21" y2="15"></line>
-              <line x1="9" y1="3" x2="9" y2="21"></line>
-              <line x1="15" y1="3" x2="15" y2="21"></line>
-            </svg>
-            <span>Table</span>
-          </button>          
         </div>
 
         {/* 第二行：Bank复选框和币种选择 */}
@@ -353,34 +307,9 @@ export function SettingsPanel({ data, onChange, activeTab }: SettingsPanelProps)
             onChange={e => onChange({ ...data, date: e.target.value })}
             className={`${inputClassName} w-[130px]`}
           />
-          
-          <select
-            value={data.from}
-            onChange={e => {
-              const newValue = e.target.value;
-              onChange({
-                ...data,
-                from: newValue,
-                notes: getDefaultNotes(newValue, activeTab)
-              });
-            }}
-            className={`${inputClassName} appearance-none 
-              bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3e%3cpolyline points="6 9 12 15 18 9"%3e%3c/polyline%3e%3c/svg%3e')] 
-              bg-[length:1em_1em] 
-              bg-[right_0.5rem_center] 
-              bg-no-repeat
-              pr-8
-              w-[120px]`}
-          >
-            <option value="Roger">Roger</option>
-            <option value="Sharon">Sharon</option>
-            <option value="Emily">Emily</option>
-            <option value="Summer">Summer</option>
-            <option value="Nina">Nina</option>
-          </select>
         </div>
 
-        {/* 第二行：Bank、复选框组、币种 */}
+        {/* 第二行：Bank复选框和币种选择 */}
         <div className="flex items-center justify-center gap-4">
 
                 {/* HK Stamp复选框 */}
@@ -553,31 +482,6 @@ export function SettingsPanel({ data, onChange, activeTab }: SettingsPanelProps)
             onChange={e => onChange({ ...data, date: e.target.value })}
             className={`${inputClassName} w-[130px]`}
           />
-          
-          <select
-            value={data.from}
-            onChange={e => {
-              const newValue = e.target.value;
-              onChange({
-                ...data,
-                from: newValue,
-                notes: getDefaultNotes(newValue, activeTab)
-              });
-            }}
-            className={`${inputClassName} appearance-none 
-              bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3e%3cpolyline points="6 9 12 15 18 9"%3e%3c/polyline%3e%3c/svg%3e')] 
-              bg-[length:1em_1em] 
-              bg-[right_0.5rem_center] 
-              bg-no-repeat
-              pr-8
-              w-[120px]`}
-          >
-            <option value="Roger">Roger</option>
-            <option value="Sharon">Sharon</option>
-            <option value="Emily">Emily</option>
-            <option value="Summer">Summer</option>
-            <option value="Nina">Nina</option>
-          </select>
         </div>
 
         {/* 控制组 */}
