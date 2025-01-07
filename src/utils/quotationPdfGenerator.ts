@@ -179,7 +179,7 @@ export const generateQuotationPDF = async (data: QuotationData, isPreview: boole
             styles: { halign: 'left' }
           } as unknown as string,
           fee.amount === 0 ? '' : fee.amount.toFixed(2),  // 金额为 0 时显示空字符串
-          ...(data.showRemarks ? [''] : [])
+          ...(data.showRemarks ? [fee.remarks || ''] : [])
         ])
       ],
       theme: 'plain',

@@ -12,6 +12,8 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
   const [editingPriceAmount, setEditingPriceAmount] = useState<string>('');
   const [editingQtyIndex, setEditingQtyIndex] = useState<number | null>(null);
   const [editingQtyAmount, setEditingQtyAmount] = useState<string>('');
+  const [editingOtherFeeIndex, setEditingOtherFeeIndex] = useState<number | null>(null);
+  const [editingOtherFeeAmount, setEditingOtherFeeAmount] = useState<string>('');
 
   // 处理键盘导航
   const handleKeyDown = (
@@ -161,7 +163,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
   };
 
   // 处理其他费用的更改
-  const handleOtherFeeChange = (index: number, field: 'description' | 'amount', value: string | number) => {
+  const handleOtherFeeChange = (index: number, field: 'description' | 'amount' | 'remarks', value: string | number) => {
     const newFees = [...(data.otherFees ?? [])];
     newFees[index] = {
       ...newFees[index],
@@ -188,21 +190,21 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
       <div className={`overflow-hidden border border-[#E5E5EA] dark:border-[#2C2C2E]
         bg-white/90 dark:bg-[#1C1C1E]/90 backdrop-blur-xl
         ${(data.otherFees ?? []).length > 0 ? 'rounded-t-2xl' : 'rounded-2xl'}`}>
-        <table className="w-full">
+        <table className="w-full border-collapse border-spacing-0">
           <thead>
             <tr className="bg-[#F5F5F7] dark:bg-[#2C2C2E]
               border-b border-[#E5E5EA] dark:border-[#3C3C3E]">
-              <th className="sticky left-0 z-10 w-[60px] px-4 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7] bg-[#F5F5F7] dark:bg-[#2C2C2E]">No.</th>
-              <th className="sticky left-[60px] z-10 w-[160px] px-4 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7] bg-[#F5F5F7] dark:bg-[#2C2C2E]">Part Name</th>
+              <th className="sticky left-0 z-10 w-[50px] px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7] bg-[#F5F5F7] dark:bg-[#2C2C2E]">No.</th>
+              <th className="sticky left-[50px] z-10 min-w-[180px] max-w-[300px] w-fit px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7] bg-[#F5F5F7] dark:bg-[#2C2C2E] whitespace-nowrap">Part Name</th>
               {data.showDescription && (
-                <th className="w-[180px] px-4 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Description</th>
+                <th className="min-w-[180px] w-fit px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Description</th>
               )}
-              <th className="w-[100px] px-4 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Q&apos;TY</th>
-              <th className="w-[100px] px-4 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Unit</th>
-              <th className="w-[120px] px-4 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">U/Price</th>
-              <th className="w-[120px] px-4 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Amount</th>
+              <th className="w-[100px] min-w-[100px] px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Q&apos;TY</th>
+              <th className="w-[100px] min-w-[100px] px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Unit</th>
+              <th className="w-[120px] min-w-[120px] px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">U/Price</th>
+              <th className="w-[120px] min-w-[120px] px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Amount</th>
               {data.showRemarks && (
-                <th className="w-[180px] px-4 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Remarks</th>
+                <th className="w-[200px] px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Remarks</th>
               )}
             </tr>
           </thead>
@@ -210,9 +212,9 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
             {data.items.map((item, index) => (
               <tr key={item.id} 
                 className="border-t border-[#E5E5EA] dark:border-[#2C2C2E]">
-                <td className="sticky left-0 z-10 w-[60px] px-4 py-2 text-center text-sm bg-white/90 dark:bg-[#1C1C1E]/90">
+                <td className="sticky left-0 z-10 w-[50px] px-1 py-2 text-center text-sm bg-white/90 dark:bg-[#1C1C1E]/90">
                   <span 
-                    className="flex items-center justify-center w-6 h-6 rounded-full 
+                    className="flex items-center justify-center w-5 h-5 rounded-full 
                       text-xs text-gray-400
                       hover:bg-red-100 hover:text-red-600 
                       cursor-pointer transition-colors"
@@ -222,7 +224,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                     {index + 1}
                   </span>
                 </td>
-                <td className="sticky left-[60px] z-10 w-[160px] px-4 py-2 bg-white/90 dark:bg-[#1C1C1E]/90">
+                <td className="sticky left-[50px] z-10 min-w-[180px] w-fit px-1 py-2 bg-white/90 dark:bg-[#1C1C1E]/90">
                   <input
                     type="text"
                     value={item.partName}
@@ -235,11 +237,11 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                       hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
                       text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
                       placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
-                      transition-all duration-200 text-center"
+                      transition-all duration-200 text-center whitespace-nowrap"
                   />
                 </td>
                 {data.showDescription && (
-                  <td className="w-[180px] px-4 py-2">
+                  <td className="w-[120px] px-4 py-2">
                     <input
                       type="text"
                       value={item.description}
@@ -256,7 +258,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                     />
                   </td>
                 )}
-                <td className="w-[100px] px-4 py-2">
+                <td className="w-[100px] px-1 py-2">
                   <input
                     type="text"
                     inputMode="decimal"
@@ -289,7 +291,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                       [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </td>
-                <td className="w-[100px] px-4 py-2">
+                <td className="w-[100px] px-1 py-2">
                   <select
                     value={item.unit}
                     data-row={index}
@@ -315,7 +317,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                     })}
                   </select>
                 </td>
-                <td className="w-[120px] px-4 py-2">
+                <td className="w-[120px] px-1 py-2">
                   <input
                     type="text"
                     inputMode="decimal"
@@ -349,7 +351,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                       [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </td>
-                <td className="w-[120px] px-4 py-2">
+                <td className="w-[120px] px-1 py-2">
                   <input
                     type="text"
                     value={item.amount ? item.amount.toFixed(2) : ''}
@@ -361,7 +363,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                   />
                 </td>
                 {data.showRemarks && (
-                  <td className="w-[180px] px-4 py-2">
+                  <td className="w-[200px] px-1 py-2">
                     <input
                       type="text"
                       value={item.remarks}
@@ -392,9 +394,9 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
               {(data.otherFees ?? []).map((fee, index) => (
                 <tr key={fee.id} 
                   className="border-t border-[#E5E5EA] dark:border-[#2C2C2E]">
-                  <td className="sticky left-0 z-10 w-[60px] px-4 py-2 text-center text-sm bg-white/90 dark:bg-[#1C1C1E]/90">
+                  <td className="sticky left-0 z-10 w-[50px] px-1 py-2 text-center text-sm bg-white/90 dark:bg-[#1C1C1E]/90">
                     <span 
-                      className="flex items-center justify-center w-6 h-6 rounded-full 
+                      className="flex items-center justify-center w-5 h-5 rounded-full 
                         text-xs text-gray-400
                         hover:bg-red-100 hover:text-red-600 
                         cursor-pointer transition-colors"
@@ -404,30 +406,40 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                       ×
                     </span>
                   </td>
-                  <td colSpan={data.showDescription ? 6 : 5} className="px-4 py-2">
+                  <td colSpan={data.showDescription ? 6 : 5} className="px-1 py-2">
                     <input
                       type="text"
                       value={fee.description}
                       onChange={(e) => handleOtherFeeChange(index, 'description', e.target.value)}
-                      placeholder="Other Fee Description"
+                      placeholder="Other Fee"
                       className="w-full px-3 py-1.5 bg-transparent border border-transparent
                         focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
                         hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
-                        text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
+                        text-[13px] text-center
                         placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
-                        transition-all duration-200 text-center"
+                        transition-all duration-200"
                     />
                   </td>
-                  <td className="w-[120px] px-4 py-2">
+                  <td className="w-[120px] px-1 py-2">
                     <input
                       type="text"
                       inputMode="decimal"
-                      value={fee.amount === 0 ? '' : fee.amount.toString()}
+                      value={editingOtherFeeIndex === index ? editingOtherFeeAmount : (fee.amount === 0 ? '' : fee.amount.toFixed(2))}
                       onChange={(e) => {
                         const value = e.target.value;
                         if (/^-?\d*\.?\d*$/.test(value)) {
+                          setEditingOtherFeeAmount(value);
                           handleOtherFeeChange(index, 'amount', value === '' ? 0 : parseFloat(value));
                         }
+                      }}
+                      onFocus={(e) => {
+                        setEditingOtherFeeIndex(index);
+                        setEditingOtherFeeAmount(fee.amount === 0 ? '' : fee.amount.toString());
+                        e.target.select();
+                      }}
+                      onBlur={() => {
+                        setEditingOtherFeeIndex(null);
+                        setEditingOtherFeeAmount('');
                       }}
                       placeholder="0.00"
                       className={`w-full px-3 py-1.5 bg-transparent border border-transparent
@@ -435,12 +447,24 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                         hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
                         text-[13px] text-center
                         placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
-                        transition-all duration-200
-                        ${fee.amount < 0 
-                          ? 'text-[#FF3B30] dark:text-[#FF453A]' 
-                          : 'text-[#1D1D1F] dark:text-[#F5F5F7]'}`}
+                        transition-all duration-200`}
                     />
                   </td>
+                  {data.showRemarks && (
+                    <td className="w-[200px] px-1 py-2">
+                      <input
+                        type="text"
+                        value={fee.remarks || ''}
+                        onChange={(e) => handleOtherFeeChange(index, 'remarks', e.target.value)}
+                        className="w-full px-3 py-1.5 bg-transparent border border-transparent
+                          focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
+                          hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
+                          text-[13px] text-center
+                          placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
+                          transition-all duration-200"
+                      />
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

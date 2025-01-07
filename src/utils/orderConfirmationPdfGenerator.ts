@@ -173,7 +173,7 @@ export const generateOrderConfirmationPDF = async (data: QuotationData, isPrevie
             styles: { halign: 'left' }
           } as unknown as string,
           fee.amount === 0 ? '' : fee.amount.toFixed(2),
-          ...(data.showRemarks ? [''] : [])
+          ...(data.showRemarks ? [fee.remarks || ''] : [])
         ])
       ],
       theme: 'plain',
