@@ -104,10 +104,17 @@ export const ImportDataButton: React.FC<ImportDataButtonProps> = ({ onImport }) 
     }
   }, [handlePasteData]);
 
-  // 添加全局粘贴事件监听
+  // 添加自定义事件监听
   useEffect(() => {
+    const handleImportData = (e: CustomEvent<string>) => {
+      handlePasteData(e.detail);
+    };
+
+    window.addEventListener('import-data', handleImportData as EventListener);
     document.addEventListener('paste', handleGlobalPaste);
+    
     return () => {
+      window.removeEventListener('import-data', handleImportData as EventListener);
       document.removeEventListener('paste', handleGlobalPaste);
     };
   }, [handleGlobalPaste]);

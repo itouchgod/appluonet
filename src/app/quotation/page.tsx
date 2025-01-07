@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Settings, Download, ArrowLeft, Eye } from 'lucide-react';
+import { Settings, Download, ArrowLeft, Eye, Clipboard } from 'lucide-react';
 import { generateQuotationPDF } from '@/utils/quotationPdfGenerator';
 import { generateOrderConfirmationPDF } from '@/utils/orderConfirmationPdfGenerator';
 import { TabButton } from '@/components/quotation/TabButton';
@@ -147,6 +147,83 @@ export default function QuotationPage() {
                 <h1 className={titleClassName}>
                   Generate {activeTab === 'quotation' ? 'Quotation' : 'Order'}
                 </h1>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const text = await navigator.clipboard.readText();
+                      if (text) {
+                        const importDataEvent = new CustomEvent('import-data', { detail: text });
+                        window.dispatchEvent(importDataEvent);
+                      }
+                    } catch (err) {
+                      console.error('Failed to access clipboard:', err);
+                      // 如果剪贴板访问失败，显示手动输入框
+                      const input = document.createElement('textarea');
+                      input.style.position = 'fixed';
+                      input.style.top = '50%';
+                      input.style.left = '50%';
+                      input.style.transform = 'translate(-50%, -50%)';
+                      input.style.zIndex = '9999';
+                      input.style.width = '80%';
+                      input.style.height = '200px';
+                      input.style.padding = '12px';
+                      input.style.border = '2px solid #007AFF';
+                      input.style.borderRadius = '8px';
+                      input.placeholder = '请将数据粘贴到这里...';
+                      
+                      const overlay = document.createElement('div');
+                      overlay.style.position = 'fixed';
+                      overlay.style.top = '0';
+                      overlay.style.left = '0';
+                      overlay.style.right = '0';
+                      overlay.style.bottom = '0';
+                      overlay.style.backgroundColor = 'rgba(0,0,0,0.5)';
+                      overlay.style.zIndex = '9998';
+                      
+                      const confirmBtn = document.createElement('button');
+                      confirmBtn.textContent = '确认';
+                      confirmBtn.style.position = 'fixed';
+                      confirmBtn.style.bottom = '20%';
+                      confirmBtn.style.left = '50%';
+                      confirmBtn.style.transform = 'translateX(-50%)';
+                      confirmBtn.style.zIndex = '9999';
+                      confirmBtn.style.padding = '8px 24px';
+                      confirmBtn.style.backgroundColor = '#007AFF';
+                      confirmBtn.style.color = 'white';
+                      confirmBtn.style.border = 'none';
+                      confirmBtn.style.borderRadius = '6px';
+                      confirmBtn.style.cursor = 'pointer';
+                      
+                      const cleanup = () => {
+                        document.body.removeChild(input);
+                        document.body.removeChild(overlay);
+                        document.body.removeChild(confirmBtn);
+                      };
+                      
+                      confirmBtn.onclick = () => {
+                        const text = input.value;
+                        if (text) {
+                          const importDataEvent = new CustomEvent('import-data', { detail: text });
+                          window.dispatchEvent(importDataEvent);
+                        }
+                        cleanup();
+                      };
+                      
+                      overlay.onclick = cleanup;
+                      
+                      document.body.appendChild(overlay);
+                      document.body.appendChild(input);
+                      document.body.appendChild(confirmBtn);
+                      
+                      input.focus();
+                    }
+                  }}
+                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex-shrink-0"
+                  title="Paste from clipboard"
+                >
+                  <Clipboard className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                </button>
               </div>
               <button
                 type="button"

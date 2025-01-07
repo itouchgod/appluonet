@@ -122,13 +122,15 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
     const newItems = [...data.items];
     
     if (field === 'unit') {
-      // 处理单位变更，直接使用选择的单位
+      // 处理单位变更,根据当前数量决定是否需要复数形式
+      const baseUnit = value.toString().replace(/s$/, '');
+      const quantity = newItems[index].quantity;
       newItems[index] = {
         ...newItems[index],
-        unit: value.toString()
+        unit: defaultUnits.includes(baseUnit) ? getUnitDisplay(baseUnit, quantity) : value.toString()
       };
     } else if (field === 'quantity') {
-      // 更新数量时，同时更新单位的单复数
+      // 更新数量时,同时更新单位的单复数
       const quantity = Number(value);
       const baseUnit = newItems[index].unit.replace(/s$/, '');
       newItems[index] = {
@@ -143,7 +145,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
       };
     }
 
-    // 如果更改了数量或单价，自动计算金额
+    // 如果更改了数量或单价,自动计算金额
     if (field === 'quantity' || field === 'unitPrice') {
       newItems[index].amount = newItems[index].quantity * newItems[index].unitPrice;
     }
@@ -321,7 +323,9 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                   <input
                     type="text"
                     inputMode="decimal"
-                    value={editingPriceIndex === index ? editingPriceAmount : (item.unitPrice === 0 ? '' : item.unitPrice.toFixed(2))}
+                    value={editingPriceIndex === index 
+                      ? editingPriceAmount 
+                      : (item.unitPrice === 0 ? '' : item.unitPrice.toFixed(2))}
                     data-row={index}
                     data-field="unitPrice"
                     onChange={(e) => {
@@ -341,7 +345,6 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                       setEditingPriceIndex(null);
                       setEditingPriceAmount('');
                     }}
-                    placeholder="0.00"
                     className="w-full px-3 py-1.5 bg-transparent border border-transparent
                       focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
                       hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
