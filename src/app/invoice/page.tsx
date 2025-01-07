@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Download, Settings } from 'lucide-react';
+import { ArrowLeft, Download, Settings, Clipboard } from 'lucide-react';
 import { generateInvoicePDF } from '@/utils/pdfGenerator';
 import { InvoiceTemplateConfig } from '@/types/invoice';
 import { format, addMonths } from 'date-fns';
@@ -295,6 +295,127 @@ Beneficiary: Luo & Company Co., Limited`,
     }));
   };
 
+  // 处理导入数据
+  const handleImportData = useCallback((text: string) => {
+    try {
+      // 尝试解析数据
+      const rows = text.trim().split('\n').map(row => {
+        // 使用制表符分割，保留空字符串以保持列位置
+        const columns = row.split('\t');
+        
+        // 过滤掉空白列，保留实际有内容的列
+        const validColumns = columns.filter(col => col.trim() !== '');
+        
+        // 确保至少有描述和数量
+        if (validColumns.length < 2) {
+          return null;
+        }
+
+        // 根据不同格式解析数据
+        const description = columns[0].trim();
+        let quantity, unit, unitPrice;
+
+        switch (validColumns.length) {
+          case 5: // 完整格式：描述 [tab] [tab] 数量 单位 单价
+            quantity = validColumns[2];
+            unit = validColumns[3];
+            unitPrice = validColumns[4];
+            break;
+          case 3: // 部分格式：描述 [tab] [tab] 数量
+            quantity = validColumns[2];
+            unit = 'pc';
+            unitPrice = '0';
+            break;
+          case 2: // 最少格式：描述 [tab] 数量
+            quantity = validColumns[1];
+            unit = 'pc';
+            unitPrice = '0';
+            break;
+          default:
+            quantity = validColumns[1];
+            unit = 'pc';
+            unitPrice = '0';
+        }
+        
+        return {
+          description,
+          quantity,
+          unit,
+          unitPrice
+        };
+      }).filter(row => row !== null); // 过滤掉无效的行
+      
+      // 更新发票数据
+      setInvoiceData(prev => {
+        const newItems = rows.map((row, index) => {
+          const quantity = parseFloat(row!.quantity) || 0;
+          const unitPrice = parseFloat(row!.unitPrice) || 0;
+          
+          return {
+            lineNo: index + 1,
+            description: row!.description,
+            quantity: quantity,
+            unit: row!.unit.toLowerCase() === 'pcs' ? 'pc' : row!.unit.toLowerCase(),
+            unitPrice: unitPrice,
+            amount: quantity * unitPrice,
+            hsCode: ''
+          };
+        });
+
+        return {
+          ...prev,
+          items: newItems
+        };
+      });
+    } catch (error) {
+      console.error('Failed to import data:', error);
+    }
+  }, []);
+
+  // 添加导入数据事件监听
+  useEffect(() => {
+    const importDataListener = (event: CustomEvent<string>) => {
+      handleImportData(event.detail);
+    };
+
+    window.addEventListener('import-data', importDataListener as EventListener);
+    return () => {
+      window.removeEventListener('import-data', importDataListener as EventListener);
+    };
+  }, [handleImportData]);
+
+  // 添加粘贴事件处理函数
+  useEffect(() => {
+    const handlePaste = async (event: ClipboardEvent) => {
+      // 检查粘贴目标是否是输入框或文本区域
+      const target = event.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+        return; // 如果是输入框，使用默认粘贴行为
+      }
+
+      event.preventDefault();
+      try {
+        let text = event.clipboardData?.getData('text') || '';
+        if (!text) {
+          text = await navigator.clipboard.readText();
+        }
+        if (text) {
+          handleImportData(text);
+        }
+      } catch (err) {
+        console.error('Failed to handle paste:', err);
+      }
+    };
+
+    // 添加全局粘贴事件监听
+    document.addEventListener('paste', handlePaste);
+
+    // 清理函数
+    return () => {
+      document.removeEventListener('paste', handlePaste);
+    };
+  }, [handleImportData]);
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -311,9 +432,88 @@ Beneficiary: Luo & Company Co., Limited`,
           <form onSubmit={handleSubmit}>
             {/* 标题和设置按钮 */}
             <div className="flex items-center justify-between mb-6">
-              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-                Invoice Generator
-              </h1>
+              <div className="flex items-center gap-4">
+                <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  Invoice Generator
+                </h1>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const text = await navigator.clipboard.readText();
+                      if (text) {
+                        const importDataEvent = new CustomEvent('import-data', { detail: text });
+                        window.dispatchEvent(importDataEvent);
+                      }
+                    } catch (err) {
+                      console.error('Failed to access clipboard:', err);
+                      // 如果剪贴板访问失败，显示手动输入框
+                      const input = document.createElement('textarea');
+                      input.style.position = 'fixed';
+                      input.style.top = '50%';
+                      input.style.left = '50%';
+                      input.style.transform = 'translate(-50%, -50%)';
+                      input.style.zIndex = '9999';
+                      input.style.width = '80%';
+                      input.style.height = '200px';
+                      input.style.padding = '12px';
+                      input.style.border = '2px solid #007AFF';
+                      input.style.borderRadius = '8px';
+                      input.placeholder = '请将数据粘贴到这里...';
+                      
+                      const overlay = document.createElement('div');
+                      overlay.style.position = 'fixed';
+                      overlay.style.top = '0';
+                      overlay.style.left = '0';
+                      overlay.style.right = '0';
+                      overlay.style.bottom = '0';
+                      overlay.style.backgroundColor = 'rgba(0,0,0,0.5)';
+                      overlay.style.zIndex = '9998';
+                      
+                      const confirmBtn = document.createElement('button');
+                      confirmBtn.textContent = '确认';
+                      confirmBtn.style.position = 'fixed';
+                      confirmBtn.style.bottom = '20%';
+                      confirmBtn.style.left = '50%';
+                      confirmBtn.style.transform = 'translateX(-50%)';
+                      confirmBtn.style.zIndex = '9999';
+                      confirmBtn.style.padding = '8px 24px';
+                      confirmBtn.style.backgroundColor = '#007AFF';
+                      confirmBtn.style.color = 'white';
+                      confirmBtn.style.border = 'none';
+                      confirmBtn.style.borderRadius = '6px';
+                      confirmBtn.style.cursor = 'pointer';
+                      
+                      const cleanup = () => {
+                        document.body.removeChild(input);
+                        document.body.removeChild(overlay);
+                        document.body.removeChild(confirmBtn);
+                      };
+                      
+                      confirmBtn.onclick = () => {
+                        const text = input.value;
+                        if (text) {
+                          const importDataEvent = new CustomEvent('import-data', { detail: text });
+                          window.dispatchEvent(importDataEvent);
+                        }
+                        cleanup();
+                      };
+                      
+                      overlay.onclick = cleanup;
+                      
+                      document.body.appendChild(overlay);
+                      document.body.appendChild(input);
+                      document.body.appendChild(confirmBtn);
+                      
+                      input.focus();
+                    }
+                  }}
+                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex-shrink-0"
+                  title="Paste from clipboard"
+                >
+                  <Clipboard className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                </button>
+              </div>
               <div className="hidden sm:flex items-center gap-3">
                 <input
                   type="text"
