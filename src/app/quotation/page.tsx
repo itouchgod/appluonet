@@ -60,7 +60,7 @@ export default function QuotationPage() {
       cents: '',
       hasDecimals: false
     },
-    showDescription: false,
+    showDescription: true,
     showRemarks: false,
     showBank: false,
     showStamp: false,
