@@ -25,10 +25,11 @@ export const config = {
      * 匹配所有路径，除了：
      * - api 路由
      * - 静态文件
-     * - 图片文件
-     * - favicon.ico
+     * - Next.js 内部图片路由
+     * - manifest 文件
+     * - 特定的图标文件（精确匹配）
      */
-    "/((?!api|_next/static|_next/image|logo|apple-touch-icon.png|favicon.ico).*)",
+    "/((?!api|_next/static|_next/image|manifest.ts|favicon.ico|icon.png|icon-512x512.png|apple-icon.png).*)",
     "/"
   ]
 } 
