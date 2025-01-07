@@ -11,6 +11,7 @@ import { CustomerInfoSection } from '@/components/quotation/CustomerInfoSection'
 import { ItemsTable } from '@/components/quotation/ItemsTable';
 import { NotesSection } from '@/components/quotation/NotesSection';
 import { SettingsPanel } from '@/components/quotation/SettingsPanel';
+import { ImportDataButton } from '@/components/quotation/ImportDataButton';
 import type { QuotationData } from '@/types/quotation';
 
 // 标题样式
@@ -209,6 +210,11 @@ export default function QuotationPage() {
 
             {/* 商品表格 */}
             <div className="space-y-2">
+              <ImportDataButton 
+                onImport={(items) => {
+                  setData({ ...data, items });
+                }}
+              />
               <ItemsTable 
                 data={data}
                 onChange={setData}
