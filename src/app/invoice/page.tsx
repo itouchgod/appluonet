@@ -314,14 +314,28 @@ Beneficiary: Luo & Company Co., Limited`,
               <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
                 Invoice Generator
               </h1>
-              <div className="flex items-center gap-2">
+              <div className="hidden sm:flex items-center gap-3">
                 <input
                   type="text"
                   value={invoiceData.invoiceNo}
                   onChange={e => setInvoiceData(prev => ({ ...prev, invoiceNo: e.target.value }))}
                   placeholder="Invoice No."
-                  className={inputClassName}
+                  className={`${inputClassName} w-[200px] [&::placeholder]:text-[#007AFF]/60 dark:[&::placeholder]:text-[#0A84FF]/60 ${
+                    !invoiceData.invoiceNo 
+                      ? 'border-[#007AFF]/50 dark:border-[#0A84FF]/50' 
+                      : ''
+                  }`}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowSettings(!showSettings)}
+                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <Settings className="w-5 h-5" />
+                </button>
+              </div>
+              {/* 小屏时只显示设置按钮 */}
+              <div className="sm:hidden">
                 <button
                   type="button"
                   onClick={() => setShowSettings(!showSettings)}
@@ -503,7 +517,19 @@ Beneficiary: Luo & Company Co., Limited`,
                 </div>
               </div>
             </div>
-
+            <div className="relative mb-8">
+              <input
+                type="text"
+                value={invoiceData.invoiceNo}
+                onChange={e => setInvoiceData(prev => ({ ...prev, invoiceNo: e.target.value }))}
+                placeholder="Invoice No."
+                className={`${inputClassName} block sm:hidden w-full mb-6 [&::placeholder]:text-[#007AFF]/60 dark:[&::placeholder]:text-[#0A84FF]/60 ${
+                  !invoiceData.invoiceNo 
+                    ? 'border-[#007AFF]/50 dark:border-[#0A84FF]/50' 
+                    : ''
+                }`}
+              />
+            </div>
             {/* 客户信息区域 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
@@ -897,13 +923,14 @@ Beneficiary: Luo & Company Co., Limited`,
             </div>
 
             {/* 生成按钮 */}
-            <div className="flex justify-start gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto">
               <button
                 type="submit"
-                className="px-6 py-2.5 rounded-xl bg-blue-500 text-white 
-                         flex items-center justify-center gap-2
-                         hover:bg-blue-600 active:bg-blue-700
-                         transition-colors duration-200"
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl 
+                           bg-blue-500 text-white font-medium
+                           flex items-center justify-center gap-2
+                           hover:bg-blue-600 active:bg-blue-700 
+                           transition-all duration-200 shadow-sm hover:shadow-md"
               >
                 <Download className="w-4 h-4" />
                 Generate Invoice
@@ -928,17 +955,21 @@ Beneficiary: Luo & Company Co., Limited`,
                     console.error('Error previewing PDF:', error);
                   }
                 }}
-                className="px-6 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 
-                         text-gray-600 dark:text-gray-300
-                         flex items-center justify-center gap-2
-                         hover:bg-gray-200 dark:hover:bg-gray-700
-                         transition-colors duration-200"
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl font-medium
+                           bg-white dark:bg-gray-800 
+                           text-gray-700 dark:text-gray-200
+                           border border-gray-200 dark:border-gray-700
+                           flex items-center justify-center gap-2
+                           hover:bg-gray-50 dark:hover:bg-gray-700
+                           hover:border-gray-300 dark:hover:border-gray-600
+                           active:bg-gray-100 dark:active:bg-gray-600
+                           transition-all duration-200 shadow-sm hover:shadow-md"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
-                Preview
+                Preview Invoice
               </button>
             </div>
           </form>
