@@ -70,16 +70,22 @@ export const ImportDataButton: React.FC<ImportDataButtonProps> = ({ onImport }) 
       // 5. 转换为 LineItem 对象
       const newItems = processedRows
         .filter(columns => columns.length > 0 && columns.some(col => col.trim()))
-        .map(columns => ({
-          id: Date.now() + Math.random(),
-          partName: columns[0]?.replace(/^"(.*)"$/, '$1').trim() || '',
-          description: columns[1]?.replace(/^"(.*)"$/, '$1').trim() || '',
-          quantity: Number(columns[2]?.replace(/^"(.*)"$/, '$1')) || 0,
-          unit: 'pc',
-          unitPrice: 0,
-          amount: 0,
-          remarks: columns[3]?.replace(/^"(.*)"$/, '$1').trim() || ''
-        }));
+        .map(columns => {
+          // 解析数量和单价
+          const quantity = Number(columns[2]?.replace(/^"(.*)"$/, '$1')) || 0;
+          const unitPrice = Number(columns[4]?.replace(/^"(.*)"$/, '$1')) || 0;
+
+          return {
+            id: Date.now() + Math.random(),
+            partName: columns[0]?.replace(/^"(.*)"$/, '$1').trim() || '',
+            description: columns[1]?.replace(/^"(.*)"$/, '$1').trim() || '',
+            quantity,
+            unit: columns[3]?.replace(/^"(.*)"$/, '$1').trim() || 'pc',
+            unitPrice,
+            amount: quantity * unitPrice,
+            remarks: columns[5]?.replace(/^"(.*)"$/, '$1').trim() || ''
+          };
+        });
 
       if (newItems.length > 0) {
         onImport(newItems);
