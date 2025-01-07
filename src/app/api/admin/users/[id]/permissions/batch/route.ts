@@ -1,4 +1,4 @@
-import type { NextRequest } from 'next/server';
+import { type NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getAuth } from '@/auth';
 import { prisma } from '@/lib/prisma';
@@ -12,13 +12,10 @@ interface Permission {
   canAccess: boolean;
 }
 
-type Props = {
-  params: {
-    id: string;
-  };
-};
-
-export async function PUT(request: NextRequest, props: Props) {
+export async function PUT(
+  request: NextRequest,
+  context: { params: { id: string } }
+) {
   try {
     // 验证管理员权限
     const session = await getAuth();
@@ -29,7 +26,7 @@ export async function PUT(request: NextRequest, props: Props) {
       );
     }
 
-    const id = props.params.id;
+    const id = context.params.id;
     if (!id) {
       return NextResponse.json({ error: "用户ID不能为空" }, { status: 400 });
     }
