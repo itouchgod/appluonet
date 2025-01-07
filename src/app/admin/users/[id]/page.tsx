@@ -140,7 +140,7 @@ export default function UserDetailPage() {
         try {
           const data = await response.json();
           errorMessage = data.error || errorMessage;
-        } catch (e) {
+        } catch (_) {
           errorMessage = response.statusText || errorMessage;
         }
         throw new Error(errorMessage);

@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Header } from '@/components/Header';
 import { ProfileModal } from '@/components/profile/ProfileModal';
 import { Mail, FileText, Receipt, Star } from 'lucide-react';
 import dynamic from 'next/dynamic';

@@ -56,9 +56,9 @@ export default function MailPage() {
       const data = await response.json();
       setGeneratedContent(data.result);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Generate Error:', error);
-      setError(error?.message || '生成失败，请稍后重试');
+      setError(error instanceof Error ? error.message : '生成失败，请稍后重试');
     } finally {
       setIsLoading(false);
     }
