@@ -184,10 +184,10 @@ export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolea
           index + 1,
           data.showHsCode ? item.hsCode : '',
           item.description,
-          item.quantity || '',  // 如果为0则显示空字符串
-          item.unit ? (item.quantity <= 1 ? item.unit.replace(/s$/, '') : item.unit) : 'pc', // 根据数量自动处理单复数
-          item.unitPrice ? Number(item.unitPrice).toFixed(2) : '',  // 如果为0则显示空字符串
-          item.amount ? Number(item.amount).toFixed(2) : ''  // 如果为0则显示空字符串
+          item.quantity || '',  // 数量为 0 时显示空字符串
+          item.quantity ? item.unit : '',  // 直接使用页面处理好的单位值
+          item.unitPrice ? Number(item.unitPrice).toFixed(2) : '',
+          item.amount ? Number(item.amount).toFixed(2) : ''
         ].filter((_, i) => i === 0 || i === 2 || i === 3 || i === 4 || i === 5 || i === 6 || (data.showHsCode && i === 1))),
         // Other Fees 行
         ...(data.otherFees || []).map(fee => [

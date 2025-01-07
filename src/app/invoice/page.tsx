@@ -177,6 +177,12 @@ Beneficiary: Luo & Company Co., Limited`,
       const newItems = [...prev.items];
       const item = { ...newItems[index] };
       
+      if (field === 'quantity') {
+        const quantity = Number(value);
+        const baseUnit = item.unit.replace(/s$/, '');
+        item.unit = quantity > 1 ? `${baseUnit}s` : baseUnit;
+      }
+      
       (item as { [key: string]: string | number })[field] = value;
       
       if (field === 'quantity' || field === 'unitPrice') {
