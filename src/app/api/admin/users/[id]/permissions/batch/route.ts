@@ -12,9 +12,13 @@ interface Permission {
   canAccess: boolean;
 }
 
+type RouteParams = {
+  id: string;
+};
+
 export async function PUT(
   request: Request | NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: RouteParams }
 ) {
   try {
     // 验证管理员权限
@@ -26,7 +30,7 @@ export async function PUT(
       );
     }
 
-    const { id } = context.params;
+    const { id } = params;
     if (!id) {
       return NextResponse.json({ error: "用户ID不能为空" }, { status: 400 });
     }
