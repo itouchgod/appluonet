@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getAuth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 
@@ -11,15 +11,9 @@ interface Permission {
   canAccess: boolean;
 }
 
-interface RequestContext {
-  params: {
-    id: string;
-  };
-}
-
 export async function PUT(
-  request: NextRequest,
-  context: RequestContext
+  request: Request,
+  context: { params: { id: string } }
 ) {
   try {
     // 验证管理员权限
