@@ -44,25 +44,6 @@ export function Header({ user, onLogout, onProfile }: HeaderProps) {
     onLogout();
   };
 
-  const ThemeChanger = () => {
-    if (!mounted) return null;
-
-    return (
-      <button
-        onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-        className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300
-                 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-        aria-label="切换主题模式"
-      >
-        {resolvedTheme === 'dark' ? (
-          <Sun className="h-5 w-5" />
-        ) : (
-          <Moon className="h-5 w-5" />
-        )}
-      </button>
-    );
-  };
-
   return (
     <header className="bg-white dark:bg-[#1c1c1e] shadow-sm dark:shadow-gray-800/30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
@@ -79,7 +60,20 @@ export function Header({ user, onLogout, onProfile }: HeaderProps) {
         </div>
 
         <div className="flex items-center space-x-4">
-          <ThemeChanger />
+          {mounted && (
+            <button
+              onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+              className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300
+                       hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              aria-label="切换主题模式"
+            >
+              {resolvedTheme === 'dark' ? (
+                <Sun className="h-5 w-5" />
+              ) : (
+                <Moon className="h-5 w-5" />
+              )}
+            </button>
+          )}
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setShowDropdown(!showDropdown)}
