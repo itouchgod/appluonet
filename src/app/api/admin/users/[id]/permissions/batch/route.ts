@@ -7,13 +7,13 @@ interface PermissionUpdate {
   canAccess: boolean;
 }
 
-type Props = {
+type Context = {
   params: { id: string }
 }
 
 export async function PUT(
   request: NextRequest,
-  props: Props
+  context: Context
 ) {
   try {
     const session = await getAuth();
@@ -21,7 +21,7 @@ export async function PUT(
       return NextResponse.json({ error: '需要管理员权限' }, { status: 403 });
     }
 
-    const userId = props.params.id;
+    const userId = context.params.id;
     const { permissions } = (await request.json()) as { permissions: PermissionUpdate[] };
 
     // 使用事务确保数据一致性
