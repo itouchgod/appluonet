@@ -17,7 +17,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
 
   // 处理键盘导航
   const handleKeyDown = (
-    e: React.KeyboardEvent<HTMLInputElement | HTMLSelectElement>,
+    e: React.KeyboardEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
     index: number,
     field: keyof LineItem
   ) => {
@@ -263,38 +263,50 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                   </span>
                 </td>
                 <td className="min-w-[180px] w-fit px-1 py-2 bg-white/90 dark:bg-[#1C1C1E]/90">
-                  <input
-                    type="text"
+                  <textarea
                     value={item.partName}
                     data-row={index}
                     data-field="partName"
                     onChange={(e) => handleItemChange(index, 'partName', e.target.value)}
                     onKeyDown={(e) => handleKeyDown(e, index, 'partName')}
                     onPaste={(e) => handleCellPaste(e, index, 'partName')}
+                    rows={1}
                     className="w-full px-3 py-1.5 bg-transparent border border-transparent
                       focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
                       hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
                       text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
                       placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
-                      transition-all duration-200 text-center whitespace-nowrap"
+                      transition-all duration-200 text-center whitespace-pre-wrap resize-none overflow-hidden"
+                    style={{ height: 'auto', minHeight: '28px' }}
+                    onInput={(e) => {
+                      const target = e.target as HTMLTextAreaElement;
+                      target.style.height = 'auto';
+                      target.style.height = target.scrollHeight + 'px';
+                    }}
                   />
                 </td>
                 {data.showDescription && (
                   <td className="w-[120px] px-4 py-2">
-                    <input
-                      type="text"
+                    <textarea
                       value={item.description}
                       data-row={index}
                       data-field="description"
                       onChange={(e) => handleItemChange(index, 'description', e.target.value)}
                       onKeyDown={(e) => handleKeyDown(e, index, 'description')}
                       onPaste={(e) => handleCellPaste(e, index, 'description')}
+                      rows={1}
                       className="w-full px-3 py-1.5 bg-transparent border border-transparent
                         focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
                         hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
                         text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
                         placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
-                        transition-all duration-200 text-center"
+                        transition-all duration-200 text-center whitespace-pre-wrap resize-none overflow-hidden"
+                      style={{ height: 'auto', minHeight: '28px' }}
+                      onInput={(e) => {
+                        const target = e.target as HTMLTextAreaElement;
+                        target.style.height = 'auto';
+                        target.style.height = target.scrollHeight + 'px';
+                      }}
                     />
                   </td>
                 )}
