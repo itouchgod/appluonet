@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ImportDataButton } from './ImportDataButton';
 import type { QuotationData, LineItem } from '@/types/quotation';
+import { parseExcelCell, parseNumberCell, parseExcelData, convertExcelToLineItems } from '@/utils/excelPasteHandler';
 
 interface ItemsTableProps {
   data: QuotationData;
@@ -29,17 +30,22 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
     const currentFieldIndex = fields.indexOf(field);
     const currentRowIndex = index;
 
+    // 如果是文本区域且按下回车键，不阻止默认行为（允许换行）
+    if ((field === 'partName' || field === 'description') && e.key === 'Enter' && !e.shiftKey) {
+      e.stopPropagation(); // 阻止事件冒泡，但允许默认行为（换行）
+      return;
+    }
+
     switch (e.key) {
-      case 'ArrowRight':
-        if (currentFieldIndex < fields.length - 1) {
+      case 'Tab':
+        if (!e.shiftKey && currentFieldIndex < fields.length - 1) {
+          e.preventDefault();
           const nextField = document.querySelector<HTMLElement>(
             `[data-row="${index}"][data-field="${fields[currentFieldIndex + 1]}"]`
           );
           nextField?.focus();
-        }
-        break;
-      case 'ArrowLeft':
-        if (currentFieldIndex > 0) {
+        } else if (e.shiftKey && currentFieldIndex > 0) {
+          e.preventDefault();
           const prevField = document.querySelector<HTMLElement>(
             `[data-row="${index}"][data-field="${fields[currentFieldIndex - 1]}"]`
           );
@@ -62,27 +68,20 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
           downField?.focus();
         }
         break;
-      case 'Enter':
-        if (currentRowIndex < data.items.length - 1) {
-          const downField = document.querySelector<HTMLElement>(
-            `[data-row="${index + 1}"][data-field="${field}"]`
-          );
-          downField?.focus();
-        }
-        break;
-      case 'Tab':
-        if (!e.shiftKey && currentFieldIndex < fields.length - 1) {
-          e.preventDefault();
-          const nextField = document.querySelector<HTMLElement>(
-            `[data-row="${index}"][data-field="${fields[currentFieldIndex + 1]}"]`
-          );
-          nextField?.focus();
-        } else if (e.shiftKey && currentFieldIndex > 0) {
-          e.preventDefault();
+      case 'ArrowLeft':
+        if (currentFieldIndex > 0) {
           const prevField = document.querySelector<HTMLElement>(
             `[data-row="${index}"][data-field="${fields[currentFieldIndex - 1]}"]`
           );
           prevField?.focus();
+        }
+        break;
+      case 'ArrowRight':
+        if (currentFieldIndex < fields.length - 1) {
+          const nextField = document.querySelector<HTMLElement>(
+            `[data-row="${index}"][data-field="${fields[currentFieldIndex + 1]}"]`
+          );
+          nextField?.focus();
         }
         break;
     }
@@ -121,6 +120,11 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
   const handleItemChange = (index: number, field: keyof LineItem, value: string | number) => {
     const newItems = [...data.items];
     
+    // 处理文本字段，去除引号
+    if (typeof value === 'string') {
+      value = value.replace(/^"|"$/g, '');
+    }
+    
     if (field === 'unit') {
       // 处理单位变更,根据当前数量决定是否需要复数形式
       const baseUnit = value.toString().replace(/s$/, '');
@@ -137,6 +141,12 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
         ...newItems[index],
         quantity,
         unit: defaultUnits.includes(baseUnit) ? getUnitDisplay(baseUnit, quantity) : newItems[index].unit
+      };
+    } else if (field === 'partName') {
+      // 特殊处理 partName 字段，保留换行符
+      newItems[index] = {
+        ...newItems[index],
+        [field]: value.toString()
       };
     } else {
       newItems[index] = {
@@ -156,39 +166,64 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
     });
   };
 
-  // 添加单元格粘贴处理函数
+  // 处理单元格粘贴
   const handleCellPaste = (e: React.ClipboardEvent<HTMLInputElement | HTMLTextAreaElement>, index: number, field: keyof LineItem) => {
     const pasteText = e.clipboardData.getData('text');
     
-    // 如果是数字字段，进行验证
-    if (field === 'quantity') {
-      if (!/^\d*$/.test(pasteText.trim())) {
-        e.preventDefault();
-        alert('数量必须是整数');
-        return;
-      }
-      const value = pasteText.trim() === '' ? 0 : parseInt(pasteText);
+    // 检查是否是全局粘贴（包含换行符或制表符）
+    if (pasteText.includes('\t') || pasteText.includes('\n')) {
       e.preventDefault();
-      handleItemChange(index, field, value);
+      
+      // 使用导入的Excel解析函数
+      const rows = parseExcelData(pasteText);
+      console.log('Parsed rows:', rows);
+      
+      const lineItems = convertExcelToLineItems(rows);
+      console.log('Converted items:', lineItems);
+      
+      // 更新数据
+      const newItems = [...data.items];
+      lineItems.forEach((item, i) => {
+        if (index + i < newItems.length) {
+          // 更新现有行，但保留原有的 id
+          const id = newItems[index + i].id;
+          newItems[index + i] = {
+            ...item,
+            id
+          };
+        } else {
+          // 添加新行
+          newItems.push({
+            ...item,
+            id: Date.now() + i,
+            remarks: ''
+          } as LineItem);
+        }
+      });
+      
+      onChange({
+        ...data,
+        items: newItems
+      });
       return;
     }
     
-    if (field === 'unitPrice') {
-      if (!/^-?\d*\.?\d*$/.test(pasteText.trim())) {
-        e.preventDefault();
-        alert('单价必须是数字');
-        return;
+    // 单个单元格的粘贴处理
+    e.preventDefault();
+    
+    if (field === 'partName') {
+      // 对于 partName 字段，保留换行符，但去掉外层引号
+      const content = pasteText.replace(/^"|"$/g, '');
+      handleItemChange(index, field, content);
+    } else if (field === 'quantity' || field === 'unitPrice') {
+      // 数字字段
+      const value = parseFloat(pasteText.trim());
+      if (!isNaN(value)) {
+        handleItemChange(index, field, value);
       }
-      const value = pasteText.trim() === '' ? 0 : parseFloat(pasteText);
-      e.preventDefault();
-      handleItemChange(index, field, value);
-      return;
-    }
-
-    // 对于文本字段（partName, description, remarks等），直接更新值
-    // 不阻止默认行为，这样可以保持原有的换行格式
-    if (field === 'partName' || field === 'description' || field === 'remarks') {
-      handleItemChange(index, field, pasteText);
+    } else {
+      // 其他文本字段
+      handleItemChange(index, field, pasteText.trim());
     }
   };
 
@@ -267,21 +302,22 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                     value={item.partName}
                     data-row={index}
                     data-field="partName"
-                    onChange={(e) => handleItemChange(index, 'partName', e.target.value)}
+                    onChange={(e) => {
+                      handleItemChange(index, 'partName', e.target.value);
+                      // 自动调整高度
+                      e.target.style.height = '28px';
+                      e.target.style.height = `${e.target.scrollHeight}px`;
+                    }}
                     onKeyDown={(e) => handleKeyDown(e, index, 'partName')}
                     onPaste={(e) => handleCellPaste(e, index, 'partName')}
-                    rows={1}
                     className="w-full px-3 py-1.5 bg-transparent border border-transparent
                       focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
                       hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
                       text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
                       placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
-                      transition-all duration-200 text-center whitespace-pre-wrap resize-none overflow-hidden"
-                    style={{ height: 'auto', minHeight: '28px' }}
-                    onInput={(e) => {
-                      const target = e.target as HTMLTextAreaElement;
-                      target.style.height = 'auto';
-                      target.style.height = target.scrollHeight + 'px';
+                      transition-all duration-200 text-center whitespace-pre-wrap resize-y overflow-hidden"
+                    style={{ 
+                      height: '28px'
                     }}
                   />
                 </td>
@@ -291,21 +327,22 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                       value={item.description}
                       data-row={index}
                       data-field="description"
-                      onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                      onChange={(e) => {
+                        handleItemChange(index, 'description', e.target.value);
+                        // 自动调整高度
+                        e.target.style.height = '28px';
+                        e.target.style.height = `${e.target.scrollHeight}px`;
+                      }}
                       onKeyDown={(e) => handleKeyDown(e, index, 'description')}
                       onPaste={(e) => handleCellPaste(e, index, 'description')}
-                      rows={1}
                       className="w-full px-3 py-1.5 bg-transparent border border-transparent
                         focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
                         hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
                         text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
                         placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
-                        transition-all duration-200 text-center whitespace-pre-wrap resize-none overflow-hidden"
-                      style={{ height: 'auto', minHeight: '28px' }}
-                      onInput={(e) => {
-                        const target = e.target as HTMLTextAreaElement;
-                        target.style.height = 'auto';
-                        target.style.height = target.scrollHeight + 'px';
+                        transition-all duration-200 text-center whitespace-pre-wrap resize-y overflow-hidden"
+                      style={{ 
+                        height: '28px'
                       }}
                     />
                   </td>
