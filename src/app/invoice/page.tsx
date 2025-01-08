@@ -836,10 +836,10 @@ Beneficiary: Luo & Company Co., Limited`,
                             </th>
                           )}
                           <th className="py-2 px-4 text-center text-xs font-bold opacity-90 flex-1">Description</th>
-                          <th className="py-2 px-4 text-center text-xs font-bold opacity-90 w-[80px]">Q&apos;TY</th>
-                          <th className="py-2 px-4 text-center text-xs font-bold opacity-90 w-[80px]">Unit</th>
-                          <th className="py-2 px-4 text-center text-xs font-bold opacity-90 w-[120px]">U/Price</th>
-                          <th className="py-2 px-4 text-center text-xs font-bold opacity-90 w-[120px]">Amount</th>
+                          <th className="py-2 px-4 text-center text-xs font-bold opacity-90 w-[100px]">Q&apos;TY</th>
+                          <th className="py-2 px-4 text-center text-xs font-bold opacity-90 w-[100px]">Unit</th>
+                          <th className="py-2 px-4 text-center text-xs font-bold opacity-90 w-[130px]">U/Price</th>
+                          <th className="py-2 px-4 text-center text-xs font-bold opacity-90 w-[150px]">Amount</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1012,7 +1012,7 @@ Beneficiary: Luo & Company Co., Limited`,
                                 className={`${tableInputClassName} text-center`}
                               />
                             </div>
-                            <div className="w-[120px] px-4">
+                            <div className="w-[160px] px-4">
                               <input
                                 type="text"
                                 inputMode="decimal"

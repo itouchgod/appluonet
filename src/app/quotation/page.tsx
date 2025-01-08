@@ -162,18 +162,10 @@ export default function QuotationPage() {
   };
 
   const handleImport = (newItems: LineItem[]) => {
-    // 处理每个项目的单位单复数
-    const processedItems = newItems.map(item => {
-      const baseUnit = item.unit.replace(/s$/, '');
-      return {
-        ...item,
-        unit: defaultUnits.includes(baseUnit) ? getUnitDisplay(baseUnit, item.quantity) : item.unit
-      };
-    });
-
+    // 直接使用导入的数据，不做额外处理
     setData({
       ...data,
-      items: processedItems
+      items: newItems
     });
   };
 
