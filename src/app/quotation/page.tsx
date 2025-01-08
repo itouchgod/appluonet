@@ -146,34 +146,17 @@ export default function QuotationPage() {
     }
   }, [activeTab, data]);
 
-  // 默认单位列表（需要单复数变化的单位）
-  const defaultUnits = ['pc', 'set', 'length'];
-
-  // 处理单位的单复数
-  const getUnitDisplay = (baseUnit: string, quantity: number) => {
-    if (defaultUnits.includes(baseUnit)) {
-      return quantity > 1 ? `${baseUnit}s` : baseUnit;
-    }
-    return baseUnit; // 自定义单位不变化单复数
-  };
-
-  // 计算金额
-  const calculateAmount = (quantity: number, unitPrice: number) => {
-    return quantity * unitPrice;
-  };
-
-  const handleImport = (newItems: LineItem[]) => {
-    // 直接使用导入的数据，不做额外处理
-    setData({
-      ...data,
-      items: newItems
-    });
-  };
-
   // 处理导入数据
   const handleImportDataLocal = (text: string) => {
     const rows = parseExcelData(text);
     return convertExcelToLineItems(rows);
+  };
+
+  const handleImport = (newItems: LineItem[]) => {
+    setData({
+      ...data,
+      items: newItems
+    });
   };
 
   return (
