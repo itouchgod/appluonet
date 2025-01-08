@@ -53,7 +53,7 @@ export function CustomerInfoSection({ data, onChange, type }: CustomerInfoSectio
             required={type === 'quotation'}
           />
         </div>
-        <div className="w-[200px]">
+        <div className="w-[110px] sm:w-[200px]">
           <select
             value={data.from}
             onChange={e => {
