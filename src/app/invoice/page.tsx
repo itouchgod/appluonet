@@ -7,6 +7,7 @@ import { generateInvoicePDF } from '@/utils/pdfGenerator';
 import { InvoiceTemplateConfig } from '@/types/invoice';
 import { format, addMonths } from 'date-fns';
 import { Footer } from '@/components/Footer';
+import { handleImportData } from '@/utils/invoiceDataHandler';
 
 // 基础样式定义
 const inputClassName = `w-full px-4 py-2.5 rounded-2xl
@@ -303,88 +304,15 @@ Beneficiary: Luo & Company Co., Limited`,
   };
 
   // 处理导入数据
-  const handleImportData = useCallback((text: string) => {
+  const handleImportDataLocal = useCallback((text: string) => {
     try {
-      // 按行分割，过滤掉空行
-      const rows = text.trim().split('\n').filter(row => row.trim() !== '');
-      
-      // 解析每一行数据
-      const parsedRows = rows.map(row => {
-        // 使用制表符分割，保留空字符串
-        const columns = row.split('\t');
-        
-        // 基本数据结构
-        let result = {
-          description: '',
-          quantity: 0,
-          unit: 'pc',
-          unitPrice: 0
-        };
-
-        // 清理数组，移除空字符串但保留位置
-        const cleanColumns = columns.map(col => col.trim());
-        
-        // 如果描述为空，返回 null
-        if (!cleanColumns[0]) {
-          return null;
-        }
-
-        // 设置描述
-        result.description = cleanColumns[0];
-
-        // 根据不同的格式处理数据
-        if (cleanColumns.length >= 5) {
-          // 描述 tab tab 数量 tab 单位 tab 单价
-          // 或 描述 tab 数量 tab 单位 tab 单价
-          result = {
-            description: cleanColumns[0],
-            quantity: parseFloat(cleanColumns[cleanColumns.length - 3]) || 0,
-            unit: cleanColumns[cleanColumns.length - 2] || 'pc',
-            unitPrice: parseFloat(cleanColumns[cleanColumns.length - 1]) || 0
-          };
-        } else if (cleanColumns.length === 4) {
-          // 描述 tab tab 数量 tab 单价
-          result = {
-            description: cleanColumns[0],
-            quantity: parseFloat(cleanColumns[2]) || 0,
-            unit: 'pc',
-            unitPrice: parseFloat(cleanColumns[3]) || 0
-          };
-        } else if (cleanColumns.length === 3 && cleanColumns[1] === '') {
-          // 描述 tab tab 数量
-          result = {
-            description: cleanColumns[0],
-            quantity: parseFloat(cleanColumns[2]) || 0,
-            unit: 'pc',
-            unitPrice: 0
-          };
-        } else if (cleanColumns.length === 2) {
-          // 描述 tab 数量
-          result = {
-            description: cleanColumns[0],
-            quantity: parseFloat(cleanColumns[1]) || 0,
-            unit: 'pc',
-            unitPrice: 0
-          };
-        }
-
-        return result;
-      }).filter(row => row !== null); // 过滤掉无效的行
-
-      // 更新发票数据
-      setInvoiceData(prev => ({
-        ...prev,
-        items: parsedRows.map((row, index) => ({
-          lineNo: index + 1,
-          description: row!.description,
-          quantity: row!.quantity,
-          unit: row!.unit, // 保持原始单位格式
-          unitPrice: row!.unitPrice,
-          amount: 0, // 不自动计算金额
-          hsCode: ''
-        }))
-      }));
-
+      const parsedRows = handleImportData(text);
+      if (Array.isArray(parsedRows)) {
+        setInvoiceData(prev => ({
+          ...prev,
+          items: parsedRows
+        }));
+      }
     } catch (error) {
       console.error('Error importing data:', error);
     }
@@ -393,14 +321,14 @@ Beneficiary: Luo & Company Co., Limited`,
   // 添加导入数据事件监听
   useEffect(() => {
     const importDataListener = (event: CustomEvent<string>) => {
-      handleImportData(event.detail);
+      handleImportDataLocal(event.detail);
     };
 
     window.addEventListener('import-data', importDataListener as EventListener);
     return () => {
       window.removeEventListener('import-data', importDataListener as EventListener);
     };
-  }, [handleImportData]);
+  }, [handleImportDataLocal]);
 
   // 修改全局粘贴事件处理函数
   useEffect(() => {
@@ -427,7 +355,7 @@ Beneficiary: Luo & Company Co., Limited`,
           text = await navigator.clipboard.readText();
         }
         if (text) {
-          handleImportData(text);
+          handleImportDataLocal(text);
         }
       } catch (err) {
         console.error('Failed to handle paste:', err);
@@ -441,7 +369,7 @@ Beneficiary: Luo & Company Co., Limited`,
     return () => {
       document.removeEventListener('paste', handlePaste);
     };
-  }, [handleImportData]);
+  }, [handleImportDataLocal]);
 
   // 修改单元格粘贴处理函数
   const handleCellPaste = (e: React.ClipboardEvent<HTMLInputElement | HTMLTextAreaElement>, index: number, field: keyof LineItem) => {
@@ -477,6 +405,77 @@ Beneficiary: Luo & Company Co., Limited`,
     if (field === 'description' || field === 'hsCode') {
       updateLineItem(index, field, pasteText);
     }
+  };
+
+  // 默认单位列表（需要单复数变化的单位）
+  const defaultUnits = ['pc', 'set', 'length'];
+
+  // 处理单位的单复数
+  const getUnitDisplay = (baseUnit: string, quantity: number) => {
+    if (defaultUnits.includes(baseUnit)) {
+      return quantity > 1 ? `${baseUnit}s` : baseUnit;
+    }
+    return baseUnit;
+  };
+
+  const handleImport = (newItems: LineItem[]) => {
+    // 处理每个项目的单位单复数和金额计算
+    const processedItems = newItems.map(item => {
+      const baseUnit = item.unit.replace(/s$/, '');
+      return {
+        ...item,
+        unit: defaultUnits.includes(baseUnit) ? getUnitDisplay(baseUnit, item.quantity) : item.unit,
+        amount: item.quantity * item.unitPrice // 确保计算金额
+      };
+    });
+
+    setInvoiceData(prev => ({
+      ...prev,
+      items: processedItems
+    }));
+  };
+
+  // 处理单个项目的更改
+  const handleItemChange = (index: number, field: keyof LineItem, value: string | number) => {
+    const newItems = [...invoiceData.items];
+    
+    if (field === 'unit') {
+      // 处理单位变更，根据当前数量决定是否需要复数形式
+      const baseUnit = value.toString().replace(/s$/, '');
+      const quantity = newItems[index].quantity;
+      newItems[index] = {
+        ...newItems[index],
+        unit: defaultUnits.includes(baseUnit) ? getUnitDisplay(baseUnit, quantity) : value.toString()
+      };
+    } else if (field === 'quantity') {
+      // 更新数量时，同时更新单位的单复数和金额
+      const quantity = Number(value);
+      const baseUnit = newItems[index].unit.replace(/s$/, '');
+      newItems[index] = {
+        ...newItems[index],
+        quantity,
+        unit: defaultUnits.includes(baseUnit) ? getUnitDisplay(baseUnit, quantity) : newItems[index].unit,
+        amount: quantity * newItems[index].unitPrice
+      };
+    } else if (field === 'unitPrice') {
+      // 更新单价时，同时更新金额
+      const unitPrice = Number(value);
+      newItems[index] = {
+        ...newItems[index],
+        unitPrice,
+        amount: newItems[index].quantity * unitPrice
+      };
+    } else {
+      newItems[index] = {
+        ...newItems[index],
+        [field]: value
+      };
+    }
+
+    setInvoiceData(prev => ({
+      ...prev,
+      items: newItems
+    }));
   };
 
   return (

@@ -13,8 +13,9 @@ import { ItemsTable } from '@/components/quotation/ItemsTable';
 import { NotesSection } from '@/components/quotation/NotesSection';
 import { SettingsPanel } from '@/components/quotation/SettingsPanel';
 import { ImportDataButton } from '@/components/quotation/ImportDataButton';
-import type { QuotationData } from '@/types/quotation';
+import type { QuotationData, LineItem } from '@/types/quotation';
 import { Footer } from '@/components/Footer';
+import { handleImportData } from '@/utils/quotationDataHandler';
 
 // 标题样式
 const titleClassName = `text-xl font-semibold text-gray-800 dark:text-gray-200`;
@@ -143,6 +144,53 @@ export default function QuotationPage() {
       setIsLoading(false);
     }
   }, [activeTab, data]);
+
+  // 默认单位列表（需要单复数变化的单位）
+  const defaultUnits = ['pc', 'set', 'length'];
+
+  // 处理单位的单复数
+  const getUnitDisplay = (baseUnit: string, quantity: number) => {
+    if (defaultUnits.includes(baseUnit)) {
+      return quantity > 1 ? `${baseUnit}s` : baseUnit;
+    }
+    return baseUnit;
+  };
+
+  // 计算金额
+  const calculateAmount = (quantity: number, unitPrice: number) => {
+    return Number((quantity * unitPrice).toFixed(2));
+  };
+
+  const handleImport = (newItems: LineItem[]) => {
+    // 处理每个项目的单位单复数
+    const processedItems = newItems.map(item => {
+      const baseUnit = item.unit.replace(/s$/, '');
+      return {
+        ...item,
+        unit: defaultUnits.includes(baseUnit) ? getUnitDisplay(baseUnit, item.quantity) : item.unit
+      };
+    });
+
+    setData({
+      ...data,
+      items: processedItems
+    });
+  };
+
+  // 处理导入数据
+  const handleImportDataLocal = useCallback((text: string) => {
+    try {
+      const parsedRows = handleImportData(text);
+      if (Array.isArray(parsedRows)) {
+        setData(prev => ({
+          ...prev,
+          items: parsedRows
+        }));
+      }
+    } catch (error) {
+      console.error('Error importing data:', error);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -294,9 +342,7 @@ export default function QuotationPage() {
               <div className="space-y-4">
                 <div className="px-4 sm:px-0">
                   <ImportDataButton 
-                    onImport={(items) => {
-                      setData({ ...data, items });
-                    }}
+                    onImport={handleImport}
                   />
                 </div>
                 <ItemsTable 

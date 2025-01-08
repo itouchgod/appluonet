@@ -9,86 +9,57 @@ export const ImportDataButton: React.FC<ImportDataButtonProps> = ({ onImport }) 
   // 处理粘贴数据
   const handlePasteData = useCallback((pasteText: string) => {
     try {
-      // 1. 首先按硬回车分割行
-      const rows = pasteText.split(/\r?\n/);
+      // 按行分割，过滤掉空行
+      const rows = pasteText.trim().split('\n').filter(row => row.trim() !== '');
       
-      // 2. 初始化数据结构来存储处理后的行
-      const processedRows: string[][] = [];
-      let currentRow: string[] = [];
-      let isInQuotes = false;
-      let currentCell = '';
-      
-      // 3. 处理每一行
-      for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
+      // 解析每一行数据
+      const parsedRows = rows.map(row => {
+        // 使用制表符分割，保留空字符串
+        const columns = row.split('\t');
         
-        // 如果不在引号内且行为空，跳过
-        if (!isInQuotes && !row.trim()) {
-          if (currentRow.length > 0) {
-            processedRows.push([...currentRow]);
-            currentRow = [];
-          }
-          continue;
-        }
+        // 清理数组，移除空字符串但保留位置
+        const cleanColumns = columns.map(col => col.trim());
         
-        // 处理每个字符
-        for (let j = 0; j < row.length; j++) {
-          const char = row[j];
-          
-          if (char === '"') {
-            isInQuotes = !isInQuotes;
-          } else if (char === '\t' && !isInQuotes) {
-            currentRow.push(currentCell.trim());
-            currentCell = '';
-          } else {
-            currentCell += char;
-          }
+        // 如果描述为空，返回 null
+        if (!cleanColumns[0]) {
+          return null;
         }
-        
-        // 处理行尾
-        if (!isInQuotes) {
-          currentRow.push(currentCell.trim());
-          processedRows.push([...currentRow]);
-          currentRow = [];
-          currentCell = '';
-        } else {
-          // 在引号内，添加一个软回车
-          currentCell += '\n';
-        }
-      }
-      
-      // 4. 如果还有未处理完的数据
-      if (currentRow.length > 0 || currentCell) {
-        if (currentCell) {
-          currentRow.push(currentCell.trim());
-        }
-        if (currentRow.length > 0) {
-          processedRows.push(currentRow);
-        }
-      }
 
-      // 5. 转换为 LineItem 对象
-      const newItems = processedRows
-        .filter(columns => columns.length > 0 && columns.some(col => col.trim()))
-        .map(columns => {
-          // 解析数量和单价
-          const quantity = Number(columns[2]?.replace(/^"(.*)"$/, '$1')) || 0;
-          const unitPrice = Number(columns[4]?.replace(/^"(.*)"$/, '$1')) || 0;
+        // 根据不同的格式处理数据
+        let quantity = 0;
+        let unit = 'pc';
+        let unitPrice = 0;
 
-          return {
-            id: Date.now() + Math.random(),
-            partName: columns[0]?.replace(/^"(.*)"$/, '$1').trim() || '',
-            description: columns[1]?.replace(/^"(.*)"$/, '$1').trim() || '',
-            quantity,
-            unit: columns[3]?.replace(/^"(.*)"$/, '$1').trim() || 'pc',
-            unitPrice,
-            amount: quantity * unitPrice,
-            remarks: columns[5]?.replace(/^"(.*)"$/, '$1').trim() || ''
-          };
-        });
+        if (cleanColumns.length >= 5) {
+          // 描述 tab 数量 tab 单位 tab 单价
+          quantity = parseFloat(cleanColumns[cleanColumns.length - 3]) || 0;
+          unit = cleanColumns[cleanColumns.length - 2] || 'pc';
+          unitPrice = parseFloat(cleanColumns[cleanColumns.length - 1]) || 0;
+        } else if (cleanColumns.length === 4) {
+          quantity = parseFloat(cleanColumns[1]) || 0;
+          unit = cleanColumns[2] || 'pc';
+          unitPrice = parseFloat(cleanColumns[3]) || 0;
+        } else if (cleanColumns.length === 3) {
+          quantity = parseFloat(cleanColumns[1]) || 0;
+          unit = cleanColumns[2] || 'pc';
+        } else if (cleanColumns.length === 2) {
+          quantity = parseFloat(cleanColumns[1]) || 0;
+        }
 
-      if (newItems.length > 0) {
-        onImport(newItems);
+        return {
+          id: Date.now() + Math.random(),
+          partName: cleanColumns[0],
+          description: '',
+          quantity,
+          unit,
+          unitPrice,
+          amount: quantity * unitPrice,
+          remarks: ''
+        } as LineItem;
+      }).filter((row): row is LineItem => row !== null);
+
+      if (parsedRows.length > 0) {
+        onImport(parsedRows);
       }
     } catch (error) {
       console.error('Error parsing pasted data:', error);
