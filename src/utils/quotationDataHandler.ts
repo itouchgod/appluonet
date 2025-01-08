@@ -5,72 +5,105 @@ export const calculateAmount = (quantity: number, unitPrice: number) => {
   return Number((quantity * unitPrice).toFixed(2));
 };
 
+// 默认单位列表
+const defaultUnits = ['pc', 'set', 'length'];
+
+// 处理单位
+const processUnit = (unit: string): string => {
+  if (!unit) return 'pc';
+  
+  // 转换为小写并移除前后空格
+  const normalizedUnit = unit.trim().toLowerCase();
+  
+  // 处理复数形式
+  const singularUnit = normalizedUnit.endsWith('s') ? normalizedUnit.slice(0, -1) : normalizedUnit;
+  
+  // 特殊处理 'pcs'
+  if (normalizedUnit === 'pcs') return 'pc';
+  
+  // 检查是否是默认单位之一
+  return defaultUnits.includes(singularUnit) ? singularUnit : 'pc';
+};
+
 // 处理导入数据
 export const handleImportData = (text: string): LineItem[] => {
   try {
-    // 按行分割，过滤掉空行
-    const rows = text.trim().split('\n').filter(row => row.trim() !== '');
+    // 按硬回车分割成行，但保留原始格式
+    const rows = text.split(/\r\n|\r|\n/);
+    const items: LineItem[] = [];
     
-    // 解析每一行数据
-    return rows.map((row, index) => {
-      // 使用制表符分割，保留空字符串
-      const columns = row.split('\t');
+    for (const row of rows) {
+      if (!row.trim()) continue;
       
-      // 清理数组，移除空字符串但保留位置
-      const cleanColumns = columns.map(col => col.trim());
+      // 按 tab 分割单元格
+      const cells = row.split('\t');
       
-      // 如果名称为空，返回 null
-      if (!cleanColumns[0]) {
-        return null;
+      // 检查是否是有效的数据行
+      if (cells.length >= 3) {
+        // 从后往前找到数量、单位和单价的位置
+        let foundData = false;
+        for (let i = cells.length - 1; i >= 2; i--) {
+          const priceStr = cells[i]?.trim();
+          const unitStr = cells[i - 1]?.trim();
+          const qtyStr = cells[i - 2]?.trim();
+          
+          if (
+            priceStr && 
+            unitStr && 
+            qtyStr && 
+            /^\d+\.?\d*$/.test(priceStr) && 
+            /^\d+$/.test(qtyStr)
+          ) {
+            // 找到了数量、单位和单价
+            const quantity = parseInt(qtyStr);
+            const unit = unitStr;
+            const unitPrice = parseFloat(priceStr);
+            
+            // 前面的所有单元格都是 partName，保持原始格式
+            const partName = cells.slice(0, i - 2).join('\t');
+            
+            items.push({
+              id: items.length + 1,
+              partName,
+              description: '',
+              quantity,
+              unit: processUnit(unit),
+              unitPrice,
+              amount: calculateAmount(quantity, unitPrice)
+            });
+            
+            foundData = true;
+            break;
+          }
+        }
+        
+        if (!foundData && cells[0]) {
+          // 如果没有找到数量和单价，但有内容
+          items.push({
+            id: items.length + 1,
+            partName: cells[0],
+            description: '',
+            quantity: 0,
+            unit: 'pc',
+            unitPrice: 0,
+            amount: 0
+          });
+        }
+      } else if (cells[0]) {
+        // 如果列数不够但有内容
+        items.push({
+          id: items.length + 1,
+          partName: cells[0],
+          description: '',
+          quantity: 0,
+          unit: 'pc',
+          unitPrice: 0,
+          amount: 0
+        });
       }
-
-      // 初始化变量
-      let partName = '';
-      let quantity = 0;
-      let unit = 'lengths';  // 默认使用 lengths
-      let unitPrice = 0;
-
-      // 根据不同的格式处理数据
-      // 格式1：名称 tab 描述 tab 数量 tab 单位 tab 单价
-      // 格式2：名称 tab tab 数量 tab 单位 tab 单价
-      // 格式3：名称 tab 数量 tab tab 单价
-      // 格式4：名称 tab 数量 tab 单价
-
-      partName = cleanColumns[0];  // 名称总是第一列
-
-      // 查找非空值
-      const nonEmptyColumns = cleanColumns.filter(col => col !== '');
-      
-      // 从后往前找数字，分别是单价和数量
-      const numbers = nonEmptyColumns.filter(col => !isNaN(parseFloat(col)));
-      if (numbers.length >= 2) {
-        unitPrice = parseFloat(numbers[numbers.length - 1]);
-        quantity = parseFloat(numbers[numbers.length - 2]);
-      } else if (numbers.length === 1) {
-        quantity = parseFloat(numbers[0]);
-      }
-
-      const amount = calculateAmount(quantity, unitPrice);
-
-      // 创建新的行项目
-      const newItem: LineItem = {
-        id: index + 1,
-        partName: partName,
-        description: '',
-        quantity: quantity,
-        unit: unit,
-        unitPrice: unitPrice,
-        amount: amount
-      };
-
-      console.log('Parsed item:', {
-        raw: cleanColumns,
-        processed: newItem
-      });
-
-      return newItem;
-    }).filter((row): row is LineItem => row !== null);
-
+    }
+    
+    return items;
   } catch (error) {
     console.error('Error importing data:', error);
     return [];

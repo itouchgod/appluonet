@@ -400,10 +400,19 @@ Beneficiary: Luo & Company Co., Limited`,
       return;
     }
 
-    // 对于文本字段（description, hsCode等），直接更新值
-    // 不阻止默认行为，这样可以保持原有的换行格式
-    if (field === 'description' || field === 'hsCode') {
-      updateLineItem(index, field, pasteText);
+    // 对于文本字段，保持原始格式
+    if (field === 'description') {
+      // 检查是否包含 tab，如果包含说明是从 Excel 复制的多个单元格
+      if (pasteText.includes('\t')) {
+        e.preventDefault();
+        // 只取第一个单元格的内容
+        const firstCell = pasteText.split('\t')[0];
+        updateLineItem(index, field, firstCell);
+      } else {
+        // 如果不包含 tab，说明是单个单元格的内容，保持原始格式
+        e.preventDefault();
+        updateLineItem(index, field, pasteText);
+      }
     }
   };
 
@@ -883,13 +892,42 @@ Beneficiary: Luo & Company Co., Limited`,
                                 onChange={e => updateLineItem(index, 'description', e.target.value)}
                                 onPaste={(e) => handleCellPaste(e, index, 'description')}
                                 rows={1}
-                                className={`${tableInputClassName} resize-none overflow-hidden`}
+                                className={`
+                                  w-full
+                                  resize-vertical
+                                  text-center
+                                  py-2 px-3
+                                  border border-transparent
+                                  rounded-lg
+                                  transition-colors
+                                  hover:bg-gray-50 dark:hover:bg-gray-800
+                                  hover:border-[#007AFF]/50 dark:hover:border-[#0A84FF]/50
+                                  focus:bg-gray-50 dark:focus:bg-gray-800
+                                  focus:border-[#007AFF]/50 dark:focus:border-[#0A84FF]/50
+                                  focus:ring-0 focus:outline-none
+                                  bg-transparent
+                                  placeholder:text-gray-300 dark:placeholder:text-gray-600
+                                  overflow-hidden
+                                  [&::-webkit-resizer] {
+                                    display: none;
+                                  }
+                                  hover:[&::-webkit-resizer] {
+                                    display: block;
+                                    width: 4px;
+                                    height: 4px;
+                                    background: linear-gradient(135deg, transparent 0.5px, #007AFF 0.5px);
+                                  }
+                                  dark:hover:[&::-webkit-resizer] {
+                                    background: linear-gradient(135deg, transparent 0.5px, #0A84FF 0.5px);
+                                  }
+                                  [&::-webkit-scrollbar] {
+                                    display: none;
+                                  }
+                                `}
                                 placeholder="Enter description"
-                                style={{ height: 'auto', minHeight: '28px' }}
-                                onInput={(e) => {
-                                  const target = e.target as HTMLTextAreaElement;
-                                  target.style.height = 'auto';
-                                  target.style.height = target.scrollHeight + 'px';
+                                style={{ 
+                                  height: '41px',
+                                  minHeight: '41px'
                                 }}
                               />
                             </td>
