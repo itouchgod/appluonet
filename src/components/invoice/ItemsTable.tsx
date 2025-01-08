@@ -27,7 +27,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
           <tr>
             <th className="px-4 py-2 text-left">No.</th>
             <th className="px-4 py-2 text-left">Description</th>
-            <th className="px-4 py-2 text-center">Q'TY</th>
+            <th className="w-[100px] px-4 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Q&apos;TY</th>
             <th className="px-4 py-2 text-center">Unit</th>
             <th className="px-4 py-2 text-right">U/Price</th>
             <th className="px-4 py-2 text-right">Amount</th>

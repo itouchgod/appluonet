@@ -427,29 +427,24 @@ Beneficiary: Luo & Company Co., Limited`,
     return baseUnit;
   };
 
+  // 处理导入的数据
   const handleImport = (newItems: LineItem[]) => {
-    // 处理每个项目的单位单复数和金额计算
-    const processedItems = newItems.map(item => {
+    // 处理每个项目的单位单复数
+    return newItems.map(item => {
       const baseUnit = item.unit.replace(/s$/, '');
       return {
         ...item,
-        unit: defaultUnits.includes(baseUnit) ? getUnitDisplay(baseUnit, item.quantity) : item.unit,
-        amount: item.quantity * item.unitPrice // 确保计算金额
+        unit: defaultUnits.includes(baseUnit) ? getUnitDisplay(baseUnit, item.quantity) : item.unit
       };
     });
-
-    setInvoiceData(prev => ({
-      ...prev,
-      items: processedItems
-    }));
   };
 
   // 处理单个项目的更改
-  const handleItemChange = (index: number, field: keyof LineItem, value: string | number) => {
-    const newItems = [...invoiceData.items];
+  const handleItemChange = (index: number, field: keyof LineItem, value: string | number, items: LineItem[]) => {
+    const newItems = [...items];
     
     if (field === 'unit') {
-      // 处理单位变更，根据当前数量决定是否需要复数形式
+      // 处理单位变更,根据当前数量决定是否需要复数形式
       const baseUnit = value.toString().replace(/s$/, '');
       const quantity = newItems[index].quantity;
       newItems[index] = {
@@ -457,22 +452,13 @@ Beneficiary: Luo & Company Co., Limited`,
         unit: defaultUnits.includes(baseUnit) ? getUnitDisplay(baseUnit, quantity) : value.toString()
       };
     } else if (field === 'quantity') {
-      // 更新数量时，同时更新单位的单复数和金额
+      // 更新数量时,同时更新单位的单复数
       const quantity = Number(value);
       const baseUnit = newItems[index].unit.replace(/s$/, '');
       newItems[index] = {
         ...newItems[index],
         quantity,
-        unit: defaultUnits.includes(baseUnit) ? getUnitDisplay(baseUnit, quantity) : newItems[index].unit,
-        amount: quantity * newItems[index].unitPrice
-      };
-    } else if (field === 'unitPrice') {
-      // 更新单价时，同时更新金额
-      const unitPrice = Number(value);
-      newItems[index] = {
-        ...newItems[index],
-        unitPrice,
-        amount: newItems[index].quantity * unitPrice
+        unit: defaultUnits.includes(baseUnit) ? getUnitDisplay(baseUnit, quantity) : newItems[index].unit
       };
     } else {
       newItems[index] = {
@@ -481,10 +467,12 @@ Beneficiary: Luo & Company Co., Limited`,
       };
     }
 
-    setInvoiceData(prev => ({
-      ...prev,
-      items: newItems
-    }));
+    // 如果更改了数量或单价,自动计算金额
+    if (field === 'quantity' || field === 'unitPrice') {
+      newItems[index].amount = newItems[index].quantity * newItems[index].unitPrice;
+    }
+
+    return newItems;
   };
 
   return (

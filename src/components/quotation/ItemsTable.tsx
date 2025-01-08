@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ImportDataButton } from './ImportDataButton';
 import type { QuotationData, LineItem } from '@/types/quotation';
-import { parseExcelCell, parseNumberCell, parseExcelData, convertExcelToLineItems } from '@/utils/excelPasteHandler';
+import { parseExcelData, convertExcelToLineItems } from '@/utils/excelPasteHandler';
 
 interface ItemsTableProps {
   data: QuotationData;

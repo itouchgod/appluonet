@@ -16,6 +16,7 @@ import { ImportDataButton } from '@/components/quotation/ImportDataButton';
 import type { QuotationData, LineItem } from '@/types/quotation';
 import { Footer } from '@/components/Footer';
 import { handleImportData } from '@/utils/quotationDataHandler';
+import { parseExcelData, convertExcelToLineItems } from '@/utils/excelPasteHandler';
 
 // 标题样式
 const titleClassName = `text-xl font-semibold text-gray-800 dark:text-gray-200`;
@@ -153,12 +154,12 @@ export default function QuotationPage() {
     if (defaultUnits.includes(baseUnit)) {
       return quantity > 1 ? `${baseUnit}s` : baseUnit;
     }
-    return baseUnit;
+    return baseUnit; // 自定义单位不变化单复数
   };
 
   // 计算金额
   const calculateAmount = (quantity: number, unitPrice: number) => {
-    return Number((quantity * unitPrice).toFixed(2));
+    return quantity * unitPrice;
   };
 
   const handleImport = (newItems: LineItem[]) => {
@@ -170,19 +171,10 @@ export default function QuotationPage() {
   };
 
   // 处理导入数据
-  const handleImportDataLocal = useCallback((text: string) => {
-    try {
-      const parsedRows = handleImportData(text);
-      if (Array.isArray(parsedRows)) {
-        setData(prev => ({
-          ...prev,
-          items: parsedRows
-        }));
-      }
-    } catch (error) {
-      console.error('Error importing data:', error);
-    }
-  }, []);
+  const handleImportDataLocal = (text: string) => {
+    const rows = parseExcelData(text);
+    return convertExcelToLineItems(rows);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
