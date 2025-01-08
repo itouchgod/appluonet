@@ -29,35 +29,6 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
     const currentFieldIndex = fields.indexOf(field);
     const currentRowIndex = index;
 
-    // 如果是 textarea 且按下 Enter 键
-    if ((field === 'partName' || field === 'description') && e.key === 'Enter') {
-      if (e.shiftKey) {
-        // Shift + Enter: 跳转到下一行
-        e.preventDefault();
-        if (currentRowIndex < data.items.length - 1) {
-          const downField = document.querySelector<HTMLElement>(
-            `[data-row="${index + 1}"][data-field="${field}"]`
-          );
-          downField?.focus();
-        }
-      } else {
-        // 普通 Enter: 在当前位置插入换行符
-        e.preventDefault();
-        const target = e.target as HTMLTextAreaElement;
-        const start = target.selectionStart;
-        const end = target.selectionEnd;
-        const value = target.value;
-        const newValue = value.substring(0, start) + '\n' + value.substring(end);
-        handleItemChange(index, field, newValue);
-        
-        // 确保光标位置正确
-        requestAnimationFrame(() => {
-          target.selectionStart = target.selectionEnd = start + 1;
-        });
-      }
-      return;
-    }
-
     switch (e.key) {
       case 'ArrowRight':
         if (currentFieldIndex < fields.length - 1) {
@@ -84,6 +55,14 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
         }
         break;
       case 'ArrowDown':
+        if (currentRowIndex < data.items.length - 1) {
+          const downField = document.querySelector<HTMLElement>(
+            `[data-row="${index + 1}"][data-field="${field}"]`
+          );
+          downField?.focus();
+        }
+        break;
+      case 'Enter':
         if (currentRowIndex < data.items.length - 1) {
           const downField = document.querySelector<HTMLElement>(
             `[data-row="${index + 1}"][data-field="${field}"]`
@@ -180,122 +159,36 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
   // 添加单元格粘贴处理函数
   const handleCellPaste = (e: React.ClipboardEvent<HTMLInputElement | HTMLTextAreaElement>, index: number, field: keyof LineItem) => {
     const pasteText = e.clipboardData.getData('text');
-    e.preventDefault();
     
-    // 如果是单个值的粘贴
+    // 如果是数字字段，进行验证
     if (field === 'quantity') {
-      const value = pasteText.trim().replace(/^"|"$/g, '');
-      if (!/^\d*$/.test(value)) {
+      if (!/^\d*$/.test(pasteText.trim())) {
+        e.preventDefault();
         alert('数量必须是整数');
         return;
       }
-      handleItemChange(index, field, value === '' ? 0 : parseInt(value));
+      const value = pasteText.trim() === '' ? 0 : parseInt(pasteText);
+      e.preventDefault();
+      handleItemChange(index, field, value);
       return;
     }
     
     if (field === 'unitPrice') {
-      const value = pasteText.trim().replace(/^"|"$/g, '');
-      if (!/^-?\d*\.?\d*$/.test(value)) {
+      if (!/^-?\d*\.?\d*$/.test(pasteText.trim())) {
+        e.preventDefault();
         alert('单价必须是数字');
         return;
       }
-      handleItemChange(index, field, value === '' ? 0 : parseFloat(value));
+      const value = pasteText.trim() === '' ? 0 : parseFloat(pasteText);
+      e.preventDefault();
+      handleItemChange(index, field, value);
       return;
     }
 
-    // 对于文本字段，处理Excel格式的数据
+    // 对于文本字段（partName, description, remarks等），直接更新值
+    // 不阻止默认行为，这样可以保持原有的换行格式
     if (field === 'partName' || field === 'description' || field === 'remarks') {
-      // 获取当前字段的值
-      const currentValue = field === 'partName' ? data.items[index].partName :
-                          field === 'description' ? (data.items[index].description || '') :
-                          (data.items[index].remarks || '');
-
-      // 如果包含制表符，说明是从Excel复制的多列数据
-      if (pasteText.includes('\t')) {
-        const newItems = [...data.items];
-        let cells: string[] = [];
-        let currentCell = '';
-        let inQuotes = false;
-        
-        // 逐字符处理粘贴的内容
-        for (let i = 0; i < pasteText.length; i++) {
-          const char = pasteText[i];
-          
-          if (char === '"') {
-            inQuotes = !inQuotes;
-            continue;
-          }
-          
-          if (char === '\t' && !inQuotes) {
-            cells.push(currentCell);
-            currentCell = '';
-            continue;
-          }
-          
-          currentCell += char;
-        }
-        cells.push(currentCell); // 添加最后一个单元格
-        
-        // 更新数据
-        if (field === 'partName') {
-          // 处理第一个单元格的内容（保持换行符）
-          const content = cells[0].replace(/^"|"$/g, '');
-          
-          // 获取当前内容的行数
-          const currentLines = currentValue.split('\n').filter(line => line.trim() !== '');
-          const newLines = content.split('\n').filter(line => line.trim() !== '');
-          
-          // 如果当前内容不为空，且新内容不在当前内容中，则追加
-          const newContent = currentLines.length > 0 && !currentValue.includes(content)
-            ? currentValue + '\n' + content
-            : content;
-          
-          newItems[index] = {
-            ...newItems[index],
-            partName: newContent,
-          };
-          
-          // 如果有数量和单价信息，也更新它们
-          if (cells[3] && /^\d+$/.test(cells[3].trim())) {
-            newItems[index].quantity = parseInt(cells[3].trim());
-          }
-          if (cells[4]) {
-            newItems[index].unit = cells[4].trim();
-          }
-          if (cells[5] && /^-?\d*\.?\d*$/.test(cells[5].trim())) {
-            newItems[index].unitPrice = parseFloat(cells[5].trim());
-          }
-          newItems[index].amount = newItems[index].quantity * newItems[index].unitPrice;
-        } else {
-          // 对于其他文本字段，只更新第一个单元格的内容
-          const content = cells[0].replace(/^"|"$/g, '');
-          
-          // 获取当前内容的行数
-          const currentLines = currentValue.split('\n').filter(line => line.trim() !== '');
-          
-          // 如果当前内容不为空，且新内容不在当前内容中，则追加
-          const newContent = currentLines.length > 0 && !currentValue.includes(content)
-            ? currentValue + '\n' + content
-            : content;
-          
-          handleItemChange(index, field, newContent);
-        }
-        
-        onChange({
-          ...data,
-          items: newItems
-        });
-      } else {
-        // 如果是单个单元格的内容，检查是否需要追加
-        const content = pasteText.replace(/^"|"$/g, '');
-        
-        // 如果当前内容不为空，且新内容不在当前内容中，则追加
-        const newContent = currentValue && !currentValue.includes(content)
-          ? currentValue + '\n' + content
-          : content;
-        
-        handleItemChange(index, field, newContent);
-      }
+      handleItemChange(index, field, pasteText);
     }
   };
 
@@ -335,14 +228,14 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
       <div className={`overflow-x-auto overflow-hidden border border-[#E5E5EA] dark:border-[#2C2C2E]
         bg-white/90 dark:bg-[#1C1C1E]/90 backdrop-blur-xl
         ${(data.otherFees ?? []).length > 0 ? 'rounded-t-2xl' : 'rounded-2xl'}`}>
-        <table className="w-full border-collapse border-spacing-0 table-fixed">
+        <table className="w-full border-collapse border-spacing-0">
           <thead>
             <tr className="bg-[#F5F5F7] dark:bg-[#2C2C2E]
               border-b border-[#E5E5EA] dark:border-[#3C3C3E]">
-              <th className="sticky left-0 z-10 w-[50px] px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7] bg-[#F5F5F7] dark:bg-[#2C2C2E]">No.</th>
-              <th className="w-[300px] px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7] bg-[#F5F5F7] dark:bg-[#2C2C2E]">Part Name</th>
+              <th className="left-0 z-10 w-[50px] px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7] bg-[#F5F5F7] dark:bg-[#2C2C2E]">No.</th>
+              <th className="min-w-[180px] max-w-[300px] w-fit px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7] bg-[#F5F5F7] dark:bg-[#2C2C2E] whitespace-nowrap">Part Name</th>
               {data.showDescription && (
-                <th className="w-[300px] px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Description</th>
+                <th className="min-w-[180px] w-fit px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Description</th>
               )}
               <th className="w-[100px] min-w-[100px] px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Q&apos;TY</th>
               <th className="w-[100px] min-w-[100px] px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Unit</th>
@@ -369,52 +262,50 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                     {index + 1}
                   </span>
                 </td>
-                <td className="px-4 py-2 group hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50">
+                <td className="min-w-[180px] w-fit px-1 py-2 bg-white/90 dark:bg-[#1C1C1E]/90">
                   <textarea
                     value={item.partName}
-                    onChange={(e) => handleItemChange(index, 'partName', e.target.value)}
                     data-row={index}
                     data-field="partName"
+                    onChange={(e) => handleItemChange(index, 'partName', e.target.value)}
                     onKeyDown={(e) => handleKeyDown(e, index, 'partName')}
                     onPaste={(e) => handleCellPaste(e, index, 'partName')}
-                    className="w-full bg-transparent border-none resize-none text-center text-sm text-[#1D1D1F] dark:text-[#F5F5F7] leading-normal
-                      focus:outline-none focus:ring-2 focus:ring-[#007AFF]/20 dark:focus:ring-[#0A84FF]/20 rounded-lg
-                      transition-all duration-200 whitespace-pre-wrap overflow-hidden"
-                    style={{ 
-                      height: item.partName.includes('\n') ? 'auto' : '24px',
-                      minHeight: '24px'
-                    }}
+                    rows={1}
+                    className="w-full px-3 py-1.5 bg-transparent border border-transparent
+                      focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
+                      hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
+                      text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
+                      placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
+                      transition-all duration-200 text-center whitespace-pre-wrap resize-none overflow-hidden"
+                    style={{ height: 'auto', minHeight: '28px' }}
                     onInput={(e) => {
                       const target = e.target as HTMLTextAreaElement;
-                      target.style.height = '24px';
-                      if (target.value.includes('\n')) {
-                        target.style.height = target.scrollHeight + 'px';
-                      }
+                      target.style.height = 'auto';
+                      target.style.height = target.scrollHeight + 'px';
                     }}
                   />
                 </td>
                 {data.showDescription && (
-                  <td className="px-4 py-2 group hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50">
+                  <td className="w-[120px] px-4 py-2">
                     <textarea
-                      value={item.description || ''}
-                      onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                      value={item.description}
                       data-row={index}
                       data-field="description"
+                      onChange={(e) => handleItemChange(index, 'description', e.target.value)}
                       onKeyDown={(e) => handleKeyDown(e, index, 'description')}
                       onPaste={(e) => handleCellPaste(e, index, 'description')}
-                      className="w-full bg-transparent border-none resize-none text-center text-sm text-[#1D1D1F] dark:text-[#F5F5F7] leading-normal
-                        focus:outline-none focus:ring-2 focus:ring-[#007AFF]/20 dark:focus:ring-[#0A84FF]/20 rounded-lg
-                        transition-all duration-200 whitespace-pre-wrap overflow-hidden"
-                      style={{ 
-                        height: (item.description || '').includes('\n') ? 'auto' : '24px',
-                        minHeight: '24px'
-                      }}
+                      rows={1}
+                      className="w-full px-3 py-1.5 bg-transparent border border-transparent
+                        focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
+                        hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
+                        text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
+                        placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
+                        transition-all duration-200 text-center whitespace-pre-wrap resize-none overflow-hidden"
+                      style={{ height: 'auto', minHeight: '28px' }}
                       onInput={(e) => {
                         const target = e.target as HTMLTextAreaElement;
-                        target.style.height = '24px';
-                        if (target.value.includes('\n')) {
-                          target.style.height = target.scrollHeight + 'px';
-                        }
+                        target.style.height = 'auto';
+                        target.style.height = target.scrollHeight + 'px';
                       }}
                     />
                   </td>
