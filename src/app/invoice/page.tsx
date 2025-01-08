@@ -27,7 +27,7 @@ const tableInputClassName = `w-full px-3 py-2 rounded-xl
   placeholder:text-gray-400/60 dark:placeholder:text-gray-500/60
   transition-all duration-300 ease-out
   hover:bg-[#007AFF]/5 dark:hover:bg-[#0A84FF]/5
-  text-center`;
+  text-center whitespace-pre-wrap`;
 
 const numberInputClassName = `${tableInputClassName}
   [appearance:textfield] 
@@ -402,15 +402,24 @@ Beneficiary: Luo & Company Co., Limited`,
     };
   }, [handleImportData]);
 
-  // 添加粘贴事件处理函数
+  // 修改全局粘贴事件处理函数
   useEffect(() => {
     const handlePaste = async (event: ClipboardEvent) => {
       // 检查粘贴目标是否是输入框或文本区域
       const target = event.target as HTMLElement;
+      
+      // 如果目标元素是输入框或文本区域，直接返回，使用默认粘贴行为
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
-        return; // 如果是输入框，使用默认粘贴行为
+        return;
       }
 
+      // 检查是否点击在表格内的任何位置
+      const isTableCell = target.closest('td') !== null;
+      if (isTableCell) {
+        return; // 如果是表格单元格内，直接返回，使用默认粘贴行为
+      }
+
+      // 只有在非表格区域的粘贴才执行全局粘贴
       event.preventDefault();
       try {
         let text = event.clipboardData?.getData('text') || '';
@@ -433,6 +442,42 @@ Beneficiary: Luo & Company Co., Limited`,
       document.removeEventListener('paste', handlePaste);
     };
   }, [handleImportData]);
+
+  // 修改单元格粘贴处理函数
+  const handleCellPaste = (e: React.ClipboardEvent<HTMLInputElement | HTMLTextAreaElement>, index: number, field: keyof LineItem) => {
+    const pasteText = e.clipboardData.getData('text');
+    
+    // 如果是数字字段，进行验证
+    if (field === 'quantity') {
+      if (!/^\d*$/.test(pasteText.trim())) {
+        e.preventDefault();
+        alert('数量必须是整数');
+        return;
+      }
+      const value = pasteText.trim() === '' ? 0 : parseInt(pasteText);
+      e.preventDefault();
+      updateLineItem(index, field, value);
+      return;
+    }
+    
+    if (field === 'unitPrice') {
+      if (!/^-?\d*\.?\d*$/.test(pasteText.trim())) {
+        e.preventDefault();
+        alert('单价必须是数字');
+        return;
+      }
+      const value = pasteText.trim() === '' ? 0 : parseFloat(pasteText);
+      e.preventDefault();
+      updateLineItem(index, field, value);
+      return;
+    }
+
+    // 对于文本字段（description, hsCode等），直接更新值
+    // 不阻止默认行为，这样可以保持原有的换行格式
+    if (field === 'description' || field === 'hsCode') {
+      updateLineItem(index, field, pasteText);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-black">
@@ -827,6 +872,7 @@ Beneficiary: Luo & Company Co., Limited`,
                                   type="text"
                                   value={item.hsCode}
                                   onChange={e => updateLineItem(index, 'hsCode', e.target.value)}
+                                  onPaste={(e) => handleCellPaste(e, index, 'hsCode')}
                                   className={tableInputClassName}
                                   placeholder="HS Code"
                                 />
@@ -836,9 +882,16 @@ Beneficiary: Luo & Company Co., Limited`,
                               <textarea
                                 value={item.description}
                                 onChange={e => updateLineItem(index, 'description', e.target.value)}
+                                onPaste={(e) => handleCellPaste(e, index, 'description')}
                                 rows={1}
-                                className={`${tableInputClassName} resize min-h-[28px]`}
+                                className={`${tableInputClassName} resize-none overflow-hidden`}
                                 placeholder="Enter description"
+                                style={{ height: 'auto', minHeight: '28px' }}
+                                onInput={(e) => {
+                                  const target = e.target as HTMLTextAreaElement;
+                                  target.style.height = 'auto';
+                                  target.style.height = target.scrollHeight + 'px';
+                                }}
                               />
                             </td>
                             <td className="py-1.5 px-1">
@@ -856,6 +909,7 @@ Beneficiary: Luo & Company Co., Limited`,
                                     }
                                   }
                                 }}
+                                onPaste={(e) => handleCellPaste(e, index, 'quantity')}
                                 onFocus={(e) => {
                                   setEditingQuantityIndex(index);
                                   setEditingQuantity(item.quantity === 0 ? '' : item.quantity.toString());
@@ -898,6 +952,7 @@ Beneficiary: Luo & Company Co., Limited`,
                                     }
                                   }
                                 }}
+                                onPaste={(e) => handleCellPaste(e, index, 'unitPrice')}
                                 onFocus={(e) => {
                                   setEditingUnitPriceIndex(index);
                                   setEditingUnitPrice(item.unitPrice === 0 ? '' : item.unitPrice.toString());

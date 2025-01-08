@@ -156,6 +156,42 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
     });
   };
 
+  // 添加单元格粘贴处理函数
+  const handleCellPaste = (e: React.ClipboardEvent<HTMLInputElement | HTMLTextAreaElement>, index: number, field: keyof LineItem) => {
+    const pasteText = e.clipboardData.getData('text');
+    
+    // 如果是数字字段，进行验证
+    if (field === 'quantity') {
+      if (!/^\d*$/.test(pasteText.trim())) {
+        e.preventDefault();
+        alert('数量必须是整数');
+        return;
+      }
+      const value = pasteText.trim() === '' ? 0 : parseInt(pasteText);
+      e.preventDefault();
+      handleItemChange(index, field, value);
+      return;
+    }
+    
+    if (field === 'unitPrice') {
+      if (!/^-?\d*\.?\d*$/.test(pasteText.trim())) {
+        e.preventDefault();
+        alert('单价必须是数字');
+        return;
+      }
+      const value = pasteText.trim() === '' ? 0 : parseFloat(pasteText);
+      e.preventDefault();
+      handleItemChange(index, field, value);
+      return;
+    }
+
+    // 对于文本字段（partName, description, remarks等），直接更新值
+    // 不阻止默认行为，这样可以保持原有的换行格式
+    if (field === 'partName' || field === 'description' || field === 'remarks') {
+      handleItemChange(index, field, pasteText);
+    }
+  };
+
   // 处理软删除
   const handleSoftDelete = (index: number) => {
     onChange({
@@ -234,6 +270,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                     data-field="partName"
                     onChange={(e) => handleItemChange(index, 'partName', e.target.value)}
                     onKeyDown={(e) => handleKeyDown(e, index, 'partName')}
+                    onPaste={(e) => handleCellPaste(e, index, 'partName')}
                     className="w-full px-3 py-1.5 bg-transparent border border-transparent
                       focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
                       hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
@@ -251,6 +288,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                       data-field="description"
                       onChange={(e) => handleItemChange(index, 'description', e.target.value)}
                       onKeyDown={(e) => handleKeyDown(e, index, 'description')}
+                      onPaste={(e) => handleCellPaste(e, index, 'description')}
                       className="w-full px-3 py-1.5 bg-transparent border border-transparent
                         focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
                         hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
@@ -275,6 +313,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                       }
                     }}
                     onKeyDown={(e) => handleKeyDown(e, index, 'quantity')}
+                    onPaste={(e) => handleCellPaste(e, index, 'quantity')}
                     onFocus={(e) => {
                       setEditingQtyIndex(index);
                       setEditingQtyAmount(item.quantity === 0 ? '' : item.quantity.toString());
@@ -324,9 +363,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                   <input
                     type="text"
                     inputMode="decimal"
-                    value={editingPriceIndex === index 
-                      ? editingPriceAmount 
-                      : (item.unitPrice === 0 ? '' : item.unitPrice.toFixed(2))}
+                    value={editingPriceIndex === index ? editingPriceAmount : (item.unitPrice === 0 ? '' : item.unitPrice.toFixed(2))}
                     data-row={index}
                     data-field="unitPrice"
                     onChange={(e) => {
@@ -337,6 +374,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                       }
                     }}
                     onKeyDown={(e) => handleKeyDown(e, index, 'unitPrice')}
+                    onPaste={(e) => handleCellPaste(e, index, 'unitPrice')}
                     onFocus={(e) => {
                       setEditingPriceIndex(index);
                       setEditingPriceAmount(item.unitPrice === 0 ? '' : item.unitPrice.toString());
@@ -375,6 +413,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                       data-field="remarks"
                       onChange={(e) => handleItemChange(index, 'remarks', e.target.value)}
                       onKeyDown={(e) => handleKeyDown(e, index, 'remarks')}
+                      onPaste={(e) => handleCellPaste(e, index, 'remarks')}
                       className="w-full px-3 py-1.5 bg-transparent border border-transparent
                         focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
                         hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
