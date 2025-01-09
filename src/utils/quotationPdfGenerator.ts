@@ -166,31 +166,31 @@ export const generateQuotationPDF = async (data: QuotationData, preview = false)
           index + 1,
           {
             content: item.partName,
-            styles: item.highlight?.partName ? { textColor: [255, 0, 0] } : {}
+            styles: item.highlight?.partName ? { textColor: [255, 0, 0] as [number, number, number] } : {}
           },
           ...(data.showDescription ? [{
             content: item.description || '',
-            styles: item.highlight?.description ? { textColor: [255, 0, 0] } : {}
+            styles: item.highlight?.description ? { textColor: [255, 0, 0] as [number, number, number] } : {}
           }] : []),
           {
             content: item.quantity || '',  // 数量为 0 时显示空字符串
-            styles: item.highlight?.quantity ? { textColor: [255, 0, 0] } : {}
+            styles: item.highlight?.quantity ? { textColor: [255, 0, 0] as [number, number, number] } : {}
           },
           {
             content: item.quantity ? item.unit : '',  // 数量为 0 时单位显示空字符串
-            styles: item.highlight?.unit ? { textColor: [255, 0, 0] } : {}
+            styles: item.highlight?.unit ? { textColor: [255, 0, 0] as [number, number, number] } : {}
           },
           {
             content: item.unitPrice === 0 ? '' : item.unitPrice.toFixed(2),
-            styles: item.highlight?.unitPrice ? { textColor: [255, 0, 0] } : {}
+            styles: item.highlight?.unitPrice ? { textColor: [255, 0, 0] as [number, number, number] } : {}
           },
           {
             content: item.amount === 0 ? '' : item.amount.toFixed(2),
-            styles: item.highlight?.amount ? { textColor: [255, 0, 0] } : {}
+            styles: item.highlight?.amount ? { textColor: [255, 0, 0] as [number, number, number] } : {}
           },
           ...(data.showRemarks ? [{
             content: item.remarks || '',
-            styles: item.highlight?.remarks ? { textColor: [255, 0, 0] } : {}
+            styles: item.highlight?.remarks ? { textColor: [255, 0, 0] as [number, number, number] } : {}
           }] : [])
         ]),
         // Other Fees 行
