@@ -170,7 +170,7 @@ export const generateOrderConfirmationPDF = async (data: QuotationData, preview 
             styles: item.highlight?.quantity ? { textColor: [255, 0, 0] as [number, number, number] } : {}
           },
           {
-            content: item.quantity === 0 ? '' : item.unit,
+            content: item.unit || '',
             styles: item.highlight?.unit ? { textColor: [255, 0, 0] as [number, number, number] } : {}
           },
           {
