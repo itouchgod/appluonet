@@ -220,9 +220,6 @@ export const generateOrderConfirmationPDF = async (data: QuotationData, preview 
     const totalText = `Total Amount: ${currencySymbols[data.currency]}${total.toFixed(2)}`;
     doc.text(totalText, pageWidth - 20 - doc.getTextWidth(totalText), currentY);
 
-    // 记录总金额的位置，用于后续定位印章
-    const totalAmountY = currentY;
-
     // 添加备注
     if (data.notes && data.notes.length > 0 && data.notes.some(note => note.trim() !== '')) {
       currentY += 8;

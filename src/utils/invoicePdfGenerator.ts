@@ -228,15 +228,15 @@ export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolea
         valign: 'middle'
       },
       columnStyles: (() => {
-        const styles: any = {
-          '0': { halign: 'center', cellWidth: '5%' },   // No.
-          ...(data.showHsCode ? { '1': { halign: 'center', cellWidth: '10%' } } : {}),   // HS Code
-          [data.showHsCode ? '2' : '1']: { halign: 'center', cellWidth: '15%' },   // Part Name
+        const styles: Record<string, { halign: 'center'; cellWidth: number | 'auto' }> = {
+          '0': { halign: 'center', cellWidth: 5 },   // No.
+          ...(data.showHsCode ? { '1': { halign: 'center', cellWidth: 10 } } : {}),   // HS Code
+          [data.showHsCode ? '2' : '1']: { halign: 'center', cellWidth: 15 },   // Part Name
           ...(data.showDescription ? { [data.showHsCode ? '3' : '2']: { halign: 'center', cellWidth: 'auto' } } : {}), // Description
-          [data.showHsCode && data.showDescription ? '4' : (data.showHsCode || data.showDescription ? '3' : '2')]: { halign: 'center', cellWidth: '8%' },   // Q'TY
-          [data.showHsCode && data.showDescription ? '5' : (data.showHsCode || data.showDescription ? '4' : '3')]: { halign: 'center', cellWidth: '8%' },   // Unit
-          [data.showHsCode && data.showDescription ? '6' : (data.showHsCode || data.showDescription ? '5' : '4')]: { halign: 'center', cellWidth: '12%' },   // U/Price
-          [data.showHsCode && data.showDescription ? '7' : (data.showHsCode || data.showDescription ? '6' : '5')]: { halign: 'center', cellWidth: '12%' }    // Amount
+          [data.showHsCode && data.showDescription ? '4' : (data.showHsCode || data.showDescription ? '3' : '2')]: { halign: 'center', cellWidth: 8 },   // Q'TY
+          [data.showHsCode && data.showDescription ? '5' : (data.showHsCode || data.showDescription ? '4' : '3')]: { halign: 'center', cellWidth: 8 },   // Unit
+          [data.showHsCode && data.showDescription ? '6' : (data.showHsCode || data.showDescription ? '5' : '4')]: { halign: 'center', cellWidth: 12 },   // U/Price
+          [data.showHsCode && data.showDescription ? '7' : (data.showHsCode || data.showDescription ? '6' : '5')]: { halign: 'center', cellWidth: 12 }    // Amount
         };
         return styles;
       })(),

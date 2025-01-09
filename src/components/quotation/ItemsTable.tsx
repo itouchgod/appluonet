@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { ImportDataButton } from './ImportDataButton';
 import type { QuotationData, LineItem } from '@/types/quotation';
-import { parseExcelData, convertExcelToLineItems } from '@/utils/excelPasteHandler';
 
 interface ItemsTableProps {
   data: QuotationData;
@@ -10,6 +9,9 @@ interface ItemsTableProps {
 
 // Add highlight class constant
 const highlightClass = 'text-red-500 font-medium';
+
+// 默认单位列表（需要单复数变化的单位）
+const defaultUnits = ['pc', 'set', 'length'] as const;
 
 export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
   const [editingPriceIndex, setEditingPriceIndex] = useState<number | null>(null);
@@ -97,7 +99,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
       const baseUnit = item.unit.replace(/s$/, '');
       return {
         ...item,
-        unit: defaultUnits.includes(baseUnit) ? getUnitDisplay(baseUnit, item.quantity) : item.unit
+        unit: defaultUnits.includes(baseUnit as typeof defaultUnits[number]) ? getUnitDisplay(baseUnit, item.quantity) : item.unit
       };
     });
 
@@ -107,13 +109,11 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
     });
   };
 
-  // 默认单位列表（需要单复数变化的单位）
-  const defaultUnits = ['pc', 'set', 'length'];
   const availableUnits = [...defaultUnits, ...(data.customUnits || [])];
 
   // 处理单位的单复数
   const getUnitDisplay = (baseUnit: string, quantity: number) => {
-    if (defaultUnits.includes(baseUnit)) {
+    if (defaultUnits.includes(baseUnit as typeof defaultUnits[number])) {
       return quantity > 1 ? `${baseUnit}s` : baseUnit;
     }
     return baseUnit; // 自定义单位不变化单复数
@@ -134,7 +134,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
       const quantity = newItems[index].quantity;
       newItems[index] = {
         ...newItems[index],
-        unit: defaultUnits.includes(baseUnit) ? getUnitDisplay(baseUnit, quantity) : value.toString()
+        unit: defaultUnits.includes(baseUnit as typeof defaultUnits[number]) ? getUnitDisplay(baseUnit, quantity) : value.toString()
       };
     } else if (field === 'quantity') {
       // 更新数量时,同时更新单位的单复数
@@ -143,7 +143,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
       newItems[index] = {
         ...newItems[index],
         quantity,
-        unit: defaultUnits.includes(baseUnit) ? getUnitDisplay(baseUnit, quantity) : newItems[index].unit
+        unit: defaultUnits.includes(baseUnit as typeof defaultUnits[number]) ? getUnitDisplay(baseUnit, quantity) : newItems[index].unit
       };
     } else if (field === 'partName') {
       // 特殊处理 partName 字段，保留换行符
@@ -207,7 +207,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
       case 'unit':
         // 单位处理，自动处理单复数
         const baseUnit = cleanText.toLowerCase().replace(/s$/, '');
-        if (defaultUnits.includes(baseUnit)) {
+        if (defaultUnits.includes(baseUnit as typeof defaultUnits[number])) {
           const quantity = data.items[index].quantity;
           handleItemChange(index, field, getUnitDisplay(baseUnit, quantity));
         } else {
@@ -411,7 +411,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                       ${item.highlight?.unit ? highlightClass : ''}`}
                   >
                     {availableUnits.map(unit => {
-                      const displayUnit = defaultUnits.includes(unit) ? getUnitDisplay(unit, item.quantity) : unit;
+                      const displayUnit = defaultUnits.includes(unit as typeof defaultUnits[number]) ? getUnitDisplay(unit, item.quantity) : unit;
                       return (
                         <option key={unit} value={displayUnit}>
                           {displayUnit}
