@@ -5,6 +5,8 @@ import type { QuotationData, LineItem } from '@/types/quotation';
 interface ItemsTableProps {
   data: QuotationData;
   onChange: (data: QuotationData) => void;
+  selectedGroupId?: string | null;
+  onGroupSelect?: (groupId: string | null) => void;
 }
 
 // Add highlight class constant
@@ -13,7 +15,54 @@ const highlightClass = 'text-red-500 font-medium';
 // 默认单位列表（需要单复数变化的单位）
 const defaultUnits = ['pc', 'set', 'length'] as const;
 
-export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
+// 检查是否是组中的最后一项
+const isLastItemInGroup = (items: LineItem[], currentIndex: number) => {
+  const currentItem = items[currentIndex];
+  if (!currentItem.groupId) return true;
+  
+  const nextItem = items[currentIndex + 1];
+  return !nextItem || nextItem.groupId !== currentItem.groupId;
+};
+
+// 检查是否是组中的第一项
+const isFirstItemInGroup = (items: LineItem[], currentIndex: number) => {
+  const currentItem = items[currentIndex];
+  if (!currentItem.groupId) return true;
+  
+  const prevItem = items[currentIndex - 1];
+  return !prevItem || prevItem.groupId !== currentItem.groupId;
+};
+
+// 获取组内行数
+const getGroupRowSpan = (items: LineItem[], currentIndex: number) => {
+  const currentItem = items[currentIndex];
+  if (!currentItem.groupId) return 1;
+  
+  let span = 1;
+  for (let i = currentIndex + 1; i < items.length; i++) {
+    if (items[i].groupId === currentItem.groupId) {
+      span++;
+    } else {
+      break;
+    }
+  }
+  return span;
+};
+
+// 获取组内所有数量的总和
+const getGroupTotalQuantity = (items: LineItem[], groupId: string | null) => {
+  if (!groupId) return 0;
+  return items
+    .filter(item => item.groupId === groupId)
+    .reduce((sum, item) => sum + item.quantity, 0);
+};
+
+export const ItemsTable: React.FC<ItemsTableProps> = ({ 
+  data, 
+  onChange,
+  selectedGroupId,
+  onGroupSelect
+}) => {
   // 可用单位列表
   const availableUnits = [...defaultUnits, ...(data.customUnits || [])] as const;
 
@@ -154,12 +203,35 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
         quantity,
         unit: defaultUnits.includes(baseUnit as typeof defaultUnits[number]) ? getUnitDisplay(baseUnit, quantity) : newItems[index].unit
       };
-    } else if (field === 'partName') {
-      // 特殊处理 partName 字段，保留换行符
-      newItems[index] = {
-        ...newItems[index],
-        [field]: value.toString()
-      };
+
+      // 如果是组合项，更新组内最后一项的金额
+      if (newItems[index].groupId) {
+        const groupId = newItems[index].groupId;
+        const lastGroupItemIndex = newItems.findIndex((item, i) => 
+          item.groupId === groupId && isLastItemInGroup(newItems, i)
+        );
+        if (lastGroupItemIndex !== -1) {
+          const totalQuantity = getGroupTotalQuantity(newItems, groupId);
+          newItems[lastGroupItemIndex].amount = totalQuantity * newItems[lastGroupItemIndex].unitPrice;
+        }
+      }
+    } else if (field === 'unitPrice') {
+      // 如果是组合项的最后一项，使用组内总数量计算金额
+      if (newItems[index].groupId && isLastItemInGroup(newItems, index)) {
+        const totalQuantity = getGroupTotalQuantity(newItems, newItems[index].groupId);
+        newItems[index] = {
+          ...newItems[index],
+          unitPrice: Number(value),
+          amount: totalQuantity * Number(value)
+        };
+      } else if (!newItems[index].groupId) {
+        // 非组合项正常计算
+        newItems[index] = {
+          ...newItems[index],
+          unitPrice: Number(value),
+          amount: newItems[index].quantity * Number(value)
+        };
+      }
     } else {
       newItems[index] = {
         ...newItems[index],
@@ -167,9 +239,12 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
       };
     }
 
-    // 如果更改了数量或单价,自动计算金额
-    if (field === 'quantity' || field === 'unitPrice') {
+    // 如果更改了单价或数量，且不是组合项，则计算金额
+    if ((field === 'unitPrice' || field === 'quantity') && !newItems[index].groupId) {
       newItems[index].amount = newItems[index].quantity * newItems[index].unitPrice;
+    } else if ((field === 'unitPrice' || field === 'quantity') && newItems[index].groupId) {
+      // 如果是组合项，总价等于单价
+      newItems[index].amount = newItems[index].unitPrice;
     }
 
     onChange({
@@ -291,11 +366,18 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
     });
   };
 
+  // 处理行点击
+  const handleRowClick = (item: LineItem) => {
+    if (onGroupSelect) {
+      onGroupSelect(item.groupId || null);
+    }
+  };
+
   return (
     <div className="space-y-0">
       <ImportDataButton onImport={handleImport} />
       <div className="text-sm text-gray-500 dark:text-gray-400 mb-2 px-1">
-        提示：双击单元格可以切换红色高亮显示
+        提示：双击单元格可以切换红色高亮显示，点击行可以选择组
       </div>
       <div className="overflow-x-auto">
         <div className="inline-block min-w-full align-middle">
@@ -321,211 +403,241 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                 </tr>
               </thead>
               <tbody>
-                {data.items.map((item, index) => (
-                  <tr key={item.id} 
-                    className="border-t border-[#E5E5EA] dark:border-[#2C2C2E]">
-                    <td className="sticky left-0 z-10 w-[50px] px-1 py-2 text-center text-sm bg-white/90 dark:bg-[#1C1C1E]/90">
-                      <span 
-                        className="flex items-center justify-center w-5 h-5 rounded-full 
-                          text-xs text-gray-400
-                          hover:bg-red-100 hover:text-red-600 
-                          cursor-pointer transition-colors"
-                        onClick={() => handleSoftDelete(index)}
-                        title="Click to delete"
-                      >
-                        {index + 1}
-                      </span>
-                    </td>
-                    <td className="min-w-[180px] w-fit px-1 py-2 bg-white/90 dark:bg-[#1C1C1E]/90">
-                      <textarea
-                        value={item.partName}
-                        data-row={index}
-                        data-field="partName"
-                        onChange={(e) => {
-                          handleItemChange(index, 'partName', e.target.value);
-                          e.target.style.height = '28px';
-                          e.target.style.height = `${e.target.scrollHeight}px`;
-                        }}
-                        onDoubleClick={() => handleDoubleClick(index, 'partName')}
-                        onKeyDown={(e) => handleKeyDown(e, index, 'partName')}
-                        onPaste={(e) => handleCellPaste(e, index, 'partName')}
-                        className={`w-full px-3 py-1.5 bg-transparent border border-transparent
-                          focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
-                          hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
-                          text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
-                          placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
-                          transition-all duration-200 text-center whitespace-pre-wrap resize-y overflow-hidden
-                          ${item.highlight?.partName ? highlightClass : ''}`}
-                        style={{ 
-                          height: '28px'
-                        }}
-                      />
-                    </td>
-                    {data.showDescription && (
-                      <td className="min-w-[180px] w-fit px-1 py-2">
+                {data.items.map((item, index) => {
+                  const isFirstInGroup = isFirstItemInGroup(data.items, index);
+                  const isSelected = item.groupId === selectedGroupId;
+                  const groupBorderClass = item.groupId ? 
+                    (isFirstInGroup ? 'border-t-2 border-t-blue-200 dark:border-t-blue-800' : '') : '';
+                  const rowSpan = isFirstInGroup && item.groupId ? getGroupRowSpan(data.items, index) : 1;
+                  const showPrice = !item.groupId || isFirstInGroup;
+
+                  return (
+                    <tr key={item.id} 
+                      onClick={() => handleRowClick(item)}
+                      className={`border-t border-[#E5E5EA] dark:border-[#2C2C2E] ${groupBorderClass}
+                        ${item.groupId ? 'bg-blue-50/50 dark:bg-blue-900/20' : ''}
+                        ${isSelected ? 'bg-blue-100 dark:bg-blue-800/30' : ''}
+                        cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/30
+                        transition-colors duration-200`}>
+                      <td className="sticky left-0 z-10 w-[50px] px-1 py-2 text-center text-sm bg-white/90 dark:bg-[#1C1C1E]/90">
+                        <span 
+                          className="flex items-center justify-center w-5 h-5 rounded-full 
+                            text-xs text-gray-400
+                            hover:bg-red-100 hover:text-red-600 
+                            cursor-pointer transition-colors"
+                          onClick={() => handleSoftDelete(index)}
+                          title="Click to delete"
+                        >
+                          {index + 1}
+                        </span>
+                      </td>
+                      <td className="min-w-[180px] w-fit px-1 py-2 bg-white/90 dark:bg-[#1C1C1E]/90">
                         <textarea
-                          value={item.description}
+                          value={item.partName}
                           data-row={index}
-                          data-field="description"
-                          onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                          onDoubleClick={() => handleDoubleClick(index, 'description')}
-                          onKeyDown={(e) => handleKeyDown(e, index, 'description')}
-                          onPaste={(e) => handleCellPaste(e, index, 'description')}
+                          data-field="partName"
+                          onChange={(e) => {
+                            handleItemChange(index, 'partName', e.target.value);
+                            e.target.style.height = '28px';
+                            e.target.style.height = `${e.target.scrollHeight}px`;
+                          }}
+                          onDoubleClick={() => handleDoubleClick(index, 'partName')}
+                          onKeyDown={(e) => handleKeyDown(e, index, 'partName')}
+                          onPaste={(e) => handleCellPaste(e, index, 'partName')}
                           className={`w-full px-3 py-1.5 bg-transparent border border-transparent
                             focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
                             hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
                             text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
                             placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
                             transition-all duration-200 text-center whitespace-pre-wrap resize-y overflow-hidden
-                            ${item.highlight?.description ? highlightClass : ''}`}
+                            ${item.highlight?.partName ? highlightClass : ''}`}
                           style={{ 
                             height: '28px'
                           }}
-                          onInput={(e) => {
-                            const target = e.target as HTMLTextAreaElement;
-                            target.style.height = 'auto';
-                            target.style.height = `${target.scrollHeight}px`;
-                          }}
                         />
                       </td>
-                    )}
-                    <td className="w-[100px] min-w-[100px] px-1 py-2">
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        value={editingQtyIndex === index ? editingQtyAmount : (item.quantity === 0 ? '' : item.quantity.toString())}
-                        data-row={index}
-                        data-field="quantity"
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          if (/^\d*$/.test(value)) {
-                            setEditingQtyAmount(value);
-                            handleItemChange(index, 'quantity', value === '' ? 0 : parseInt(value));
-                          }
-                        }}
-                        onDoubleClick={() => handleDoubleClick(index, 'quantity')}
-                        onKeyDown={(e) => handleKeyDown(e, index, 'quantity')}
-                        onPaste={(e) => handleCellPaste(e, index, 'quantity')}
-                        onFocus={(e) => {
-                          setEditingQtyIndex(index);
-                          setEditingQtyAmount(item.quantity === 0 ? '' : item.quantity.toString());
-                          e.target.select();
-                        }}
-                        onBlur={() => {
-                          setEditingQtyIndex(null);
-                          setEditingQtyAmount('');
-                        }}
-                        className={`w-full px-3 py-1.5 bg-transparent border border-transparent
-                          focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
-                          hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
-                          text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
-                          placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
-                          transition-all duration-200 text-center
-                          [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none
-                          ${item.highlight?.quantity ? highlightClass : ''}`}
-                      />
-                    </td>
-                    <td className="w-[100px] min-w-[100px] px-1 py-2">
-                      <select
-                        value={item.unit}
-                        data-row={index}
-                        data-field="unit"
-                        onChange={(e) => {
-                          handleItemChange(index, 'unit', e.target.value);
-                        }}
-                        onDoubleClick={() => handleDoubleClick(index, 'unit')}
-                        onKeyDown={(e) => handleKeyDown(e, index, 'unit')}
-                        className={`w-full px-3 py-1.5 bg-transparent border border-transparent
-                          focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
-                          hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
-                          text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
-                          placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
-                          transition-all duration-200 text-center cursor-pointer
-                          appearance-none
-                          ${item.highlight?.unit ? highlightClass : ''}`}
-                      >
-                        {availableUnits.map(unit => {
-                          const displayUnit = defaultUnits.includes(unit as typeof defaultUnits[number]) ? getUnitDisplay(unit, item.quantity) : unit;
-                          return (
-                            <option key={unit} value={displayUnit}>
-                              {displayUnit}
-                            </option>
-                          );
-                        })}
-                      </select>
-                    </td>
-                    <td className="w-[120px] min-w-[120px] px-1 py-2">
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        value={editingPriceIndex === index ? editingPriceAmount : (item.unitPrice === 0 ? '' : item.unitPrice.toFixed(2))}
-                        data-row={index}
-                        data-field="unitPrice"
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          if (/^-?\d*\.?\d*$/.test(value)) {
-                            setEditingPriceAmount(value);
-                            handleItemChange(index, 'unitPrice', value === '' ? 0 : parseFloat(value));
-                          }
-                        }}
-                        onDoubleClick={() => handleDoubleClick(index, 'unitPrice')}
-                        onKeyDown={(e) => handleKeyDown(e, index, 'unitPrice')}
-                        onPaste={(e) => handleCellPaste(e, index, 'unitPrice')}
-                        onFocus={(e) => {
-                          setEditingPriceIndex(index);
-                          setEditingPriceAmount(item.unitPrice === 0 ? '' : item.unitPrice.toString());
-                          e.target.select();
-                        }}
-                        onBlur={() => {
-                          setEditingPriceIndex(null);
-                          setEditingPriceAmount('');
-                        }}
-                        className={`w-full px-3 py-1.5 bg-transparent border border-transparent
-                          focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
-                          hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
-                          text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
-                          placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
-                          transition-all duration-200 text-center
-                          [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none
-                          ${item.highlight?.unitPrice ? highlightClass : ''}`}
-                      />
-                    </td>
-                    <td className="w-[120px] min-w-[120px] px-1 py-2">
-                      <input
-                        type="text"
-                        value={item.amount ? item.amount.toFixed(2) : ''}
-                        readOnly
-                        onDoubleClick={() => handleDoubleClick(index, 'amount')}
-                        className={`w-full px-3 py-1.5 bg-transparent
-                          text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
-                          placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
-                          transition-all duration-200 text-center
-                          ${item.highlight?.amount ? highlightClass : ''}`}
-                      />
-                    </td>
-                    {data.showRemarks && (
-                      <td className="w-[200px] px-1 py-2">
+                      {data.showDescription && (
+                        <td className="min-w-[180px] w-fit px-1 py-2">
+                          <textarea
+                            value={item.description}
+                            onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                            onDoubleClick={() => handleDoubleClick(index, 'description')}
+                            onKeyDown={(e) => handleKeyDown(e, index, 'description')}
+                            onPaste={(e) => handleCellPaste(e, index, 'description')}
+                            rows={1}
+                            style={{ resize: 'none', overflow: 'hidden' }}
+                            onInput={(e) => {
+                              const target = e.target as HTMLTextAreaElement;
+                              target.style.height = 'auto';
+                              target.style.height = target.scrollHeight + 'px';
+                            }}
+                            className={`w-full px-3 py-1.5 bg-transparent border border-transparent
+                              focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
+                              hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
+                              text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
+                              placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
+                              transition-all duration-200 text-center leading-normal min-h-[34px]
+                              ${item.highlight?.description ? highlightClass : ''}`}
+                          />
+                        </td>
+                      )}
+                      <td className="w-[100px] min-w-[100px] px-1 py-2">
                         <input
                           type="text"
-                          value={item.remarks}
+                          inputMode="decimal"
+                          value={editingQtyIndex === index ? editingQtyAmount : (item.quantity === 0 ? '' : item.quantity.toString())}
                           data-row={index}
-                          data-field="remarks"
-                          onChange={(e) => handleItemChange(index, 'remarks', e.target.value)}
-                          onDoubleClick={() => handleDoubleClick(index, 'remarks')}
-                          onKeyDown={(e) => handleKeyDown(e, index, 'remarks')}
-                          onPaste={(e) => handleCellPaste(e, index, 'remarks')}
+                          data-field="quantity"
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (/^\d*$/.test(value)) {
+                              setEditingQtyAmount(value);
+                              handleItemChange(index, 'quantity', value === '' ? 0 : parseInt(value));
+                            }
+                          }}
+                          onDoubleClick={() => handleDoubleClick(index, 'quantity')}
+                          onKeyDown={(e) => handleKeyDown(e, index, 'quantity')}
+                          onPaste={(e) => handleCellPaste(e, index, 'quantity')}
+                          onFocus={(e) => {
+                            setEditingQtyIndex(index);
+                            setEditingQtyAmount(item.quantity === 0 ? '' : item.quantity.toString());
+                            e.target.select();
+                          }}
+                          onBlur={() => {
+                            setEditingQtyIndex(null);
+                            setEditingQtyAmount('');
+                          }}
                           className={`w-full px-3 py-1.5 bg-transparent border border-transparent
                             focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
                             hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
                             text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
                             placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
                             transition-all duration-200 text-center
-                            ${item.highlight?.remarks ? highlightClass : ''}`}
+                            [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none
+                            ${item.highlight?.quantity ? highlightClass : ''}`}
                         />
                       </td>
-                    )}
-                  </tr>
-                ))}
+                      <td className="w-[100px] min-w-[100px] px-1 py-2">
+                        <select
+                          value={item.unit}
+                          data-row={index}
+                          data-field="unit"
+                          onChange={(e) => {
+                            handleItemChange(index, 'unit', e.target.value);
+                          }}
+                          onDoubleClick={() => handleDoubleClick(index, 'unit')}
+                          onKeyDown={(e) => handleKeyDown(e, index, 'unit')}
+                          className={`w-full px-3 py-1.5 bg-transparent border border-transparent
+                            focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
+                            hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
+                            text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
+                            placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
+                            transition-all duration-200 text-center cursor-pointer
+                            appearance-none
+                            ${item.highlight?.unit ? highlightClass : ''}`}
+                        >
+                          {availableUnits.map(unit => {
+                            const displayUnit = defaultUnits.includes(unit as typeof defaultUnits[number]) ? getUnitDisplay(unit, item.quantity) : unit;
+                            return (
+                              <option key={unit} value={displayUnit}>
+                                {displayUnit}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </td>
+                      {showPrice && (
+                        <>
+                          <td className="w-[120px] min-w-[120px] px-1 py-2" rowSpan={rowSpan}>
+                            <input
+                              type="text"
+                              value={editingPriceIndex === index ? editingPriceAmount : (item.unitPrice === 0 ? '' : item.unitPrice.toFixed(2))}
+                              onChange={(e) => {
+                                const value = e.target.value.replace(/[^\d.]/g, '');
+                                setEditingPriceAmount(value);
+                                if (value === '' || value === '.') {
+                                  handleItemChange(index, 'unitPrice', 0);
+                                } else {
+                                  const numValue = parseFloat(value);
+                                  if (!isNaN(numValue)) {
+                                    if (item.groupId) {
+                                      // 如果是组合项，更新所有相同组ID的项目
+                                      const groupId = item.groupId;
+                                      const newItems = [...data.items];
+                                      newItems.forEach((groupItem, i) => {
+                                        if (groupItem.groupId === groupId) {
+                                          groupItem.unitPrice = numValue;
+                                          groupItem.amount = numValue; // 组合项的总价直接等于单价
+                                        }
+                                      });
+                                      onChange({
+                                        ...data,
+                                        items: newItems
+                                      });
+                                    } else {
+                                      // 非组合项，正常计算
+                                      handleItemChange(index, 'unitPrice', numValue);
+                                    }
+                                  }
+                                }
+                              }}
+                              onDoubleClick={() => handleDoubleClick(index, 'unitPrice')}
+                              onFocus={(e) => {
+                                setEditingPriceIndex(index);
+                                setEditingPriceAmount(item.unitPrice === 0 ? '' : item.unitPrice.toString());
+                                e.target.select();
+                              }}
+                              onBlur={() => {
+                                setEditingPriceIndex(null);
+                                setEditingPriceAmount('');
+                              }}
+                              className={`w-full px-3 py-1.5 bg-transparent border border-transparent
+                                focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
+                                hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
+                                text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
+                                placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
+                                transition-all duration-200 text-center
+                                ${item.highlight?.unitPrice ? highlightClass : ''}`}
+                            />
+                          </td>
+                          <td className="w-[120px] min-w-[120px] px-1 py-2" rowSpan={rowSpan}>
+                            <input
+                              type="text"
+                              value={item.amount ? item.amount.toFixed(2) : ''}
+                              readOnly
+                              className={`w-full px-3 py-1.5 bg-transparent
+                                text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
+                                placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
+                                transition-all duration-200 text-center
+                                ${item.highlight?.amount ? highlightClass : ''}`}
+                            />
+                          </td>
+                        </>
+                      )}
+                      {data.showRemarks && showPrice && (
+                        <td className="w-[200px] px-1 py-2" rowSpan={rowSpan}>
+                          <input
+                            type="text"
+                            value={item.remarks}
+                            data-row={index}
+                            data-field="remarks"
+                            onChange={(e) => handleItemChange(index, 'remarks', e.target.value)}
+                            onDoubleClick={() => handleDoubleClick(index, 'remarks')}
+                            onKeyDown={(e) => handleKeyDown(e, index, 'remarks')}
+                            onPaste={(e) => handleCellPaste(e, index, 'remarks')}
+                            className={`w-full px-3 py-1.5 bg-transparent border border-transparent
+                              focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
+                              hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
+                              text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
+                              placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
+                              transition-all duration-200 text-center
+                              ${item.highlight?.remarks ? highlightClass : ''}`}
+                          />
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

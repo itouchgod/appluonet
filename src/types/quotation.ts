@@ -7,6 +7,7 @@ export interface LineItem {
   unitPrice: number;
   amount: number;
   remarks?: string;
+  groupId?: string | null;
   highlight?: {
     partName?: boolean;
     description?: boolean;

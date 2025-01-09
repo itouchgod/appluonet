@@ -12,6 +12,15 @@ interface ExtendedJsPDF extends jsPDF {
   autoTable: (options: UserOptions) => void;
 }
 
+// 定义单元格样式类型
+type Color = [number, number, number];
+
+interface CellStyle {
+  textColor?: Color;
+  halign?: 'left' | 'center' | 'right';
+  display?: string;
+}
+
 // 货币符号映射
 const currencySymbols: { [key: string]: string } = {
   USD: '$',
@@ -162,54 +171,83 @@ export const generateQuotationPDF = async (data: QuotationData, preview = false)
       head: [['No.', 'Part Name', ...(data.showDescription ? ['Description'] : []), 'Q\'TY', 'Unit', 'U/Price', 'Amount', ...(data.showRemarks ? ['Remarks'] : [])]],
       body: [
         // 常规商品行 - 当数量为 0 时，数量和单位都显示空字符串
-        ...data.items.map((item, index) => [
-          index + 1,
-          {
-            content: item.partName,
-            styles: item.highlight?.partName ? { textColor: [255, 0, 0] as [number, number, number] } : {}
-          },
-          ...(data.showDescription ? [{
-            content: item.description || '',
-            styles: item.highlight?.description ? { textColor: [255, 0, 0] as [number, number, number] } : {}
-          }] : []),
-          {
-            content: item.quantity || '',  // 数量为 0 时显示空字符串
-            styles: item.highlight?.quantity ? { textColor: [255, 0, 0] as [number, number, number] } : {}
-          },
-          {
-            content: item.quantity ? item.unit : '',  // 数量为 0 时单位显示空字符串
-            styles: item.highlight?.unit ? { textColor: [255, 0, 0] as [number, number, number] } : {}
-          },
-          {
-            content: item.unitPrice === 0 ? '' : item.unitPrice.toFixed(2),
-            styles: item.highlight?.unitPrice ? { textColor: [255, 0, 0] as [number, number, number] } : {}
-          },
-          {
-            content: item.amount === 0 ? '' : item.amount.toFixed(2),
-            styles: item.highlight?.amount ? { textColor: [255, 0, 0] as [number, number, number] } : {}
-          },
-          ...(data.showRemarks ? [{
-            content: item.remarks || '',
-            styles: item.highlight?.remarks ? { textColor: [255, 0, 0] as [number, number, number] } : {}
-          }] : [])
-        ]),
+        ...data.items.map((item, index) => {
+          // 检查是否是组合项的第一个项目
+          const isFirstInGroup = item.groupId && !data.items.slice(0, index).some(prevItem => prevItem.groupId === item.groupId);
+          // 计算组内项目数量
+          const groupItemCount = item.groupId ? data.items.filter(i => i.groupId === item.groupId).length : 1;
+
+          const row = [
+            index + 1,
+            {
+              content: item.partName,
+              styles: item.highlight?.partName ? { textColor: [255, 0, 0] as Color } : {} as CellStyle
+            },
+            ...(data.showDescription ? [{
+              content: item.description || '',
+              styles: item.highlight?.description ? { textColor: [255, 0, 0] as Color } : {} as CellStyle
+            }] : []),
+            {
+              content: item.quantity || '',
+              styles: item.highlight?.quantity ? { textColor: [255, 0, 0] as Color } : {} as CellStyle
+            },
+            {
+              content: item.quantity ? item.unit : '',
+              styles: item.highlight?.unit ? { textColor: [255, 0, 0] as Color } : {} as CellStyle
+            },
+            {
+              content: item.unitPrice === 0 ? '' : item.unitPrice.toFixed(2),
+              styles: {
+                ...item.highlight?.unitPrice ? { textColor: [255, 0, 0] as Color } : {},
+                ...(item.groupId && !isFirstInGroup ? { display: 'none' } : {})
+              } as CellStyle,
+              ...(item.groupId && isFirstInGroup ? { rowSpan: groupItemCount } : {})
+            },
+            {
+              content: item.amount === 0 ? '' : item.amount.toFixed(2),
+              styles: {
+                ...item.highlight?.amount ? { textColor: [255, 0, 0] as Color } : {},
+                ...(item.groupId && !isFirstInGroup ? { display: 'none' } : {})
+              } as CellStyle,
+              ...(item.groupId && isFirstInGroup ? { rowSpan: groupItemCount } : {})
+            }
+          ];
+
+          // 只有在 showRemarks 为 true 时才添加 remarks 列
+          if (data.showRemarks) {
+            row.push({
+              content: item.remarks || '',
+              styles: {
+                ...item.highlight?.remarks ? { textColor: [255, 0, 0] as Color } : {},
+                halign: 'center' as const,
+                ...(item.groupId && !isFirstInGroup ? { display: 'none' } : {})
+              } as CellStyle,
+              ...(item.groupId && isFirstInGroup ? { rowSpan: groupItemCount } : {})
+            });
+          }
+
+          return row;
+        }),
         // Other Fees 行
         ...(data.otherFees || []).map(fee => [
           {
             content: fee.description,
             colSpan: data.showDescription ? 6 : 5,
             styles: { 
-              halign: 'left',
-              ...(fee.highlight?.description ? { textColor: [255, 0, 0] } : {})
+              halign: 'left' as const,
+              ...(fee.highlight?.description ? { textColor: [255, 0, 0] as Color } : {})
             }
           } as unknown as string,
           {
             content: fee.amount === 0 ? '' : fee.amount.toFixed(2),
-            styles: fee.highlight?.amount ? { textColor: [255, 0, 0] } : {}
+            styles: fee.highlight?.amount ? { textColor: [255, 0, 0] as Color } : {}
           },
           ...(data.showRemarks ? [{
             content: fee.remarks || '',
-            styles: fee.highlight?.remarks ? { textColor: [255, 0, 0] } : {}
+            styles: {
+              halign: 'left' as const,
+              ...(fee.highlight?.remarks ? { textColor: [255, 0, 0] as Color } : {})
+            }
           }] : [])
         ])
       ],
@@ -226,19 +264,19 @@ export const generateQuotationPDF = async (data: QuotationData, preview = false)
       headStyles: {
         fontSize: 8,
         fontStyle: 'bold',
-        halign: 'center',
+        halign: 'center' as const,
         font: 'NotoSansSC',
         valign: 'middle'
       },
       columnStyles: {
-        0: { halign: 'center', cellWidth: 10 },  // No.
-        1: { halign: 'center', cellWidth: 'auto' },  // Part Name
-        ...(data.showDescription ? { 2: { halign: 'center', cellWidth: 'auto' } } : {}),  // Description
-        [data.showDescription ? 3 : 2]: { halign: 'center', cellWidth: 15 },  // Q'TY
-        [data.showDescription ? 4 : 3]: { halign: 'center', cellWidth: 15 },  // Unit
-        [data.showDescription ? 5 : 4]: { halign: 'center', cellWidth: 20 },  // U/Price
-        [data.showDescription ? 6 : 5]: { halign: 'center', cellWidth: 20 },  // Amount
-        ...(data.showRemarks ? { [data.showDescription ? 7 : 6]: { halign: 'center', cellWidth: 'auto' } } : {})  // Remarks
+        0: { halign: 'center' as const, cellWidth: 10 },  // No.
+        1: { halign: 'center' as const, cellWidth: 'auto' },  // Part Name
+        ...(data.showDescription ? { 2: { halign: 'center' as const, cellWidth: 'auto' } } : {}),  // Description
+        [data.showDescription ? 3 : 2]: { halign: 'center' as const, cellWidth: 15 },  // Q'TY
+        [data.showDescription ? 4 : 3]: { halign: 'center' as const, cellWidth: 15 },  // Unit
+        [data.showDescription ? 5 : 4]: { halign: 'center' as const, cellWidth: 20 },  // U/Price
+        [data.showDescription ? 6 : 5]: { halign: 'center' as const, cellWidth: 20 },  // Amount
+        ...(data.showRemarks ? { [data.showDescription ? 7 : 6]: { halign: 'center' as const, cellWidth: 'auto' } } : {})  // Remarks
       } as { [key: number]: { cellWidth: number | 'auto', halign: 'center' } },
       margin: { left: 15, right: 15 },
       tableWidth: pageWidth - 30  // 设置表格宽度为页面宽度减去左右边距

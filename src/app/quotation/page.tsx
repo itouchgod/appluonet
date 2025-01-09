@@ -28,12 +28,13 @@ const buttonClassName = `px-4 py-2 rounded-xl text-sm font-medium
 // 默认单位列表
 const defaultUnits = ['pc', 'set', 'length'];
 
-// 处理单位的单复数
-const getUnitDisplay = (baseUnit: string, quantity: number) => {
-  if (defaultUnits.includes(baseUnit)) {
-    return quantity > 1 ? `${baseUnit}s` : baseUnit;
-  }
-  return baseUnit;
+// 检查是否是组中的最后一项
+const isLastItemInGroup = (items: LineItem[], currentIndex: number) => {
+  const currentItem = items[currentIndex];
+  if (!currentItem.groupId) return true;
+  
+  const nextItem = items[currentIndex + 1];
+  return !nextItem || nextItem.groupId !== currentItem.groupId;
 };
 
 export default function QuotationPage() {
@@ -43,6 +44,7 @@ export default function QuotationPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [generatingProgress, setGeneratingProgress] = useState(0);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [data, setData] = useState<QuotationData>({
     to: '',
     inquiryNo: '',
@@ -59,7 +61,9 @@ export default function QuotationPage() {
       unit: 'pc',
       unitPrice: 0,
       amount: 0,
-      remarks: ''
+      remarks: '',
+      groupId: null,
+      highlight: {}
     }],
     notes: getDefaultNotes('Roger', 'quotation'),
     amountInWords: {
@@ -277,7 +281,7 @@ export default function QuotationPage() {
     input.focus();
   };
 
-  // 处理单个项目的更改
+  // 修改：处理单个项目的更改
   const handleItemChange = (index: number, field: keyof LineItem, value: string | number) => {
     const newItems = [...data.items];
     newItems[index] = {
@@ -285,8 +289,8 @@ export default function QuotationPage() {
       [field]: value
     };
 
-    // 如果更改了数量或单价，自动计算金额
-    if (field === 'quantity' || field === 'unitPrice') {
+    // 如果更改了单价或数量，且不是组合项，则计算金额
+    if ((field === 'unitPrice' || field === 'quantity') && !newItems[index].groupId) {
       newItems[index].amount = newItems[index].quantity * newItems[index].unitPrice;
     }
 
@@ -294,6 +298,73 @@ export default function QuotationPage() {
       ...data,
       items: newItems
     });
+  };
+
+  // 添加新行
+  const handleAddLine = () => {
+    const newItems = [...data.items];
+    newItems.push({
+      id: Date.now(),
+      partName: '',
+      description: '',
+      quantity: 0,
+      unit: 'pc',
+      unitPrice: 0,
+      amount: 0,
+      remarks: '',
+      groupId: null,
+      highlight: {}
+    });
+    setData({ ...data, items: newItems });
+  };
+
+  // 创建新组合
+  const createNewGroup = () => {
+    const newItems = [...data.items];
+    const newGroupId = Date.now().toString();
+    
+    newItems.push({
+      id: newItems.length + 1,
+      partName: '',
+      description: '',
+      quantity: 0,
+      unit: 'pc',
+      unitPrice: 0,
+      amount: 0,
+      remarks: '',
+      groupId: newGroupId,
+      highlight: {}
+    });
+
+    setSelectedGroupId(newGroupId);
+    setData({ ...data, items: newItems });
+  };
+
+  // 向组中添加行
+  const addLineToGroup = (groupId: string | null) => {
+    if (!groupId) return;
+    
+    const newItems = [...data.items];
+    // 找到组的最后一个项目的位置
+    const lastGroupItemIndex = newItems.findIndex((item, i) => 
+      item.groupId === groupId && isLastItemInGroup(newItems, i)
+    );
+    
+    // 在组的最后一个项目后面插入新项目
+    newItems.splice(lastGroupItemIndex + 1, 0, {
+      id: Date.now(),
+      partName: '',
+      description: '',
+      quantity: 0,
+      unit: 'pc',
+      unitPrice: 0,
+      amount: 0,
+      remarks: '',
+      groupId: groupId,
+      highlight: {}
+    });
+
+    setData({ ...data, items: newItems });
   };
 
   return (
@@ -381,6 +452,8 @@ export default function QuotationPage() {
                 <ItemsTable 
                   data={data}
                   onChange={setData}
+                  selectedGroupId={selectedGroupId}
+                  onGroupSelect={setSelectedGroupId}
                 />
               </div>
 
@@ -389,20 +462,7 @@ export default function QuotationPage() {
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                   <button
                     type="button"
-                    onClick={() => {
-                      const newItems = [...data.items];
-                      newItems.push({
-                        id: newItems.length + 1,
-                        partName: '',
-                        description: '',
-                        quantity: 0,
-                        unit: 'pc',
-                        unitPrice: 0,
-                        amount: 0,
-                        remarks: ''
-                      });
-                      setData({ ...data, items: newItems });
-                    }}
+                    onClick={handleAddLine}
                     className="px-3 h-7 rounded-lg
                       bg-[#007AFF]/[0.08] dark:bg-[#0A84FF]/[0.08]
                       hover:bg-[#007AFF]/[0.12] dark:hover:bg-[#0A84FF]/[0.12]
@@ -414,6 +474,38 @@ export default function QuotationPage() {
                     <span className="text-lg leading-none translate-y-[-1px]">+</span>
                     <span>Add Line</span>
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={createNewGroup}
+                    className="px-3 h-7 rounded-lg
+                      bg-[#007AFF]/[0.08] dark:bg-[#0A84FF]/[0.08]
+                      hover:bg-[#007AFF]/[0.12] dark:hover:bg-[#0A84FF]/[0.12]
+                      text-[#007AFF] dark:text-[#0A84FF]
+                      text-[13px] font-medium
+                      flex items-center gap-1
+                      transition-all duration-200"
+                  >
+                    <span className="text-lg leading-none translate-y-[-1px]">+</span>
+                    <span>New Group</span>
+                  </button>
+
+                  {selectedGroupId && (
+                    <button
+                      type="button"
+                      onClick={() => addLineToGroup(selectedGroupId)}
+                      className="px-3 h-7 rounded-lg
+                        bg-[#007AFF]/[0.08] dark:bg-[#0A84FF]/[0.08]
+                        hover:bg-[#007AFF]/[0.12] dark:hover:bg-[#0A84FF]/[0.12]
+                        text-[#007AFF] dark:text-[#0A84FF]
+                        text-[13px] font-medium
+                        flex items-center gap-1
+                        transition-all duration-200"
+                    >
+                      <span className="text-lg leading-none translate-y-[-1px]">+</span>
+                      <span>Add to Group</span>
+                    </button>
+                  )}
 
                   <button
                     type="button"
@@ -447,7 +539,14 @@ export default function QuotationPage() {
                     <div className="text-xl sm:text-2xl font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">
                       {data.currency === 'USD' ? '$' : '¥'}
                       {(
-                        data.items.reduce((sum, item) => sum + item.amount, 0) +
+                        data.items.reduce((sum, item, index) => {
+                          // 如果是组合项，只在第一个项目时计算一次
+                          if (item.groupId) {
+                            const isFirstInGroup = !data.items.slice(0, index).some(prevItem => prevItem.groupId === item.groupId);
+                            return isFirstInGroup ? sum + item.amount : sum;
+                          }
+                          return sum + item.amount;
+                        }, 0) +
                         (data.otherFees?.reduce((sum, fee) => sum + fee.amount, 0) || 0)
                       ).toFixed(2)}
                     </div>
