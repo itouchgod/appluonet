@@ -2,9 +2,9 @@ import { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: '罗氏企业',
-    short_name: '罗氏企业',
-    description: '罗氏企业管理系统',
+    name: 'LC APP',
+    short_name: 'LuoCompany',
+    description: 'LuoCompany APP',
     start_url: '/',
     display: 'standalone',
     background_color: '#ffffff',
