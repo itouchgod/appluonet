@@ -173,11 +173,11 @@ export const generateQuotationPDF = async (data: QuotationData, preview = false)
             styles: item.highlight?.description ? { textColor: [255, 0, 0] as [number, number, number] } : {}
           }] : []),
           {
-            content: item.quantity || '',  // 数量为 0 时显示空字符串
+            content: item.quantity || '',
             styles: item.highlight?.quantity ? { textColor: [255, 0, 0] as [number, number, number] } : {}
           },
           {
-            content: item.quantity ? item.unit : '',  // 数量为 0 时单位显示空字符串
+            content: item.quantity ? item.unit : '',
             styles: item.highlight?.unit ? { textColor: [255, 0, 0] as [number, number, number] } : {}
           },
           {
@@ -199,20 +199,20 @@ export const generateQuotationPDF = async (data: QuotationData, preview = false)
             content: fee.description,
             colSpan: data.showDescription ? 6 : 5,
             styles: { 
-              halign: 'left',
-              ...(fee.highlight?.description ? { textColor: [255, 0, 0] } : {})
+              halign: 'center',
+              ...(fee.highlight?.description ? { textColor: [255, 0, 0] as [number, number, number] } : {})
             }
           } as unknown as string,
           {
             content: fee.amount === 0 ? '' : fee.amount.toFixed(2),
-            styles: fee.highlight?.amount ? { textColor: [255, 0, 0] } : {}
+            styles: fee.highlight?.amount ? { textColor: [255, 0, 0] as [number, number, number] } : {}
           },
           ...(data.showRemarks ? [{
             content: fee.remarks || '',
-            styles: fee.highlight?.remarks ? { textColor: [255, 0, 0] } : {}
+            styles: fee.highlight?.remarks ? { textColor: [255, 0, 0] as [number, number, number] } : {}
           }] : [])
         ])
-      ],
+      ] as unknown as RowInput[],
       theme: 'plain',
       styles: {
         fontSize: 8,
