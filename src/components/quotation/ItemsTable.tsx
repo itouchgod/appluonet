@@ -169,61 +169,52 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
   // 处理单元格粘贴
   const handleCellPaste = (e: React.ClipboardEvent<HTMLInputElement | HTMLTextAreaElement>, index: number, field: keyof LineItem) => {
     const pasteText = e.clipboardData.getData('text');
-    
-    // 检查是否是全局粘贴（包含换行符或制表符）
-    if (pasteText.includes('\t') || pasteText.includes('\n')) {
-      e.preventDefault();
-      
-      // 使用导入的Excel解析函数
-      const rows = parseExcelData(pasteText);
-      console.log('Parsed rows:', rows);
-      
-      const lineItems = convertExcelToLineItems(rows);
-      console.log('Converted items:', lineItems);
-      
-      // 更新数据
-      const newItems = [...data.items];
-      lineItems.forEach((item, i) => {
-        if (index + i < newItems.length) {
-          // 更新现有行，但保留原有的 id
-          const id = newItems[index + i].id;
-          newItems[index + i] = {
-            ...item,
-            id
-          };
-        } else {
-          // 添加新行
-          newItems.push({
-            ...item,
-            id: Date.now() + i,
-            remarks: ''
-          } as LineItem);
-        }
-      });
-      
-      onChange({
-        ...data,
-        items: newItems
-      });
-      return;
-    }
-    
-    // 单个单元格的粘贴处理
     e.preventDefault();
     
-    if (field === 'partName') {
-      // 对于 partName 字段，保留换行符，但去掉外层引号
-      const content = pasteText.replace(/^"|"$/g, '');
-      handleItemChange(index, field, content);
-    } else if (field === 'quantity' || field === 'unitPrice') {
-      // 数字字段
-      const value = parseFloat(pasteText.trim());
-      if (!isNaN(value)) {
-        handleItemChange(index, field, value);
-      }
-    } else {
-      // 其他文本字段
-      handleItemChange(index, field, pasteText.trim());
+    // 清理文本，但保留换行符
+    const cleanText = pasteText.replace(/^"|"$/g, '').trim();
+    
+    switch (field) {
+      case 'quantity':
+        if (!/^\d+$/.test(cleanText)) {
+          alert('数量必须是正整数');
+          return;
+        }
+        const quantity = parseInt(cleanText);
+        if (quantity < 0) {
+          alert('数量不能为负数');
+          return;
+        }
+        handleItemChange(index, field, quantity);
+        break;
+        
+      case 'unitPrice':
+        if (!/^\d*\.?\d*$/.test(cleanText)) {
+          alert('单价必须是有效的数字');
+          return;
+        }
+        const unitPrice = parseFloat(cleanText);
+        if (isNaN(unitPrice) || unitPrice < 0) {
+          alert('请输入有效的单价');
+          return;
+        }
+        handleItemChange(index, field, unitPrice);
+        break;
+        
+      case 'unit':
+        // 单位处理，自动处理单复数
+        const baseUnit = cleanText.toLowerCase().replace(/s$/, '');
+        if (defaultUnits.includes(baseUnit)) {
+          const quantity = data.items[index].quantity;
+          handleItemChange(index, field, getUnitDisplay(baseUnit, quantity));
+        } else {
+          handleItemChange(index, field, cleanText);
+        }
+        break;
+        
+      default:
+        // 对于其他字段（partName, description, remarks），直接使用清理后的文本，保留换行符
+        handleItemChange(index, field, cleanText);
     }
   };
 

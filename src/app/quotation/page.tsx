@@ -185,7 +185,7 @@ export default function QuotationPage() {
   // 处理导入数据
   const handleImportDataLocal = (text: string) => {
     const rows = parseExcelData(text);
-    return convertExcelToLineItems(rows);
+    return convertExcelToLineItems(rows, data.items);
   };
 
   const handleImport = (newItems: LineItem[]) => {
@@ -197,7 +197,8 @@ export default function QuotationPage() {
 
   // 处理全局粘贴
   const handleGlobalPaste = async (text: string) => {
-    const newItems = handleImportDataLocal(text);
+    const rows = parseExcelData(text);
+    const newItems = convertExcelToLineItems(rows, data.items);
     handleImport(newItems);
   };
 
@@ -206,15 +207,7 @@ export default function QuotationPage() {
     const pasteText = e.clipboardData.getData('text');
     e.preventDefault();
     
-    // 检查是否是全局粘贴（包含换行符或制表符）
-    if (pasteText.includes('\t') || pasteText.includes('\n')) {
-      // 如果是在单个单元格内粘贴多列数据，只取第一列
-      const firstCell = pasteText.split('\t')[0].split('\n')[0];
-      handleItemChange(index, field, firstCell);
-      return;
-    }
-    
-    // 单个单元格的粘贴处理
+    // 清理文本，但保留换行符
     const cleanText = pasteText.replace(/^"|"$/g, '').trim();
     
     switch (field) {
@@ -228,7 +221,7 @@ export default function QuotationPage() {
           alert('数量不能为负数');
           return;
         }
-        handleItemChange(index, 'quantity', quantity);
+        handleItemChange(index, field, quantity);
         break;
         
       case 'unitPrice':
@@ -241,7 +234,7 @@ export default function QuotationPage() {
           alert('请输入有效的单价');
           return;
         }
-        handleItemChange(index, 'unitPrice', unitPrice);
+        handleItemChange(index, field, unitPrice);
         break;
         
       case 'unit':
@@ -249,14 +242,14 @@ export default function QuotationPage() {
         const baseUnit = cleanText.toLowerCase().replace(/s$/, '');
         if (defaultUnits.includes(baseUnit)) {
           const quantity = data.items[index].quantity;
-          handleItemChange(index, 'unit', getUnitDisplay(baseUnit, quantity));
+          handleItemChange(index, field, getUnitDisplay(baseUnit, quantity));
         } else {
-          handleItemChange(index, 'unit', cleanText);
+          handleItemChange(index, field, cleanText);
         }
         break;
         
       default:
-        // 对于其他字段（partName, description, remarks），直接使用清理后的文本
+        // 对于其他字段（partName, description, remarks），直接使用清理后的文本，保留换行符
         handleItemChange(index, field, cleanText);
     }
   };

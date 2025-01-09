@@ -72,17 +72,19 @@ export const parseExcelData = (text: string): string[][] => {
 export interface ExcelLineItem {
   id: number;
   partName: string;
-  description: string;
+  description?: string;
   quantity: number;
   unit: string;
   unitPrice: number;
   amount: number;
 }
 
-export const convertExcelToLineItems = (rows: string[][]): ExcelLineItem[] => {
+export const convertExcelToLineItems = (rows: string[][], existingItems: ExcelLineItem[] = []): ExcelLineItem[] => {
   const items: ExcelLineItem[] = [];
+  const defaultUnits = ['pc', 'set', 'length'];
   
-  for (const row of rows) {
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
     // 跳过空行
     if (row.length === 0 || row.every(cell => !cell.trim())) {
       continue;
@@ -91,7 +93,7 @@ export const convertExcelToLineItems = (rows: string[][]): ExcelLineItem[] => {
     let partName = '';
     let description = '';
     let quantity = 0;
-    let unit = 'pc';
+    let unit = existingItems[i]?.unit || 'pc'; // 使用现有项目的单位，如果没有则默认为 'pc'
     let unitPrice = 0;
 
     // 识别数字列的位置
@@ -126,7 +128,21 @@ export const convertExcelToLineItems = (rows: string[][]): ExcelLineItem[] => {
       partName = row[0].trim();
       description = row[1].trim();
       quantity = parseInt(row[2]) || 0;
-      unit = row[3]?.trim() || 'pc';
+      const copiedUnit = row[3]?.trim() || '';
+      if (copiedUnit) {
+        // 转换为小写并移除前后空格
+        const normalizedUnit = copiedUnit.toLowerCase();
+        // 处理复数形式
+        const singularUnit = normalizedUnit.endsWith('s') ? normalizedUnit.slice(0, -1) : normalizedUnit;
+        // 特殊处理 'pcs'
+        if (normalizedUnit === 'pcs') {
+          unit = 'pc';
+        } else if (defaultUnits.includes(singularUnit)) {
+          unit = singularUnit;
+        } else {
+          unit = copiedUnit; // 如果不是默认单位，保持原样
+        }
+      }
       unitPrice = parseFloat(row[4]) || 0;
     } else {
       // 单列：只有名称
@@ -143,7 +159,7 @@ export const convertExcelToLineItems = (rows: string[][]): ExcelLineItem[] => {
       amount: Math.floor(quantity) * unitPrice
     });
   }
-  
+
   return items;
 };
 
