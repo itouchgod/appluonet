@@ -25,9 +25,6 @@ const titleClassName = `text-xl font-semibold text-gray-800 dark:text-gray-200`;
 const buttonClassName = `px-4 py-2 rounded-xl text-sm font-medium 
   transition-all duration-300`;
 
-// 默认单位列表
-const defaultUnits = ['pc', 'set', 'length'];
-
 export default function QuotationPage() {
   const [activeTab, setActiveTab] = useState<'quotation' | 'confirmation'>('quotation');
   const [showSettings, setShowSettings] = useState(false);
