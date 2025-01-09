@@ -564,7 +564,7 @@ Beneficiary: Luo & Company Co., Limited`,
         otherFees: []
       });
     }
-  }, []);
+  }, [invoiceData]);
 
   // 处理单元格粘贴
   const handleCellPaste = (e: React.ClipboardEvent, index: number, field: keyof LineItem) => {
