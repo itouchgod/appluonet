@@ -164,13 +164,34 @@ export const generateQuotationPDF = async (data: QuotationData, preview = false)
         // 常规商品行 - 当数量为 0 时，数量和单位都显示空字符串
         ...data.items.map((item, index) => [
           index + 1,
-          item.partName,
-          ...(data.showDescription ? [item.description || ''] : []),
-          item.quantity || '',  // 数量为 0 时显示空字符串
-          item.quantity ? item.unit : '',  // 数量为 0 时单位显示空字符串
-          item.unitPrice === 0 ? '' : item.unitPrice.toFixed(2),
-          item.amount === 0 ? '' : item.amount.toFixed(2),
-          ...(data.showRemarks ? [item.remarks || ''] : [])
+          {
+            content: item.partName,
+            styles: item.highlight?.partName ? { textColor: [255, 0, 0] } : {}
+          },
+          ...(data.showDescription ? [{
+            content: item.description || '',
+            styles: item.highlight?.description ? { textColor: [255, 0, 0] } : {}
+          }] : []),
+          {
+            content: item.quantity || '',  // 数量为 0 时显示空字符串
+            styles: item.highlight?.quantity ? { textColor: [255, 0, 0] } : {}
+          },
+          {
+            content: item.quantity ? item.unit : '',  // 数量为 0 时单位显示空字符串
+            styles: item.highlight?.unit ? { textColor: [255, 0, 0] } : {}
+          },
+          {
+            content: item.unitPrice === 0 ? '' : item.unitPrice.toFixed(2),
+            styles: item.highlight?.unitPrice ? { textColor: [255, 0, 0] } : {}
+          },
+          {
+            content: item.amount === 0 ? '' : item.amount.toFixed(2),
+            styles: item.highlight?.amount ? { textColor: [255, 0, 0] } : {}
+          },
+          ...(data.showRemarks ? [{
+            content: item.remarks || '',
+            styles: item.highlight?.remarks ? { textColor: [255, 0, 0] } : {}
+          }] : [])
         ]),
         // Other Fees 行
         ...(data.otherFees || []).map(fee => [

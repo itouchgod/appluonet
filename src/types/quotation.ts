@@ -7,6 +7,15 @@ export interface LineItem {
   unitPrice: number;
   amount: number;
   remarks?: string;
+  highlight?: {
+    partName?: boolean;
+    description?: boolean;
+    quantity?: boolean;
+    unit?: boolean;
+    unitPrice?: boolean;
+    amount?: boolean;
+    remarks?: boolean;
+  };
 }
 
 export interface OtherFee {

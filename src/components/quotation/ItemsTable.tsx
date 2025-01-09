@@ -8,6 +8,9 @@ interface ItemsTableProps {
   onChange: (data: QuotationData) => void;
 }
 
+// Add highlight class constant
+const highlightClass = 'text-red-500 font-medium';
+
 export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
   const [editingPriceIndex, setEditingPriceIndex] = useState<number | null>(null);
   const [editingPriceAmount, setEditingPriceAmount] = useState<string>('');
@@ -247,10 +250,28 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
     });
   };
 
+  // 添加处理双击事件的函数
+  const handleDoubleClick = (index: number, field: keyof Exclude<LineItem['highlight'], undefined>) => {
+    const newItems = [...data.items];
+    newItems[index] = {
+      ...newItems[index],
+      highlight: {
+        ...newItems[index].highlight,
+        [field]: !newItems[index].highlight?.[field]
+      }
+    };
+    onChange({
+      ...data,
+      items: newItems
+    });
+  };
+
   return (
     <div className="space-y-0">
       <ImportDataButton onImport={handleImport} />
-
+      <div className="text-sm text-gray-500 dark:text-gray-400 mb-2 px-1">
+        提示：双击单元格可以切换红色高亮显示
+      </div>
       <div className={`overflow-x-auto overflow-hidden border border-[#E5E5EA] dark:border-[#2C2C2E]
         bg-white/90 dark:bg-[#1C1C1E]/90 backdrop-blur-xl
         ${(data.otherFees ?? []).length > 0 ? 'rounded-t-2xl' : 'rounded-2xl'}`}>
@@ -295,50 +316,46 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                     data-field="partName"
                     onChange={(e) => {
                       handleItemChange(index, 'partName', e.target.value);
-                      // 自动调整高度
                       e.target.style.height = '28px';
                       e.target.style.height = `${e.target.scrollHeight}px`;
                     }}
+                    onDoubleClick={() => handleDoubleClick(index, 'partName')}
                     onKeyDown={(e) => handleKeyDown(e, index, 'partName')}
                     onPaste={(e) => handleCellPaste(e, index, 'partName')}
-                    className="w-full px-3 py-1.5 bg-transparent border border-transparent
+                    className={`w-full px-3 py-1.5 bg-transparent border border-transparent
                       focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
                       hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
                       text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
                       placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
-                      transition-all duration-200 text-center whitespace-pre-wrap resize-y overflow-hidden"
+                      transition-all duration-200 text-center whitespace-pre-wrap resize-y overflow-hidden
+                      ${item.highlight?.partName ? highlightClass : ''}`}
                     style={{ 
                       height: '28px'
                     }}
                   />
                 </td>
                 {data.showDescription && (
-                  <td className="w-[120px] px-4 py-2">
-                    <textarea
+                  <td className="min-w-[180px] w-fit px-1 py-2">
+                    <input
+                      type="text"
                       value={item.description}
                       data-row={index}
                       data-field="description"
-                      onChange={(e) => {
-                        handleItemChange(index, 'description', e.target.value);
-                        // 自动调整高度
-                        e.target.style.height = '28px';
-                        e.target.style.height = `${e.target.scrollHeight}px`;
-                      }}
+                      onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                      onDoubleClick={() => handleDoubleClick(index, 'description')}
                       onKeyDown={(e) => handleKeyDown(e, index, 'description')}
                       onPaste={(e) => handleCellPaste(e, index, 'description')}
-                      className="w-full px-3 py-1.5 bg-transparent border border-transparent
+                      className={`w-full px-3 py-1.5 bg-transparent border border-transparent
                         focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
                         hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
                         text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
                         placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
-                        transition-all duration-200 text-center whitespace-pre-wrap resize-y overflow-hidden"
-                      style={{ 
-                        height: '28px'
-                      }}
+                        transition-all duration-200 text-center
+                        ${item.highlight?.description ? highlightClass : ''}`}
                     />
                   </td>
                 )}
-                <td className="w-[100px] px-1 py-2">
+                <td className="w-[100px] min-w-[100px] px-1 py-2">
                   <input
                     type="text"
                     inputMode="decimal"
@@ -352,6 +369,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                         handleItemChange(index, 'quantity', value === '' ? 0 : parseInt(value));
                       }
                     }}
+                    onDoubleClick={() => handleDoubleClick(index, 'quantity')}
                     onKeyDown={(e) => handleKeyDown(e, index, 'quantity')}
                     onPaste={(e) => handleCellPaste(e, index, 'quantity')}
                     onFocus={(e) => {
@@ -363,16 +381,17 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                       setEditingQtyIndex(null);
                       setEditingQtyAmount('');
                     }}
-                    className="w-full px-3 py-1.5 bg-transparent border border-transparent
+                    className={`w-full px-3 py-1.5 bg-transparent border border-transparent
                       focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
                       hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
                       text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
                       placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
                       transition-all duration-200 text-center
-                      [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none
+                      ${item.highlight?.quantity ? highlightClass : ''}`}
                   />
                 </td>
-                <td className="w-[100px] px-1 py-2">
+                <td className="w-[100px] min-w-[100px] px-1 py-2">
                   <select
                     value={item.unit}
                     data-row={index}
@@ -380,14 +399,16 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                     onChange={(e) => {
                       handleItemChange(index, 'unit', e.target.value);
                     }}
+                    onDoubleClick={() => handleDoubleClick(index, 'unit')}
                     onKeyDown={(e) => handleKeyDown(e, index, 'unit')}
-                    className="w-full px-3 py-1.5 bg-transparent border border-transparent
+                    className={`w-full px-3 py-1.5 bg-transparent border border-transparent
                       focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
                       hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
                       text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
                       placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
                       transition-all duration-200 text-center cursor-pointer
-                      appearance-none"
+                      appearance-none
+                      ${item.highlight?.unit ? highlightClass : ''}`}
                   >
                     {availableUnits.map(unit => {
                       const displayUnit = defaultUnits.includes(unit) ? getUnitDisplay(unit, item.quantity) : unit;
@@ -399,7 +420,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                     })}
                   </select>
                 </td>
-                <td className="w-[120px] px-1 py-2">
+                <td className="w-[120px] min-w-[120px] px-1 py-2">
                   <input
                     type="text"
                     inputMode="decimal"
@@ -413,6 +434,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                         handleItemChange(index, 'unitPrice', value === '' ? 0 : parseFloat(value));
                       }
                     }}
+                    onDoubleClick={() => handleDoubleClick(index, 'unitPrice')}
                     onKeyDown={(e) => handleKeyDown(e, index, 'unitPrice')}
                     onPaste={(e) => handleCellPaste(e, index, 'unitPrice')}
                     onFocus={(e) => {
@@ -424,24 +446,27 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                       setEditingPriceIndex(null);
                       setEditingPriceAmount('');
                     }}
-                    className="w-full px-3 py-1.5 bg-transparent border border-transparent
+                    className={`w-full px-3 py-1.5 bg-transparent border border-transparent
                       focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
                       hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
                       text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
                       placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
                       transition-all duration-200 text-center
-                      [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none
+                      ${item.highlight?.unitPrice ? highlightClass : ''}`}
                   />
                 </td>
-                <td className="w-[120px] px-1 py-2">
+                <td className="w-[120px] min-w-[120px] px-1 py-2">
                   <input
                     type="text"
                     value={item.amount ? item.amount.toFixed(2) : ''}
                     readOnly
-                    className="w-full px-3 py-1.5 bg-transparent
+                    onDoubleClick={() => handleDoubleClick(index, 'amount')}
+                    className={`w-full px-3 py-1.5 bg-transparent
                       text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
                       placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
-                      transition-all duration-200 text-center"
+                      transition-all duration-200 text-center
+                      ${item.highlight?.amount ? highlightClass : ''}`}
                   />
                 </td>
                 {data.showRemarks && (
@@ -452,14 +477,16 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                       data-row={index}
                       data-field="remarks"
                       onChange={(e) => handleItemChange(index, 'remarks', e.target.value)}
+                      onDoubleClick={() => handleDoubleClick(index, 'remarks')}
                       onKeyDown={(e) => handleKeyDown(e, index, 'remarks')}
                       onPaste={(e) => handleCellPaste(e, index, 'remarks')}
-                      className="w-full px-3 py-1.5 bg-transparent border border-transparent
+                      className={`w-full px-3 py-1.5 bg-transparent border border-transparent
                         focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
                         hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
                         text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
                         placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
-                        transition-all duration-200 text-center"
+                        transition-all duration-200 text-center
+                        ${item.highlight?.remarks ? highlightClass : ''}`}
                     />
                   </td>
                 )}
