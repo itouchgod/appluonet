@@ -357,6 +357,35 @@ Beneficiary: Luo & Company Co., Limited`,
     }));
   };
 
+  // 处理单元格粘贴
+  const handleCellPaste = (e: React.ClipboardEvent, index: number, field: keyof LineItem) => {
+    // 获取粘贴的文本
+    const text = e.clipboardData.getData('text');
+    if (text) {
+      // 获取当前光标位置
+      const target = e.target as HTMLTextAreaElement | HTMLInputElement;
+      const start = target.selectionStart || 0;
+      const end = target.selectionEnd || 0;
+      
+      // 获取当前值
+      const currentValue = target.value;
+      
+      // 构建新值：保留光标前后的文本，插入粘贴的内容
+      const newValue = currentValue.substring(0, start) + text + currentValue.substring(end);
+      
+      // 更新值
+      updateLineItem(index, field, newValue);
+      
+      // 计算新的光标位置
+      const newCursorPos = start + text.length;
+      
+      // 在下一个事件循环中设置光标位置
+      setTimeout(() => {
+        target.setSelectionRange(newCursorPos, newCursorPos);
+      }, 0);
+    }
+  };
+
   // 修改全局粘贴事件处理函数
   useEffect(() => {
     const handlePaste = async (event: ClipboardEvent) => {
@@ -382,38 +411,16 @@ Beneficiary: Luo & Company Co., Limited`,
           text = await navigator.clipboard.readText();
         }
         if (text) {
-          // 处理 Excel 复制的数据，将软回车替换为空格
-          text = text.replace(/\r/g, ' ');
-          
           // 按行分割，但保留引号内的换行符
-          const rows = text.split(/\n(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(row => {
-            // 处理每一行，保留引号内的内容
-            let processedRow = '';
-            let inQuotes = false;
-            let currentCell = '';
-            
-            for (let i = 0; i < row.length; i++) {
-              const char = row[i];
-              if (char === '"') {
-                inQuotes = !inQuotes;
-                continue;  // 跳过引号字符
-              }
-              
-              if (char === '\t' && !inQuotes) {
-                processedRow += currentCell + '\t';
-                currentCell = '';
-              } else {
-                currentCell += char;
-              }
-            }
-            processedRow += currentCell;  // 添加最后一个单元格
-            
-            return processedRow;
-          });
-
+          const rows = text.split(/\n(?=(?:[^"]*"[^"]*")*[^"]*$)/);
+          
           const newItems: LineItem[] = rows.map((row, index) => {
-            // 分割单元格，但保留引号内的制表符
-            const cells = row.split(/\t(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(cell => cell.trim());
+            // 分割单元格，但保留引号内的制表符和换行符
+            const cells = row.split(/\t(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(cell => {
+              // 保留单元格内的换行符，只去除首尾空格
+              return cell.replace(/^\s+|\s+$/g, '');
+            });
+            
             let partname = '', description = '', quantity = '0', unit = 'pc', unitPrice = '0';
 
             // 根据不同的列数处理数据
@@ -440,9 +447,12 @@ Beneficiary: Luo & Company Co., Limited`,
             } else if (cells.length === 2) {
               // 2列：名称 tab 数量
               [partname, quantity] = cells;
+            } else if (cells.length === 1) {
+              // 1列：只有名称
+              [partname] = cells;
             }
 
-            // 清理并验证数据
+            // 清理并验证数据，但保留换行符
             const cleanQuantity = parseInt(quantity.replace(/[^\d.-]/g, '')) || 0;
             const cleanUnitPrice = parseFloat(unitPrice.replace(/[^\d.-]/g, '')) || 0;
             const baseUnit = unit.trim().replace(/s$/, '') || 'pc';
@@ -450,8 +460,8 @@ Beneficiary: Luo & Company Co., Limited`,
             return {
               lineNo: index + 1,
               hsCode: '',
-              partname: partname.trim(),
-              description: description.trim(),
+              partname: partname, // 不使用 trim()，保留换行符
+              description: description, // 不使用 trim()，保留换行符
               quantity: cleanQuantity,
               unit: defaultUnits.includes(baseUnit) ? getUnitDisplay(baseUnit, cleanQuantity) : baseUnit,
               unitPrice: cleanUnitPrice,
@@ -460,10 +470,10 @@ Beneficiary: Luo & Company Co., Limited`,
             };
           });
 
-          // 更新发票数据
+          // 更新发票数据，过滤掉完全空白的行
           setInvoiceData(prev => ({
             ...prev,
-            items: newItems.filter(item => item.partname || item.description)  // 过滤掉空行
+            items: newItems.filter(item => item.partname || item.description)
           }));
         }
       } catch (err) {
@@ -490,6 +500,7 @@ Beneficiary: Luo & Company Co., Limited`,
 
     const currentColumnIndex = columns.indexOf(column);
     const totalRows = invoiceData.items.length;
+    const isTextarea = e.target instanceof HTMLTextAreaElement;
 
     switch (e.key) {
       case 'ArrowRight':
@@ -513,7 +524,17 @@ Beneficiary: Luo & Company Co., Limited`,
         }
         break;
       case 'ArrowDown':
+        if (rowIndex < totalRows - 1) {
+          setFocusedCell({ row: rowIndex + 1, column });
+          e.preventDefault();
+        }
+        break;
       case 'Enter':
+        // 如果是多行文本框且没有按住 Shift 键，允许换行
+        if (isTextarea && !e.shiftKey) {
+          return; // 不阻止默认行为，允许换行
+        }
+        // 对于其他输入框，或按住 Shift 键的情况，导航到下一行
         if (rowIndex < totalRows - 1) {
           setFocusedCell({ row: rowIndex + 1, column });
           e.preventDefault();
@@ -565,15 +586,6 @@ Beneficiary: Luo & Company Co., Limited`,
       });
     }
   }, [invoiceData]);
-
-  // 处理单元格粘贴
-  const handleCellPaste = (e: React.ClipboardEvent, index: number, field: keyof LineItem) => {
-    e.preventDefault();
-    const text = e.clipboardData.getData('text');
-    if (text) {
-      updateLineItem(index, field, text);
-    }
-  };
 
   // 添加处理双击事件的函数
   const handleDoubleClick = (index: number, field: keyof Exclude<LineItem['highlight'], undefined>) => {

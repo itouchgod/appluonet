@@ -180,20 +180,30 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
 
   // 处理单元格粘贴
   const handleCellPaste = (e: React.ClipboardEvent<HTMLInputElement | HTMLTextAreaElement>, index: number, field: keyof LineItem) => {
+    const target = e.target as HTMLInputElement | HTMLTextAreaElement;
     const pasteText = e.clipboardData.getData('text');
-    e.preventDefault();
+    
+    // 获取当前光标位置
+    const start = target.selectionStart || 0;
+    const end = target.selectionEnd || 0;
+    
+    // 构建新值：保留光标前后的文本，插入粘贴的内容
+    const currentValue = target.value;
+    const newValue = currentValue.substring(0, start) + pasteText + currentValue.substring(end);
     
     // 清理文本，但保留换行符
-    const cleanText = pasteText.replace(/^"|"$/g, '').trim();
+    const cleanText = newValue.replace(/^"|"$/g, '').trim();
     
     switch (field) {
       case 'quantity':
         if (!/^\d+$/.test(cleanText)) {
+          e.preventDefault();
           alert('数量必须是正整数');
           return;
         }
         const quantity = parseInt(cleanText);
         if (quantity < 0) {
+          e.preventDefault();
           alert('数量不能为负数');
           return;
         }
@@ -202,11 +212,13 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
         
       case 'unitPrice':
         if (!/^\d*\.?\d*$/.test(cleanText)) {
+          e.preventDefault();
           alert('单价必须是有效的数字');
           return;
         }
         const unitPrice = parseFloat(cleanText);
         if (isNaN(unitPrice) || unitPrice < 0) {
+          e.preventDefault();
           alert('请输入有效的单价');
           return;
         }
@@ -214,6 +226,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
         break;
         
       case 'unit':
+        e.preventDefault();
         // 单位处理，自动处理单复数
         const baseUnit = cleanText.toLowerCase().replace(/s$/, '');
         if (defaultUnits.includes(baseUnit as typeof defaultUnits[number])) {
@@ -228,6 +241,14 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
         // 对于其他字段（partName, description, remarks），直接使用清理后的文本，保留换行符
         handleItemChange(index, field, cleanText);
     }
+    
+    // 计算新的光标位置
+    const newCursorPos = start + pasteText.length;
+    
+    // 在下一个事件循环中设置光标位置
+    setTimeout(() => {
+      target.setSelectionRange(newCursorPos, newCursorPos);
+    }, 0);
   };
 
   // 处理软删除
@@ -367,7 +388,11 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                           value={item.description}
                           data-row={index}
                           data-field="description"
-                          onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                          onChange={(e) => {
+                            handleItemChange(index, 'description', e.target.value);
+                            e.target.style.height = '28px';
+                            e.target.style.height = `${e.target.scrollHeight}px`;
+                          }}
                           onDoubleClick={() => handleDoubleClick(index, 'description')}
                           onKeyDown={(e) => handleKeyDown(e, index, 'description')}
                           onPaste={(e) => handleCellPaste(e, index, 'description')}
@@ -376,15 +401,10 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                             hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
                             text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
                             placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
-                            transition-all duration-200 text-center whitespace-pre-wrap resize-y overflow-hidden
+                            transition-all duration-200 text-center whitespace-pre resize-none overflow-hidden
                             ${item.highlight?.description ? highlightClass : ''}`}
                           style={{ 
                             height: '28px'
-                          }}
-                          onInput={(e) => {
-                            const target = e.target as HTMLTextAreaElement;
-                            target.style.height = 'auto';
-                            target.style.height = `${target.scrollHeight}px`;
                           }}
                         />
                       </td>

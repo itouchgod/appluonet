@@ -19,6 +19,18 @@ const currencySymbols: { [key: string]: string } = {
   CNY: '¥'
 };
 
+// 默认单位列表（需要单复数变化的单位）
+const defaultUnits = ['pc', 'set', 'length'];
+
+// 处理单位的单复数
+const getUnitDisplay = (baseUnit: string, quantity: number) => {
+  const singularUnit = baseUnit.replace(/s$/, '');
+  if (defaultUnits.includes(singularUnit)) {
+    return quantity > 1 ? `${singularUnit}s` : singularUnit;
+  }
+  return baseUnit; // 自定义单位不变化单复数
+};
+
 // 生成报价单PDF
 export const generateQuotationPDF = async (data: QuotationData, preview = false): Promise<Blob> => {
   const doc = new jsPDF({
@@ -177,7 +189,7 @@ export const generateQuotationPDF = async (data: QuotationData, preview = false)
             styles: item.highlight?.quantity ? { textColor: [255, 0, 0] as [number, number, number] } : {}
           },
           {
-            content: item.unit || '',
+            content: getUnitDisplay(item.unit || '', item.quantity || 0),
             styles: item.highlight?.unit ? { textColor: [255, 0, 0] as [number, number, number] } : {}
           },
           {
