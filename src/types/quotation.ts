@@ -23,6 +23,11 @@ export interface OtherFee {
   description: string;
   amount: number;
   remarks?: string;
+  highlight?: {
+    description?: boolean;
+    amount?: boolean;
+    remarks?: boolean;
+  };
 }
 
 export interface QuotationData {

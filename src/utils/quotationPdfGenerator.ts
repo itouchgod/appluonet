@@ -198,10 +198,19 @@ export const generateQuotationPDF = async (data: QuotationData, preview = false)
           {
             content: fee.description,
             colSpan: data.showDescription ? 6 : 5,
-            styles: { halign: 'left' }
+            styles: { 
+              halign: 'left',
+              ...(fee.highlight?.description ? { textColor: [255, 0, 0] } : {})
+            }
           } as unknown as string,
-          fee.amount === 0 ? '' : fee.amount.toFixed(2),  // 金额为 0 时显示空字符串
-          ...(data.showRemarks ? [fee.remarks || ''] : [])
+          {
+            content: fee.amount === 0 ? '' : fee.amount.toFixed(2),
+            styles: fee.highlight?.amount ? { textColor: [255, 0, 0] } : {}
+          },
+          ...(data.showRemarks ? [{
+            content: fee.remarks || '',
+            styles: fee.highlight?.remarks ? { textColor: [255, 0, 0] } : {}
+          }] : [])
         ])
       ],
       theme: 'plain',

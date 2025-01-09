@@ -27,6 +27,11 @@ export interface PDFGeneratorData {
   otherFees?: {
     description: string;
     amount: number;
+    highlight?: {
+      description?: boolean;
+      amount?: boolean;
+      remarks?: boolean;
+    };
   }[];
   to: string;
   customerPO: string;

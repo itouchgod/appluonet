@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ImportDataButton } from './ImportDataButton';
 import type { QuotationData, LineItem } from '@/types/quotation';
 
@@ -23,6 +23,14 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
   const [editingQtyAmount, setEditingQtyAmount] = useState<string>('');
   const [editingOtherFeeIndex, setEditingOtherFeeIndex] = useState<number | null>(null);
   const [editingOtherFeeAmount, setEditingOtherFeeAmount] = useState<string>('');
+
+  // 添加表格宽度设置的逻辑
+  useEffect(() => {
+    const mainTable = document.querySelector('table');
+    if (mainTable) {
+      document.documentElement.style.setProperty('--table-width', `${mainTable.offsetWidth}px`);
+    }
+  }, [data.items.length, data.showDescription, data.showRemarks]);
 
   // 处理键盘导航
   const handleKeyDown = (
@@ -243,6 +251,22 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
     });
   };
 
+  // 处理其他费用的双击高亮
+  const handleOtherFeeDoubleClick = (index: number, field: 'description' | 'amount' | 'remarks') => {
+    const newFees = [...(data.otherFees ?? [])];
+    newFees[index] = {
+      ...newFees[index],
+      highlight: {
+        ...newFees[index].highlight,
+        [field]: !newFees[index].highlight?.[field]
+      }
+    };
+    onChange({
+      ...data,
+      otherFees: newFees
+    });
+  };
+
   // 处理其他费用的删除
   const handleOtherFeeSoftDelete = (index: number) => {
     onChange({
@@ -273,244 +297,31 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
       <div className="text-sm text-gray-500 dark:text-gray-400 mb-2 px-1">
         提示：双击单元格可以切换红色高亮显示
       </div>
-      <div className={`overflow-x-auto overflow-hidden border border-[#E5E5EA] dark:border-[#2C2C2E]
-        bg-white/90 dark:bg-[#1C1C1E]/90 backdrop-blur-xl
-        ${(data.otherFees ?? []).length > 0 ? 'rounded-t-2xl' : 'rounded-2xl'}`}>
-        <table className="w-full border-collapse border-spacing-0">
-          <thead>
-            <tr className="bg-[#F5F5F7] dark:bg-[#2C2C2E]
-              border-b border-[#E5E5EA] dark:border-[#3C3C3E]">
-              <th className="left-0 z-10 w-[50px] px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7] bg-[#F5F5F7] dark:bg-[#2C2C2E]">No.</th>
-              <th className="min-w-[180px] max-w-[300px] w-fit px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7] bg-[#F5F5F7] dark:bg-[#2C2C2E] whitespace-nowrap">Part Name</th>
-              {data.showDescription && (
-                <th className="min-w-[180px] w-fit px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Description</th>
-              )}
-              <th className="w-[100px] min-w-[100px] px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Q&apos;TY</th>
-              <th className="w-[100px] min-w-[100px] px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Unit</th>
-              <th className="w-[120px] min-w-[120px] px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">U/Price</th>
-              <th className="w-[120px] min-w-[120px] px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Amount</th>
-              {data.showRemarks && (
-                <th className="w-[200px] px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Remarks</th>
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {data.items.map((item, index) => (
-              <tr key={item.id} 
-                className="border-t border-[#E5E5EA] dark:border-[#2C2C2E]">
-                <td className="sticky left-0 z-10 w-[50px] px-1 py-2 text-center text-sm bg-white/90 dark:bg-[#1C1C1E]/90">
-                  <span 
-                    className="flex items-center justify-center w-5 h-5 rounded-full 
-                      text-xs text-gray-400
-                      hover:bg-red-100 hover:text-red-600 
-                      cursor-pointer transition-colors"
-                    onClick={() => handleSoftDelete(index)}
-                    title="Click to delete"
-                  >
-                    {index + 1}
-                  </span>
-                </td>
-                <td className="min-w-[180px] w-fit px-1 py-2 bg-white/90 dark:bg-[#1C1C1E]/90">
-                  <textarea
-                    value={item.partName}
-                    data-row={index}
-                    data-field="partName"
-                    onChange={(e) => {
-                      handleItemChange(index, 'partName', e.target.value);
-                      e.target.style.height = '28px';
-                      e.target.style.height = `${e.target.scrollHeight}px`;
-                    }}
-                    onDoubleClick={() => handleDoubleClick(index, 'partName')}
-                    onKeyDown={(e) => handleKeyDown(e, index, 'partName')}
-                    onPaste={(e) => handleCellPaste(e, index, 'partName')}
-                    className={`w-full px-3 py-1.5 bg-transparent border border-transparent
-                      focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
-                      hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
-                      text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
-                      placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
-                      transition-all duration-200 text-center whitespace-pre-wrap resize-y overflow-hidden
-                      ${item.highlight?.partName ? highlightClass : ''}`}
-                    style={{ 
-                      height: '28px'
-                    }}
-                  />
-                </td>
+      <div className="overflow-x-auto">
+        <div className="min-w-max border border-[#E5E5EA] dark:border-[#2C2C2E]
+          bg-white/90 dark:bg-[#1C1C1E]/90 backdrop-blur-xl
+          ${(data.otherFees ?? []).length > 0 ? 'rounded-t-2xl' : 'rounded-2xl'}">
+          <table className="w-full border-collapse border-spacing-0">
+            <thead>
+              <tr className="bg-[#F5F5F7] dark:bg-[#2C2C2E]
+                border-b border-[#E5E5EA] dark:border-[#3C3C3E]">
+                <th className="left-0 z-10 w-[50px] px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7] bg-[#F5F5F7] dark:bg-[#2C2C2E]">No.</th>
+                <th className="min-w-[180px] max-w-[300px] w-fit px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7] bg-[#F5F5F7] dark:bg-[#2C2C2E] whitespace-nowrap">Part Name</th>
                 {data.showDescription && (
-                  <td className="min-w-[180px] w-fit px-1 py-2">
-                    <textarea
-                      value={item.description}
-                      data-row={index}
-                      data-field="description"
-                      onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                      onDoubleClick={() => handleDoubleClick(index, 'description')}
-                      onKeyDown={(e) => handleKeyDown(e, index, 'description')}
-                      onPaste={(e) => handleCellPaste(e, index, 'description')}
-                      className={`w-full px-3 py-1.5 bg-transparent border border-transparent
-                        focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
-                        hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
-                        text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
-                        placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
-                        transition-all duration-200 text-center whitespace-pre-wrap resize-y overflow-hidden
-                        ${item.highlight?.description ? highlightClass : ''}`}
-                      style={{ 
-                        height: '28px'
-                      }}
-                      onInput={(e) => {
-                        const target = e.target as HTMLTextAreaElement;
-                        target.style.height = 'auto';
-                        target.style.height = `${target.scrollHeight}px`;
-                      }}
-                    />
-                  </td>
+                  <th className="min-w-[180px] w-fit px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Description</th>
                 )}
-                <td className="w-[100px] min-w-[100px] px-1 py-2">
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    value={editingQtyIndex === index ? editingQtyAmount : (item.quantity === 0 ? '' : item.quantity.toString())}
-                    data-row={index}
-                    data-field="quantity"
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (/^\d*$/.test(value)) {
-                        setEditingQtyAmount(value);
-                        handleItemChange(index, 'quantity', value === '' ? 0 : parseInt(value));
-                      }
-                    }}
-                    onDoubleClick={() => handleDoubleClick(index, 'quantity')}
-                    onKeyDown={(e) => handleKeyDown(e, index, 'quantity')}
-                    onPaste={(e) => handleCellPaste(e, index, 'quantity')}
-                    onFocus={(e) => {
-                      setEditingQtyIndex(index);
-                      setEditingQtyAmount(item.quantity === 0 ? '' : item.quantity.toString());
-                      e.target.select();
-                    }}
-                    onBlur={() => {
-                      setEditingQtyIndex(null);
-                      setEditingQtyAmount('');
-                    }}
-                    className={`w-full px-3 py-1.5 bg-transparent border border-transparent
-                      focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
-                      hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
-                      text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
-                      placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
-                      transition-all duration-200 text-center
-                      [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none
-                      ${item.highlight?.quantity ? highlightClass : ''}`}
-                  />
-                </td>
-                <td className="w-[100px] min-w-[100px] px-1 py-2">
-                  <select
-                    value={item.unit}
-                    data-row={index}
-                    data-field="unit"
-                    onChange={(e) => {
-                      handleItemChange(index, 'unit', e.target.value);
-                    }}
-                    onDoubleClick={() => handleDoubleClick(index, 'unit')}
-                    onKeyDown={(e) => handleKeyDown(e, index, 'unit')}
-                    className={`w-full px-3 py-1.5 bg-transparent border border-transparent
-                      focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
-                      hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
-                      text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
-                      placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
-                      transition-all duration-200 text-center cursor-pointer
-                      appearance-none
-                      ${item.highlight?.unit ? highlightClass : ''}`}
-                  >
-                    {availableUnits.map(unit => {
-                      const displayUnit = defaultUnits.includes(unit as typeof defaultUnits[number]) ? getUnitDisplay(unit, item.quantity) : unit;
-                      return (
-                        <option key={unit} value={displayUnit}>
-                          {displayUnit}
-                        </option>
-                      );
-                    })}
-                  </select>
-                </td>
-                <td className="w-[120px] min-w-[120px] px-1 py-2">
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    value={editingPriceIndex === index ? editingPriceAmount : (item.unitPrice === 0 ? '' : item.unitPrice.toFixed(2))}
-                    data-row={index}
-                    data-field="unitPrice"
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (/^-?\d*\.?\d*$/.test(value)) {
-                        setEditingPriceAmount(value);
-                        handleItemChange(index, 'unitPrice', value === '' ? 0 : parseFloat(value));
-                      }
-                    }}
-                    onDoubleClick={() => handleDoubleClick(index, 'unitPrice')}
-                    onKeyDown={(e) => handleKeyDown(e, index, 'unitPrice')}
-                    onPaste={(e) => handleCellPaste(e, index, 'unitPrice')}
-                    onFocus={(e) => {
-                      setEditingPriceIndex(index);
-                      setEditingPriceAmount(item.unitPrice === 0 ? '' : item.unitPrice.toString());
-                      e.target.select();
-                    }}
-                    onBlur={() => {
-                      setEditingPriceIndex(null);
-                      setEditingPriceAmount('');
-                    }}
-                    className={`w-full px-3 py-1.5 bg-transparent border border-transparent
-                      focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
-                      hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
-                      text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
-                      placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
-                      transition-all duration-200 text-center
-                      [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none
-                      ${item.highlight?.unitPrice ? highlightClass : ''}`}
-                  />
-                </td>
-                <td className="w-[120px] min-w-[120px] px-1 py-2">
-                  <input
-                    type="text"
-                    value={item.amount ? item.amount.toFixed(2) : ''}
-                    readOnly
-                    onDoubleClick={() => handleDoubleClick(index, 'amount')}
-                    className={`w-full px-3 py-1.5 bg-transparent
-                      text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
-                      placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
-                      transition-all duration-200 text-center
-                      ${item.highlight?.amount ? highlightClass : ''}`}
-                  />
-                </td>
+                <th className="w-[100px] min-w-[100px] px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Q&apos;TY</th>
+                <th className="w-[100px] min-w-[100px] px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Unit</th>
+                <th className="w-[120px] min-w-[120px] px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">U/Price</th>
+                <th className="w-[120px] min-w-[120px] px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Amount</th>
                 {data.showRemarks && (
-                  <td className="w-[200px] px-1 py-2">
-                    <input
-                      type="text"
-                      value={item.remarks}
-                      data-row={index}
-                      data-field="remarks"
-                      onChange={(e) => handleItemChange(index, 'remarks', e.target.value)}
-                      onDoubleClick={() => handleDoubleClick(index, 'remarks')}
-                      onKeyDown={(e) => handleKeyDown(e, index, 'remarks')}
-                      onPaste={(e) => handleCellPaste(e, index, 'remarks')}
-                      className={`w-full px-3 py-1.5 bg-transparent border border-transparent
-                        focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
-                        hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
-                        text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
-                        placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
-                        transition-all duration-200 text-center
-                        ${item.highlight?.remarks ? highlightClass : ''}`}
-                    />
-                  </td>
+                  <th className="w-[200px] px-1 py-3 text-center text-sm font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Remarks</th>
                 )}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {(data.otherFees ?? []).length > 0 && (
-        <div className="overflow-x-auto overflow-hidden rounded-b-2xl border border-t-0 border-[#E5E5EA] dark:border-[#2C2C2E]
-          bg-white/90 dark:bg-[#1C1C1E]/90 backdrop-blur-xl">
-          <table className="w-full">
+            </thead>
             <tbody>
-              {(data.otherFees ?? []).map((fee, index) => (
-                <tr key={fee.id} 
+              {data.items.map((item, index) => (
+                <tr key={item.id} 
                   className="border-t border-[#E5E5EA] dark:border-[#2C2C2E]">
                   <td className="sticky left-0 z-10 w-[50px] px-1 py-2 text-center text-sm bg-white/90 dark:bg-[#1C1C1E]/90">
                     <span 
@@ -518,68 +329,197 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                         text-xs text-gray-400
                         hover:bg-red-100 hover:text-red-600 
                         cursor-pointer transition-colors"
-                      onClick={() => handleOtherFeeSoftDelete(index)}
+                      onClick={() => handleSoftDelete(index)}
                       title="Click to delete"
                     >
-                      ×
+                      {index + 1}
                     </span>
                   </td>
-                  <td colSpan={data.showDescription ? 6 : 5} className="px-1 py-2">
-                    <input
-                      type="text"
-                      value={fee.description}
-                      onChange={(e) => handleOtherFeeChange(index, 'description', e.target.value)}
-                      placeholder="Other Fee"
-                      className="w-full px-3 py-1.5 bg-transparent border border-transparent
-                        focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
-                        hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
-                        text-[13px] text-center
-                        placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
-                        transition-all duration-200"
-                    />
-                  </td>
-                  <td className="w-[120px] px-1 py-2">
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      value={editingOtherFeeIndex === index ? editingOtherFeeAmount : (fee.amount === 0 ? '' : fee.amount.toFixed(2))}
+                  <td className="min-w-[180px] w-fit px-1 py-2 bg-white/90 dark:bg-[#1C1C1E]/90">
+                    <textarea
+                      value={item.partName}
+                      data-row={index}
+                      data-field="partName"
                       onChange={(e) => {
-                        const value = e.target.value;
-                        if (/^-?\d*\.?\d*$/.test(value)) {
-                          setEditingOtherFeeAmount(value);
-                          handleOtherFeeChange(index, 'amount', value === '' ? 0 : parseFloat(value));
-                        }
+                        handleItemChange(index, 'partName', e.target.value);
+                        e.target.style.height = '28px';
+                        e.target.style.height = `${e.target.scrollHeight}px`;
                       }}
-                      onFocus={(e) => {
-                        setEditingOtherFeeIndex(index);
-                        setEditingOtherFeeAmount(fee.amount === 0 ? '' : fee.amount.toString());
-                        e.target.select();
-                      }}
-                      onBlur={() => {
-                        setEditingOtherFeeIndex(null);
-                        setEditingOtherFeeAmount('');
-                      }}
-                      placeholder="0.00"
+                      onDoubleClick={() => handleDoubleClick(index, 'partName')}
+                      onKeyDown={(e) => handleKeyDown(e, index, 'partName')}
+                      onPaste={(e) => handleCellPaste(e, index, 'partName')}
                       className={`w-full px-3 py-1.5 bg-transparent border border-transparent
                         focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
                         hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
-                        text-[13px] text-center
+                        text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
                         placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
-                        transition-all duration-200`}
+                        transition-all duration-200 text-center whitespace-pre-wrap resize-y overflow-hidden
+                        ${item.highlight?.partName ? highlightClass : ''}`}
+                      style={{ 
+                        height: '28px'
+                      }}
+                    />
+                  </td>
+                  {data.showDescription && (
+                    <td className="min-w-[180px] w-fit px-1 py-2">
+                      <textarea
+                        value={item.description}
+                        data-row={index}
+                        data-field="description"
+                        onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                        onDoubleClick={() => handleDoubleClick(index, 'description')}
+                        onKeyDown={(e) => handleKeyDown(e, index, 'description')}
+                        onPaste={(e) => handleCellPaste(e, index, 'description')}
+                        className={`w-full px-3 py-1.5 bg-transparent border border-transparent
+                          focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
+                          hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
+                          text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
+                          placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
+                          transition-all duration-200 text-center whitespace-pre-wrap resize-y overflow-hidden
+                          ${item.highlight?.description ? highlightClass : ''}`}
+                        style={{ 
+                          height: '28px'
+                        }}
+                        onInput={(e) => {
+                          const target = e.target as HTMLTextAreaElement;
+                          target.style.height = 'auto';
+                          target.style.height = `${target.scrollHeight}px`;
+                        }}
+                      />
+                    </td>
+                  )}
+                  <td className="w-[100px] min-w-[100px] px-1 py-2">
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={editingQtyIndex === index ? editingQtyAmount : (item.quantity === 0 ? '' : item.quantity.toString())}
+                      data-row={index}
+                      data-field="quantity"
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (/^\d*$/.test(value)) {
+                          setEditingQtyAmount(value);
+                          handleItemChange(index, 'quantity', value === '' ? 0 : parseInt(value));
+                        }
+                      }}
+                      onDoubleClick={() => handleDoubleClick(index, 'quantity')}
+                      onKeyDown={(e) => handleKeyDown(e, index, 'quantity')}
+                      onPaste={(e) => handleCellPaste(e, index, 'quantity')}
+                      onFocus={(e) => {
+                        setEditingQtyIndex(index);
+                        setEditingQtyAmount(item.quantity === 0 ? '' : item.quantity.toString());
+                        e.target.select();
+                      }}
+                      onBlur={() => {
+                        setEditingQtyIndex(null);
+                        setEditingQtyAmount('');
+                      }}
+                      className={`w-full px-3 py-1.5 bg-transparent border border-transparent
+                        focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
+                        hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
+                        text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
+                        placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
+                        transition-all duration-200 text-center
+                        [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none
+                        ${item.highlight?.quantity ? highlightClass : ''}`}
+                    />
+                  </td>
+                  <td className="w-[100px] min-w-[100px] px-1 py-2">
+                    <select
+                      value={item.unit}
+                      data-row={index}
+                      data-field="unit"
+                      onChange={(e) => {
+                        handleItemChange(index, 'unit', e.target.value);
+                      }}
+                      onDoubleClick={() => handleDoubleClick(index, 'unit')}
+                      onKeyDown={(e) => handleKeyDown(e, index, 'unit')}
+                      className={`w-full px-3 py-1.5 bg-transparent border border-transparent
+                        focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
+                        hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
+                        text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
+                        placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
+                        transition-all duration-200 text-center cursor-pointer
+                        appearance-none
+                        ${item.highlight?.unit ? highlightClass : ''}`}
+                    >
+                      {availableUnits.map(unit => {
+                        const displayUnit = defaultUnits.includes(unit as typeof defaultUnits[number]) ? getUnitDisplay(unit, item.quantity) : unit;
+                        return (
+                          <option key={unit} value={displayUnit}>
+                            {displayUnit}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </td>
+                  <td className="w-[120px] min-w-[120px] px-1 py-2">
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={editingPriceIndex === index ? editingPriceAmount : (item.unitPrice === 0 ? '' : item.unitPrice.toFixed(2))}
+                      data-row={index}
+                      data-field="unitPrice"
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (/^-?\d*\.?\d*$/.test(value)) {
+                          setEditingPriceAmount(value);
+                          handleItemChange(index, 'unitPrice', value === '' ? 0 : parseFloat(value));
+                        }
+                      }}
+                      onDoubleClick={() => handleDoubleClick(index, 'unitPrice')}
+                      onKeyDown={(e) => handleKeyDown(e, index, 'unitPrice')}
+                      onPaste={(e) => handleCellPaste(e, index, 'unitPrice')}
+                      onFocus={(e) => {
+                        setEditingPriceIndex(index);
+                        setEditingPriceAmount(item.unitPrice === 0 ? '' : item.unitPrice.toString());
+                        e.target.select();
+                      }}
+                      onBlur={() => {
+                        setEditingPriceIndex(null);
+                        setEditingPriceAmount('');
+                      }}
+                      className={`w-full px-3 py-1.5 bg-transparent border border-transparent
+                        focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
+                        hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
+                        text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
+                        placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
+                        transition-all duration-200 text-center
+                        [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none
+                        ${item.highlight?.unitPrice ? highlightClass : ''}`}
+                    />
+                  </td>
+                  <td className="w-[120px] min-w-[120px] px-1 py-2">
+                    <input
+                      type="text"
+                      value={item.amount ? item.amount.toFixed(2) : ''}
+                      readOnly
+                      onDoubleClick={() => handleDoubleClick(index, 'amount')}
+                      className={`w-full px-3 py-1.5 bg-transparent
+                        text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
+                        placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
+                        transition-all duration-200 text-center
+                        ${item.highlight?.amount ? highlightClass : ''}`}
                     />
                   </td>
                   {data.showRemarks && (
                     <td className="w-[200px] px-1 py-2">
                       <input
                         type="text"
-                        value={fee.remarks || ''}
-                        onChange={(e) => handleOtherFeeChange(index, 'remarks', e.target.value)}
-                        className="w-full px-3 py-1.5 bg-transparent border border-transparent
+                        value={item.remarks}
+                        data-row={index}
+                        data-field="remarks"
+                        onChange={(e) => handleItemChange(index, 'remarks', e.target.value)}
+                        onDoubleClick={() => handleDoubleClick(index, 'remarks')}
+                        onKeyDown={(e) => handleKeyDown(e, index, 'remarks')}
+                        onPaste={(e) => handleCellPaste(e, index, 'remarks')}
+                        className={`w-full px-3 py-1.5 bg-transparent border border-transparent
                           focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
                           hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
-                          text-[13px] text-center
+                          text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
                           placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
-                          transition-all duration-200"
+                          transition-all duration-200 text-center
+                          ${item.highlight?.remarks ? highlightClass : ''}`}
                       />
                     </td>
                   )}
@@ -588,7 +528,100 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
             </tbody>
           </table>
         </div>
-      )}
+
+        {(data.otherFees ?? []).length > 0 && (
+          <div className="min-w-max border border-t-0 border-[#E5E5EA] dark:border-[#2C2C2E]
+            bg-white/90 dark:bg-[#1C1C1E]/90 backdrop-blur-xl rounded-b-2xl"
+            style={{ width: 'var(--table-width)' }}>
+            <table className="w-full">
+              <tbody>
+                {(data.otherFees ?? []).map((fee, index) => (
+                  <tr key={fee.id} 
+                    className="border-t border-[#E5E5EA] dark:border-[#2C2C2E]">
+                    <td className="sticky left-0 z-10 w-[50px] px-1 py-2 text-center text-sm bg-white/90 dark:bg-[#1C1C1E]/90">
+                      <span 
+                        className="flex items-center justify-center w-5 h-5 rounded-full 
+                          text-xs text-gray-400
+                          hover:bg-red-100 hover:text-red-600 
+                          cursor-pointer transition-colors"
+                        onClick={() => handleOtherFeeSoftDelete(index)}
+                        title="Click to delete"
+                      >
+                        ×
+                      </span>
+                    </td>
+                    <td colSpan={data.showDescription ? 6 : 5} className="px-1 py-2">
+                      <input
+                        type="text"
+                        value={fee.description}
+                        onChange={(e) => handleOtherFeeChange(index, 'description', e.target.value)}
+                        onDoubleClick={() => handleOtherFeeDoubleClick(index, 'description')}
+                        placeholder="Other Fee"
+                        className={`w-full px-3 py-1.5 bg-transparent border border-transparent
+                          focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
+                          hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
+                          text-[13px] text-center
+                          placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
+                          transition-all duration-200
+                          ${fee.highlight?.description ? highlightClass : ''}`}
+                      />
+                    </td>
+                    <td className="w-[120px] min-w-[120px] px-1 py-2">
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={editingOtherFeeIndex === index ? editingOtherFeeAmount : (fee.amount === 0 ? '' : fee.amount.toFixed(2))}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (/^-?\d*\.?\d*$/.test(value)) {
+                            setEditingOtherFeeAmount(value);
+                            handleOtherFeeChange(index, 'amount', value === '' ? 0 : parseFloat(value));
+                          }
+                        }}
+                        onDoubleClick={() => handleOtherFeeDoubleClick(index, 'amount')}
+                        onFocus={(e) => {
+                          setEditingOtherFeeIndex(index);
+                          setEditingOtherFeeAmount(fee.amount === 0 ? '' : fee.amount.toString());
+                          e.target.select();
+                        }}
+                        onBlur={() => {
+                          setEditingOtherFeeIndex(null);
+                          setEditingOtherFeeAmount('');
+                        }}
+                        className={`w-full px-3 py-1.5 bg-transparent border border-transparent
+                          focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
+                          hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
+                          text-[13px] text-center
+                          placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
+                          transition-all duration-200
+                          [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none
+                          ${fee.highlight?.amount ? highlightClass : ''}`}
+                      />
+                    </td>
+                    {data.showRemarks && (
+                      <td className="w-[200px] px-1 py-2">
+                        <input
+                          type="text"
+                          value={fee.remarks || ''}
+                          onChange={(e) => handleOtherFeeChange(index, 'remarks', e.target.value)}
+                          onDoubleClick={() => handleOtherFeeDoubleClick(index, 'remarks')}
+                          className={`w-full px-3 py-1.5 bg-transparent border border-transparent
+                            focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
+                            hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
+                            text-[13px] text-center
+                            placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
+                            transition-all duration-200
+                            ${fee.highlight?.remarks ? highlightClass : ''}`}
+                        />
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }; 

@@ -157,23 +157,59 @@ export const generateOrderConfirmationPDF = async (data: QuotationData, preview 
         // 常规商品行
         ...data.items.map((item, index) => [
           index + 1,
-          item.partName,
-          ...(data.showDescription ? [item.description || ''] : []),
-          item.quantity === 0 ? '' : item.quantity,
-          item.quantity === 0 ? '' : item.unit,
-          item.unitPrice === 0 ? '' : item.unitPrice.toFixed(2),
-          item.amount === 0 ? '' : item.amount.toFixed(2),
-          ...(data.showRemarks ? [item.remarks || ''] : [])
+          {
+            content: item.partName,
+            styles: item.highlight?.partName ? { textColor: [255, 0, 0] as [number, number, number] } : {}
+          },
+          ...(data.showDescription ? [{
+            content: item.description || '',
+            styles: item.highlight?.description ? { textColor: [255, 0, 0] as [number, number, number] } : {}
+          }] : []),
+          {
+            content: item.quantity === 0 ? '' : item.quantity,
+            styles: item.highlight?.quantity ? { textColor: [255, 0, 0] as [number, number, number] } : {}
+          },
+          {
+            content: item.quantity === 0 ? '' : item.unit,
+            styles: item.highlight?.unit ? { textColor: [255, 0, 0] as [number, number, number] } : {}
+          },
+          {
+            content: item.unitPrice === 0 ? '' : item.unitPrice.toFixed(2),
+            styles: item.highlight?.unitPrice ? { textColor: [255, 0, 0] as [number, number, number] } : {}
+          },
+          {
+            content: item.amount === 0 ? '' : item.amount.toFixed(2),
+            styles: item.highlight?.amount ? { textColor: [255, 0, 0] as [number, number, number] } : {}
+          },
+          ...(data.showRemarks ? [{
+            content: item.remarks || '',
+            styles: item.highlight?.remarks ? { textColor: [255, 0, 0] as [number, number, number] } : {}
+          }] : [])
         ]),
         // Other Fees 行
         ...(data.otherFees || []).map(fee => [
           {
             content: fee.description,
             colSpan: data.showDescription ? 6 : 5,
-            styles: { halign: 'left' }
+            styles: { 
+              halign: 'center' as 'center',
+              ...(fee.highlight?.description ? { textColor: [255, 0, 0] as [number, number, number] } : {})
+            }
           } as unknown as string,
-          fee.amount === 0 ? '' : fee.amount.toFixed(2),
-          ...(data.showRemarks ? [fee.remarks || ''] : [])
+          {
+            content: fee.amount === 0 ? '' : fee.amount.toFixed(2),
+            styles: {
+              halign: 'center' as 'center',
+              ...(fee.highlight?.amount ? { textColor: [255, 0, 0] as [number, number, number] } : {})
+            }
+          },
+          ...(data.showRemarks ? [{
+            content: fee.remarks || '',
+            styles: {
+              halign: 'center' as 'center',
+              ...(fee.highlight?.remarks ? { textColor: [255, 0, 0] as [number, number, number] } : {})
+            }
+          }] : [])
         ])
       ],
       theme: 'plain',
