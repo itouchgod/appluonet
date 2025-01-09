@@ -20,6 +20,9 @@ const inputClassName = `w-full px-4 py-2.5 rounded-2xl
   hover:border-[#007AFF]/20 dark:hover:border-[#0A84FF]/20
   shadow-sm hover:shadow-md`;
 
+// 默认单位列表（需要单复数变化的单位）
+const defaultUnits = ['pc', 'set', 'length'];
+
 const tableInputClassName = `w-full px-3 py-2 rounded-xl
   bg-transparent backdrop-blur-sm
   border border-transparent
@@ -144,6 +147,18 @@ Beneficiary: Luo & Company Co., Limited`,
   const [additionalPaymentTerms, setAdditionalPaymentTerms] = useState('');
   const [editingFeeAmount, setEditingFeeAmount] = useState<string>('');
   const [editingFeeIndex, setEditingFeeIndex] = useState<number | null>(null);
+  const [focusedCell, setFocusedCell] = useState<{
+    row: number;
+    column: string;
+  } | null>(null);
+
+  // 处理单位的单复数
+  const getUnitDisplay = (baseUnit: string, quantity: number) => {
+    if (defaultUnits.includes(baseUnit)) {
+      return quantity > 1 ? `${baseUnit}s` : baseUnit;
+    }
+    return baseUnit;
+  };
 
   const handleAddLine = () => {
     setInvoiceData(prev => ({
@@ -309,49 +324,19 @@ Beneficiary: Luo & Company Co., Limited`,
     }));
   };
 
-  // 处理导入数据
-  const handleImportDataLocal = useCallback((text: string) => {
-    try {
-      const parsedRows = handleImportData(text);
-      if (Array.isArray(parsedRows)) {
-        setInvoiceData(prev => ({
-          ...prev,
-          items: parsedRows.map(row => ({
-            ...row,
-            partname: row.partname || ''  // 确保有 partname 字段
-          }))
-        }));
-      }
-    } catch (error) {
-      console.error('Error importing data:', error);
-    }
-  }, []);
-
-  // 添加导入数据事件监听
-  useEffect(() => {
-    const importDataListener = (event: CustomEvent<string>) => {
-      handleImportDataLocal(event.detail);
-    };
-
-    window.addEventListener('import-data', importDataListener as EventListener);
-    return () => {
-      window.removeEventListener('import-data', importDataListener as EventListener);
-    };
-  }, [handleImportDataLocal]);
-
   // 修改全局粘贴事件处理函数
   useEffect(() => {
     const handlePaste = async (event: ClipboardEvent) => {
       // 检查粘贴目标是否是输入框或文本区域
-      const target = event.target as HTMLElement;
+      const target = event.target;
       
       // 如果目标元素是输入框或文本区域，直接返回，使用默认粘贴行为
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+      if (target instanceof HTMLElement && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
         return;
       }
 
       // 检查是否点击在表格内的任何位置
-      const isTableCell = target.closest('td') !== null;
+      const isTableCell = target instanceof Element && target.closest('td') !== null;
       if (isTableCell) {
         return; // 如果是表格单元格内，直接返回，使用默认粘贴行为
       }
@@ -364,7 +349,88 @@ Beneficiary: Luo & Company Co., Limited`,
           text = await navigator.clipboard.readText();
         }
         if (text) {
-          handleImportDataLocal(text);
+          // 处理 Excel 复制的数据，将软回车替换为空格
+          text = text.replace(/\r/g, ' ');
+          
+          // 按行分割，但保留引号内的换行符
+          const rows = text.split(/\n(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(row => {
+            // 处理每一行，保留引号内的内容
+            let processedRow = '';
+            let inQuotes = false;
+            let currentCell = '';
+            
+            for (let i = 0; i < row.length; i++) {
+              const char = row[i];
+              if (char === '"') {
+                inQuotes = !inQuotes;
+                continue;  // 跳过引号字符
+              }
+              
+              if (char === '\t' && !inQuotes) {
+                processedRow += currentCell + '\t';
+                currentCell = '';
+              } else {
+                currentCell += char;
+              }
+            }
+            processedRow += currentCell;  // 添加最后一个单元格
+            
+            return processedRow;
+          });
+
+          const newItems: LineItem[] = rows.map((row, index) => {
+            // 分割单元格，但保留引号内的制表符
+            const cells = row.split(/\t(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(cell => cell.trim());
+            let partname = '', description = '', quantity = '0', unit = 'pc', unitPrice = '0';
+
+            // 根据不同的列数处理数据
+            if (cells.length >= 5) {
+              // 5列或更多：名称 tab 描述 tab 数量 tab 单位 tab 单价
+              [partname, description, quantity, unit, unitPrice] = cells;
+            } else if (cells.length === 4) {
+              // 4列：名称 tab tab 数量 tab 单位 tab 单价
+              [partname,, quantity, unit, unitPrice] = cells;
+            } else if (cells.length === 3) {
+              // 3列有多种情况
+              if (cells[1] && !isNaN(Number(cells[1]))) {
+                if (!isNaN(Number(cells[2]))) {
+                  // 名称 tab 数量 tab 单价
+                  [partname, quantity, unitPrice] = cells;
+                } else {
+                  // 名称 tab 数量 tab tab
+                  [partname, quantity] = cells;
+                }
+              } else {
+                // 名称 tab 描述 tab 数量
+                [partname, description, quantity] = cells;
+              }
+            } else if (cells.length === 2) {
+              // 2列：名称 tab 数量
+              [partname, quantity] = cells;
+            }
+
+            // 清理并验证数据
+            const cleanQuantity = parseInt(quantity.replace(/[^\d.-]/g, '')) || 0;
+            const cleanUnitPrice = parseFloat(unitPrice.replace(/[^\d.-]/g, '')) || 0;
+            const baseUnit = unit.trim().replace(/s$/, '') || 'pc';
+
+            return {
+              lineNo: index + 1,
+              hsCode: '',
+              partname: partname.trim(),
+              description: description.trim(),
+              quantity: cleanQuantity,
+              unit: defaultUnits.includes(baseUnit) ? getUnitDisplay(baseUnit, cleanQuantity) : baseUnit,
+              unitPrice: cleanUnitPrice,
+              amount: cleanQuantity * cleanUnitPrice
+            };
+          });
+
+          // 更新发票数据
+          setInvoiceData(prev => ({
+            ...prev,
+            items: newItems.filter(item => item.partname || item.description)  // 过滤掉空行
+          }));
         }
       } catch (err) {
         console.error('Failed to handle paste:', err);
@@ -378,7 +444,7 @@ Beneficiary: Luo & Company Co., Limited`,
     return () => {
       document.removeEventListener('paste', handlePaste);
     };
-  }, [handleImportDataLocal]);
+  }, [defaultUnits, getUnitDisplay]);
 
   // 修改单元格粘贴处理函数
   const handleCellPaste = (e: React.ClipboardEvent<HTMLInputElement | HTMLTextAreaElement>, index: number, field: keyof LineItem) => {
@@ -411,29 +477,9 @@ Beneficiary: Luo & Company Co., Limited`,
 
     // 对于文本字段，保持原始格式
     if (field === 'description' || field === 'hsCode' || field === 'partname') {
-      // 检查是否包含 tab，如果包含说明是从 Excel 复制的多个单元格
-      if (pasteText.includes('\t')) {
-        e.preventDefault();
-        // 只取第一个单元格的内容
-        const firstCell = pasteText.split('\t')[0];
-        updateLineItem(index, field, firstCell);
-      } else {
-        // 如果不包含 tab，说明是单个单元格的内容，保持原始格式
-        e.preventDefault();
-        updateLineItem(index, field, pasteText);
-      }
+      e.preventDefault();
+      updateLineItem(index, field, pasteText);
     }
-  };
-
-  // 默认单位列表（需要单复数变化的单位）
-  const defaultUnits = ['pc', 'set', 'length'];
-
-  // 处理单位的单复数
-  const getUnitDisplay = (baseUnit: string, quantity: number) => {
-    if (defaultUnits.includes(baseUnit)) {
-      return quantity > 1 ? `${baseUnit}s` : baseUnit;
-    }
-    return baseUnit;
   };
 
   // 处理导入的数据
@@ -484,6 +530,70 @@ Beneficiary: Luo & Company Co., Limited`,
     return newItems;
   };
 
+  // 处理键盘导航
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>, rowIndex: number, column: string) => {
+    const columns = [
+      ...(invoiceData.showHsCode ? ['hsCode'] : []),
+      'partname',
+      ...(invoiceData.showDescription ? ['description'] : []),
+      'quantity',
+      'unit',
+      'unitPrice'
+    ];
+
+    const currentColumnIndex = columns.indexOf(column);
+    const totalRows = invoiceData.items.length;
+
+    switch (e.key) {
+      case 'ArrowRight':
+        if (currentColumnIndex < columns.length - 1) {
+          const nextColumn = columns[currentColumnIndex + 1];
+          setFocusedCell({ row: rowIndex, column: nextColumn });
+          e.preventDefault();
+        }
+        break;
+      case 'ArrowLeft':
+        if (currentColumnIndex > 0) {
+          const prevColumn = columns[currentColumnIndex - 1];
+          setFocusedCell({ row: rowIndex, column: prevColumn });
+          e.preventDefault();
+        }
+        break;
+      case 'ArrowUp':
+        if (rowIndex > 0) {
+          setFocusedCell({ row: rowIndex - 1, column });
+          e.preventDefault();
+        }
+        break;
+      case 'ArrowDown':
+      case 'Enter':
+        if (rowIndex < totalRows - 1) {
+          setFocusedCell({ row: rowIndex + 1, column });
+          e.preventDefault();
+        }
+        break;
+      case 'Tab':
+        if (!e.shiftKey && currentColumnIndex === columns.length - 1 && rowIndex < totalRows - 1) {
+          setFocusedCell({ row: rowIndex + 1, column: columns[0] });
+          e.preventDefault();
+        } else if (e.shiftKey && currentColumnIndex === 0 && rowIndex > 0) {
+          setFocusedCell({ row: rowIndex - 1, column: columns[columns.length - 1] });
+          e.preventDefault();
+        }
+        break;
+    }
+  };
+
+  // 使用 useEffect 自动聚焦到指定单元格
+  useEffect(() => {
+    if (focusedCell) {
+      const element = document.querySelector(`[data-row="${focusedCell.row}"][data-column="${focusedCell.column}"]`) as HTMLElement;
+      if (element) {
+        element.focus();
+      }
+    }
+  }, [focusedCell]);
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-black">
     <div className="flex-1">  {/* 添加这个 flex-1 容器 */}
@@ -512,8 +622,13 @@ Beneficiary: Luo & Company Co., Limited`,
                       try {
                         const text = await navigator.clipboard.readText();
                         if (text) {
-                          const importDataEvent = new CustomEvent('import-data', { detail: text });
-                          window.dispatchEvent(importDataEvent);
+                          // 直接调用全局粘贴处理函数
+                          const pasteEvent = new ClipboardEvent('paste', {
+                            clipboardData: new DataTransfer()
+                          });
+                          // @ts-ignore - 为了设置剪贴板数据
+                          pasteEvent.clipboardData.setData('text', text);
+                          document.dispatchEvent(pasteEvent);
                         }
                       } catch (err) {
                         console.error('Failed to access clipboard:', err);
@@ -563,8 +678,12 @@ Beneficiary: Luo & Company Co., Limited`,
                         confirmBtn.onclick = () => {
                           const text = input.value;
                           if (text) {
-                            const importDataEvent = new CustomEvent('import-data', { detail: text });
-                            window.dispatchEvent(importDataEvent);
+                            const pasteEvent = new ClipboardEvent('paste', {
+                              clipboardData: new DataTransfer()
+                            });
+                            // @ts-ignore - 为了设置剪贴板数据
+                            pasteEvent.clipboardData.setData('text', text);
+                            document.dispatchEvent(pasteEvent);
                           }
                           cleanup();
                         };
@@ -850,14 +969,14 @@ Beneficiary: Luo & Company Co., Limited`,
                               HS Code
                             </th>
                           )}
-                          <th className="py-2 px-4 text-center text-xs font-bold opacity-90 w-[150px]">Part Name</th>
+                          <th className="py-2 px-4 text-center text-[12px] font-bold opacity-90 w-[150px] md:w-[210px]">Part Name</th>
                           {invoiceData.showDescription && (
-                            <th className="py-2 px-4 text-center text-xs font-bold opacity-90 flex-1">Description</th>
+                            <th className="py-2 px-4 text-center text-[12px] font-bold opacity-90 flex-1">Description</th>
                           )}
-                          <th className="py-2 px-4 text-center text-xs font-bold opacity-90 w-[100px]">Q&apos;TY</th>
-                          <th className="py-2 px-4 text-center text-xs font-bold opacity-90 w-[100px]">Unit</th>
-                          <th className="py-2 px-4 text-center text-xs font-bold opacity-90 w-[130px]">U/Price</th>
-                          <th className="py-2 px-4 text-center text-xs font-bold opacity-90 w-[150px]">Amount</th>
+                          <th className="py-2 px-4 text-center text-[12px] font-bold opacity-90 w-[100px]">Q&apos;TY</th>
+                          <th className="py-2 px-4 text-center text-[12px] font-bold opacity-90 w-[100px]">Unit</th>
+                          <th className="py-2 px-4 text-center text-[12px] font-bold opacity-90 w-[130px]">U/Price</th>
+                          <th className="py-2 px-4 text-center text-[12px] font-bold opacity-90 w-[150px]">Amount</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -890,19 +1009,71 @@ Beneficiary: Luo & Company Co., Limited`,
                                   value={item.hsCode}
                                   onChange={e => updateLineItem(index, 'hsCode', e.target.value)}
                                   onPaste={(e) => handleCellPaste(e, index, 'hsCode')}
+                                  onKeyDown={(e) => handleKeyDown(e, index, 'hsCode')}
+                                  data-row={index}
+                                  data-column="hsCode"
                                   className={tableInputClassName}
                                   placeholder="HS Code"
                                 />
                               </td>
                             )}
                             <td className="py-1.5 px-1">
-                              <input
-                                type="text"
+                              <textarea
                                 value={item.partname}
                                 onChange={e => updateLineItem(index, 'partname', e.target.value)}
                                 onPaste={(e) => handleCellPaste(e, index, 'partname')}
-                                className={tableInputClassName}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Tab') {
+                                    handleKeyDown(e, index, 'partname');
+                                  }
+                                }}
+                                data-row={index}
+                                data-column="partname"
+                                rows={1}
+                                className={`
+                                  w-full
+                                  resize-vertical
+                                  text-center
+                                  py-2 px-3
+                                  border border-transparent
+                                  rounded-lg
+                                  transition-colors
+                                  hover:bg-gray-50 dark:hover:bg-gray-800
+                                  hover:border-[#007AFF]/50 dark:hover:border-[#0A84FF]/50
+                                  focus:bg-gray-50 dark:focus:bg-gray-800
+                                  focus:border-[#007AFF]/50 dark:focus:border-[#0A84FF]/50
+                                  focus:ring-0 focus:outline-none
+                                  bg-transparent
+                                  placeholder:text-gray-300 dark:placeholder:text-gray-600
+                                  overflow-hidden
+                                  text-[10px] leading-[14px]
+                                  [&::-webkit-resizer] {
+                                    display: none;
+                                  }
+                                  hover:[&::-webkit-resizer] {
+                                    display: block;
+                                    width: 4px;
+                                    height: 4px;
+                                    background: linear-gradient(135deg, transparent 0.5px, #007AFF 0.5px);
+                                  }
+                                  dark:hover:[&::-webkit-resizer] {
+                                    background: linear-gradient(135deg, transparent 0.5px, #0A84FF 0.5px);
+                                  }
+                                  [&::-webkit-scrollbar] {
+                                    display: none;
+                                  }
+                                `}
                                 placeholder="Part Name"
+                                style={{ 
+                                  height: 'auto',
+                                  minHeight: '41px',
+                                  maxHeight: '200px'
+                                }}
+                                onInput={(e) => {
+                                  const target = e.target as HTMLTextAreaElement;
+                                  target.style.height = 'auto';
+                                  target.style.height = `${Math.min(target.scrollHeight, 200)}px`;
+                                }}
                               />
                             </td>
                             {invoiceData.showDescription && (
@@ -911,6 +1082,13 @@ Beneficiary: Luo & Company Co., Limited`,
                                   value={item.description}
                                   onChange={e => updateLineItem(index, 'description', e.target.value)}
                                   onPaste={(e) => handleCellPaste(e, index, 'description')}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Tab') {
+                                      handleKeyDown(e, index, 'description');
+                                    }
+                                  }}
+                                  data-row={index}
+                                  data-column="description"
                                   rows={1}
                                   className={`
                                     w-full
@@ -928,6 +1106,7 @@ Beneficiary: Luo & Company Co., Limited`,
                                     bg-transparent
                                     placeholder:text-gray-300 dark:placeholder:text-gray-600
                                     overflow-hidden
+                                    text-[10px] leading-[14px]
                                     [&::-webkit-resizer] {
                                       display: none;
                                     }
@@ -946,8 +1125,14 @@ Beneficiary: Luo & Company Co., Limited`,
                                   `}
                                   placeholder="Enter description"
                                   style={{ 
-                                    height: '41px',
-                                    minHeight: '41px'
+                                    height: 'auto',
+                                    minHeight: '41px',
+                                    maxHeight: '200px'
+                                  }}
+                                  onInput={(e) => {
+                                    const target = e.target as HTMLTextAreaElement;
+                                    target.style.height = 'auto';
+                                    target.style.height = `${Math.min(target.scrollHeight, 200)}px`;
                                   }}
                                 />
                               </td>
@@ -968,6 +1153,9 @@ Beneficiary: Luo & Company Co., Limited`,
                                   }
                                 }}
                                 onPaste={(e) => handleCellPaste(e, index, 'quantity')}
+                                onKeyDown={(e) => handleKeyDown(e, index, 'quantity')}
+                                data-row={index}
+                                data-column="quantity"
                                 onFocus={(e) => {
                                   setEditingQuantityIndex(index);
                                   setEditingQuantity(item.quantity === 0 ? '' : item.quantity.toString());
@@ -988,6 +1176,9 @@ Beneficiary: Luo & Company Co., Limited`,
                                   const unit = item.quantity <= 1 ? baseUnit : `${baseUnit}s`;
                                   updateLineItem(index, 'unit', unit);
                                 }}
+                                onKeyDown={(e) => handleKeyDown(e, index, 'unit')}
+                                data-row={index}
+                                data-column="unit"
                                 className={`${tableInputClassName} appearance-none`}
                               >
                                 <option value="pc">pc{item.quantity > 1 ? 's' : ''}</option>
@@ -1011,6 +1202,9 @@ Beneficiary: Luo & Company Co., Limited`,
                                   }
                                 }}
                                 onPaste={(e) => handleCellPaste(e, index, 'unitPrice')}
+                                onKeyDown={(e) => handleKeyDown(e, index, 'unitPrice')}
+                                data-row={index}
+                                data-column="unitPrice"
                                 onFocus={(e) => {
                                   setEditingUnitPriceIndex(index);
                                   setEditingUnitPrice(item.unitPrice === 0 ? '' : item.unitPrice.toString());
