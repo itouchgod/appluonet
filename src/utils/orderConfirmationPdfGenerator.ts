@@ -192,21 +192,21 @@ export const generateOrderConfirmationPDF = async (data: QuotationData, preview 
             content: fee.description,
             colSpan: data.showDescription ? 6 : 5,
             styles: { 
-              halign: 'center' as 'center',
+              halign: 'center' as const,
               ...(fee.highlight?.description ? { textColor: [255, 0, 0] as [number, number, number] } : {})
             }
           } as unknown as string,
           {
             content: fee.amount === 0 ? '' : fee.amount.toFixed(2),
             styles: {
-              halign: 'center' as 'center',
+              halign: 'center' as const,
               ...(fee.highlight?.amount ? { textColor: [255, 0, 0] as [number, number, number] } : {})
             }
           },
           ...(data.showRemarks ? [{
             content: fee.remarks || '',
             styles: {
-              halign: 'center' as 'center',
+              halign: 'center' as const,
               ...(fee.highlight?.remarks ? { textColor: [255, 0, 0] as [number, number, number] } : {})
             }
           }] : [])

@@ -28,14 +28,6 @@ const buttonClassName = `px-4 py-2 rounded-xl text-sm font-medium
 // 默认单位列表
 const defaultUnits = ['pc', 'set', 'length'];
 
-// 处理单位的单复数
-const getUnitDisplay = (baseUnit: string, quantity: number) => {
-  if (defaultUnits.includes(baseUnit)) {
-    return quantity > 1 ? `${baseUnit}s` : baseUnit;
-  }
-  return baseUnit;
-};
-
 export default function QuotationPage() {
   const [activeTab, setActiveTab] = useState<'quotation' | 'confirmation'>('quotation');
   const [showSettings, setShowSettings] = useState(false);
@@ -275,25 +267,6 @@ export default function QuotationPage() {
     document.body.appendChild(confirmBtn);
     
     input.focus();
-  };
-
-  // 处理单个项目的更改
-  const handleItemChange = (index: number, field: keyof LineItem, value: string | number) => {
-    const newItems = [...data.items];
-    newItems[index] = {
-      ...newItems[index],
-      [field]: value
-    };
-
-    // 如果更改了数量或单价，自动计算金额
-    if (field === 'quantity' || field === 'unitPrice') {
-      newItems[index].amount = newItems[index].quantity * newItems[index].unitPrice;
-    }
-
-    setData({
-      ...data,
-      items: newItems
-    });
   };
 
   return (

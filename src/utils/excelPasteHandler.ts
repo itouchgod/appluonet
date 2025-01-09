@@ -96,13 +96,6 @@ export const convertExcelToLineItems = (rows: string[][], existingItems: ExcelLi
     let unit = existingItems[i]?.unit || 'pc'; // 使用现有项目的单位，如果没有则默认为 'pc'
     let unitPrice = 0;
 
-    // 识别数字列的位置
-    const numericColumns = row.map((cell, index) => ({
-      index,
-      value: cell.trim(),
-      isNumeric: isNumeric(cell)
-    }));
-
     // 根据列数和数字列位置处理不同格式
     if (row.length === 3) {
       // 如果最后一列是数字，那就是 名称 描述 数量 格式

@@ -231,7 +231,7 @@ Beneficiary: Luo & Company Co., Limited`,
       }
       
       if (field !== 'highlight') {
-        (item as any)[field] = value;
+        (item as Record<keyof LineItem, string | number | undefined>)[field] = value;
       }
       
       if (field === 'quantity' || field === 'unitPrice') {
@@ -472,7 +472,7 @@ Beneficiary: Luo & Company Co., Limited`,
     return () => {
       document.removeEventListener('paste', handlePaste);
     };
-  }, [defaultUnits, getUnitDisplay]);
+  }, [getUnitDisplay]);
 
   // 处理键盘导航
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>, rowIndex: number, column: string) => {
@@ -561,7 +561,7 @@ Beneficiary: Luo & Company Co., Limited`,
         otherFees: []
       });
     }
-  }, [getUnitDisplay]);
+  }, []);
 
   // 处理单元格粘贴
   const handleCellPaste = (e: React.ClipboardEvent, index: number, field: keyof LineItem) => {
