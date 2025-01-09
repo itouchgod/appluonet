@@ -14,6 +14,9 @@ const highlightClass = 'text-red-500 font-medium';
 const defaultUnits = ['pc', 'set', 'length'] as const;
 
 export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
+  // 可用单位列表
+  const availableUnits = [...defaultUnits, ...(data.customUnits || [])] as const;
+
   const [editingPriceIndex, setEditingPriceIndex] = useState<number | null>(null);
   const [editingPriceAmount, setEditingPriceAmount] = useState<string>('');
   const [editingQtyIndex, setEditingQtyIndex] = useState<number | null>(null);
@@ -108,8 +111,6 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
       items: processedItems
     });
   };
-
-  const availableUnits = [...defaultUnits, ...(data.customUnits || [])];
 
   // 处理单位的单复数
   const getUnitDisplay = (baseUnit: string, quantity: number) => {
