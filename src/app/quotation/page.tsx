@@ -43,6 +43,7 @@ export default function QuotationPage() {
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [generatingProgress, setGeneratingProgress] = useState(0);
   const [data, setData] = useState<QuotationData>({
     to: '',
     inquiryNo: '',
@@ -120,14 +121,34 @@ export default function QuotationPage() {
     e.preventDefault();
     flushSync(() => {
       setIsGenerating(true);
+      setGeneratingProgress(0);
     });
     
     try {
+      // 模拟进度更新
+      const progressInterval = setInterval(() => {
+        setGeneratingProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return prev;
+          }
+          return prev + Math.random() * 15;
+        });
+      }, 200);
+
       if (activeTab === 'quotation') {
         await generateQuotationPDF(data);
       } else {
         await generateOrderConfirmationPDF(data);
       }
+
+      clearInterval(progressInterval);
+      setGeneratingProgress(100);
+      
+      // 延迟重置进度，以便用户可以看到完成状态
+      setTimeout(() => {
+        setGeneratingProgress(0);
+      }, 500);
     } catch (error) {
       console.error('Error generating PDF:', error);
     } finally {
@@ -532,37 +553,48 @@ export default function QuotationPage() {
             {/* 生成按钮和预览按钮 */}
             <div className="px-4 sm:px-6 py-4 border-t border-gray-100 dark:border-gray-700">
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                <button
-                  type="button"
-                  onClick={handleGenerate}
-                  disabled={isGenerating}
-                  className={`${buttonClassName}
-                    bg-[#007AFF] hover:bg-[#0063CC] dark:bg-[#0A84FF] dark:hover:bg-[#0070E0]
-                    text-white font-medium
-                    shadow-sm shadow-[#007AFF]/20 dark:shadow-[#0A84FF]/20
-                    hover:shadow-lg hover:shadow-[#007AFF]/25 dark:hover:shadow-[#0A84FF]/25
-                    active:scale-[0.98] active:shadow-inner
-                    transform transition-all duration-200 ease-out
-                    w-full sm:w-auto sm:min-w-[180px] h-10
-                    disabled:opacity-50 disabled:cursor-not-allowed`}
-                >
-                  <div className="flex items-center justify-center gap-2">
-                    {isGenerating ? (
-                      <>
-                        <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <span>Generating...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Download className="w-4 h-4" />
-                        <span>Generate {activeTab === 'quotation' ? 'Quotation' : 'Order'}</span>
-                      </>
-                    )}
-                  </div>
-                </button>
+                <div className="w-full sm:w-auto sm:min-w-[180px]">
+                  <button
+                    type="button"
+                    onClick={handleGenerate}
+                    disabled={isGenerating}
+                    className={`${buttonClassName}
+                      bg-[#007AFF] hover:bg-[#0063CC] dark:bg-[#0A84FF] dark:hover:bg-[#0070E0]
+                      text-white font-medium
+                      shadow-sm shadow-[#007AFF]/20 dark:shadow-[#0A84FF]/20
+                      hover:shadow-lg hover:shadow-[#007AFF]/25 dark:hover:shadow-[#0A84FF]/25
+                      active:scale-[0.98] active:shadow-inner
+                      transform transition-all duration-200 ease-out
+                      w-full h-10
+                      disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      {isGenerating ? (
+                        <>
+                          <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span>Generating...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Download className="w-4 h-4" />
+                          <span>Generate {activeTab === 'quotation' ? 'Quotation' : 'Order'}</span>
+                        </>
+                      )}
+                    </div>
+                  </button>
+                  {/* 进度条 */}
+                  {isGenerating && (
+                    <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5 dark:bg-gray-700">
+                      <div 
+                        className="bg-[#007AFF] dark:bg-[#0A84FF] h-1.5 rounded-full transition-all duration-300 ease-out"
+                        style={{ width: `${Math.min(100, generatingProgress)}%` }}
+                      />
+                    </div>
+                  )}
+                </div>
 
                 <button
                   type="button"
