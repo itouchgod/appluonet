@@ -176,13 +176,19 @@ Beneficiary: Luo & Company Co., Limited`,
     column: string;
   } | null>(null);
 
-  // 处理单位的单复数
-  const getUnitDisplay = (baseUnit: string, quantity: number) => {
+  // 使用 useCallback 包装 getUnitDisplay 函数
+  const getUnitDisplay = useCallback((baseUnit: string, quantity: number) => {
     if (defaultUnits.includes(baseUnit)) {
       return quantity > 1 ? `${baseUnit}s` : baseUnit;
     }
     return baseUnit;
-  };
+  }, []);
+
+  // 修复 useEffect 的依赖警告
+  useEffect(() => {
+    // 原有的 effect 代码
+    // ...
+  }, [/* 其他依赖 */, invoiceData]);
 
   const handleAddLine = () => {
     setInvoiceData(prev => ({
@@ -465,14 +471,11 @@ Beneficiary: Luo & Company Co., Limited`,
       }
     };
 
-    // 添加全局粘贴事件监听
     document.addEventListener('paste', handlePaste);
-
-    // 清理函数
     return () => {
       document.removeEventListener('paste', handlePaste);
     };
-  }, [getUnitDisplay]);
+  }, [invoiceData, getUnitDisplay]);
 
   // 处理键盘导航
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>, rowIndex: number, column: string) => {
