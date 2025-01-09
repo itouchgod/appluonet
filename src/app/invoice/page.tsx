@@ -102,6 +102,10 @@ interface InvoiceData {
     id: number;
     description: string;
     amount: number;
+    highlight?: {
+      description?: boolean;
+      amount?: boolean;
+    };
   }>;
 }
 
@@ -581,6 +585,22 @@ Beneficiary: Luo & Company Co., Limited`,
     setInvoiceData(prev => ({
       ...prev,
       items: newItems
+    }));
+  };
+
+  // 添加处理 other fee 双击事件的函数
+  const handleOtherFeeDoubleClick = (index: number, field: keyof Exclude<typeof invoiceData.otherFees[number]['highlight'], undefined>) => {
+    const newFees = [...(invoiceData.otherFees || [])];
+    newFees[index] = {
+      ...newFees[index],
+      highlight: {
+        ...newFees[index].highlight,
+        [field]: !newFees[index].highlight?.[field]
+      }
+    };
+    setInvoiceData(prev => ({
+      ...prev,
+      otherFees: newFees
     }));
   };
 
@@ -1250,8 +1270,9 @@ Beneficiary: Luo & Company Co., Limited`,
                                   newFees[index] = { ...fee, description: e.target.value };
                                   setInvoiceData(prev => ({ ...prev, otherFees: newFees }));
                                 }}
+                                onDoubleClick={() => handleOtherFeeDoubleClick(index, 'description')}
                                 placeholder="Other Fee"
-                                className={`${tableInputClassName} text-center`}
+                                className={`${tableInputClassName} text-center ${fee.highlight?.description ? highlightClass : ''}`}
                               />
                             </div>
                             <div className="w-[160px] px-4">
@@ -1268,6 +1289,7 @@ Beneficiary: Luo & Company Co., Limited`,
                                     setInvoiceData(prev => ({ ...prev, otherFees: newFees }));
                                   }
                                 }}
+                                onDoubleClick={() => handleOtherFeeDoubleClick(index, 'amount')}
                                 onFocus={(e) => {
                                   setEditingFeeIndex(index);
                                   setEditingFeeAmount(fee.amount === 0 ? '' : fee.amount.toString());
@@ -1278,7 +1300,7 @@ Beneficiary: Luo & Company Co., Limited`,
                                   setEditingFeeAmount('');
                                 }}
                                 placeholder="0.00"
-                                className={`${numberInputClassName} ${fee.amount < 0 ? 'text-red-500 dark:text-red-400' : ''}`}
+                                className={`${numberInputClassName} ${fee.highlight?.amount ? highlightClass : ''}`}
                               />
                             </div>
                           </div>
