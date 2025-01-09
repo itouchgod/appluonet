@@ -53,8 +53,17 @@ export function NotesSection({ data, onChange }: NotesSectionProps) {
           <div key={index} className="flex items-start gap-3 group">
             <div 
               className="mt-[11px] text-[13px] font-medium text-[#86868B] dark:text-[#98989D] w-5 flex-shrink-0 text-center
-                group-hover:text-[#007AFF] dark:group-hover:text-[#0A84FF]
-                cursor-default select-none transition-colors duration-200"
+                group-hover:text-[#FF3B30] dark:group-hover:text-[#FF453A]
+                group-hover:bg-[#FF3B30]/10 dark:group-hover:bg-[#FF453A]/10
+                cursor-pointer select-none transition-all duration-200 rounded"
+              onClick={() => {
+                const newNotes = [...data.notes];
+                newNotes.splice(index, 1);
+                onChange({
+                  ...data,
+                  notes: newNotes
+                });
+              }}
             >
               {index + 1}.
             </div>
@@ -94,26 +103,6 @@ export function NotesSection({ data, onChange }: NotesSectionProps) {
                   adjustHeight(e.target as HTMLTextAreaElement);
                 }}
               />
-              <div 
-                className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-all duration-200
-                  cursor-pointer p-1.5 rounded-lg 
-                  hover:bg-[#FF3B30]/10 dark:hover:bg-[#FF453A]/10
-                  active:bg-[#FF3B30]/20 dark:active:bg-[#FF453A]/20"
-                onClick={() => {
-                  const newNotes = [...data.notes];
-                  newNotes.splice(index, 1);
-                  onChange({
-                    ...data,
-                    notes: newNotes
-                  });
-                }}
-                title="Delete note"
-              >
-                <svg className="w-4 h-4 text-[#FF3B30] dark:text-[#FF453A]" 
-                  fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </div>
             </div>
           </div>
         ))}
