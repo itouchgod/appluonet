@@ -497,8 +497,15 @@ export default function QuotationPage() {
 
             {/* Notes 部分 */}
             <div className="px-4 sm:px-6 py-4 border-t border-gray-100 dark:border-gray-700">
-              {/* 银行信息区域 */}
-              {activeTab === 'confirmation' && data.showBank && (
+             
+              <div className="space-y-6">
+                <NotesSection 
+                  data={data}
+                  onChange={setData}
+                
+                />
+                {/* 银行信息区域 */}
+                {activeTab === 'confirmation' && data.showBank && (
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
                     Bank Information:
@@ -513,13 +520,7 @@ export default function QuotationPage() {
                 </div>
               )}
 
-              <div className="space-y-6">
-                <NotesSection 
-                  data={data}
-                  onChange={setData}
-                />
-
-                {activeTab === 'confirmation' && (
+                {activeTab === 'confirmation' && data.showBank && (
                   <PaymentTermsSection
                     data={data}
                     onChange={setData}
