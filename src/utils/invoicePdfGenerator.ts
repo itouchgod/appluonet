@@ -6,7 +6,14 @@ import { getHeaderImage, getInvoiceTitle, getStampImage, loadImage } from '@/uti
 interface AutoTableOptions {
   startY: number;
   head: string[][];
-  body: (string | number | undefined | { content: string; colSpan: number; styles: { halign: string } })[][];
+  body: (string | number | { 
+    content: string | number | undefined; 
+    colSpan?: number;
+    styles?: { 
+      halign?: string;
+      textColor?: number[];
+    }
+  } | undefined)[][];
   theme: string;
   styles: {
     fontSize: number;
@@ -182,13 +189,34 @@ export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolea
         // 常规商品行
         ...data.items.map((item, index) => [
           index + 1,
-          data.showHsCode ? item.hsCode : '',
-          item.partname,
-          data.showDescription ? item.description : '',
-          item.quantity || '',  // 数量为 0 时显示空字符串
-          item.quantity ? item.unit : '',  // 直接使用页面处理好的单位值
-          item.unitPrice ? Number(item.unitPrice).toFixed(2) : '',
-          item.amount ? Number(item.amount).toFixed(2) : ''
+          data.showHsCode ? {
+            content: item.hsCode,
+            styles: item.highlight?.hsCode ? { textColor: [255, 0, 0] } : {}
+          } : '',
+          {
+            content: item.partname,
+            styles: item.highlight?.partname ? { textColor: [255, 0, 0] } : {}
+          },
+          data.showDescription ? {
+            content: item.description,
+            styles: item.highlight?.description ? { textColor: [255, 0, 0] } : {}
+          } : '',
+          {
+            content: item.quantity || '',
+            styles: item.highlight?.quantity ? { textColor: [255, 0, 0] } : {}
+          },
+          {
+            content: item.quantity ? item.unit : '',
+            styles: item.highlight?.unit ? { textColor: [255, 0, 0] } : {}
+          },
+          {
+            content: item.unitPrice ? Number(item.unitPrice).toFixed(2) : '',
+            styles: item.highlight?.unitPrice ? { textColor: [255, 0, 0] } : {}
+          },
+          {
+            content: item.amount ? Number(item.amount).toFixed(2) : '',
+            styles: item.highlight?.amount ? { textColor: [255, 0, 0] } : {}
+          }
         ].filter((_, i) => {
           if (i === 0) return true; // No.
           if (i === 2) return true; // Part Name
@@ -207,7 +235,7 @@ export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolea
             colSpan: (data.showHsCode ? 1 : 0) + (data.showDescription ? 1 : 0) + 5,
             styles: { halign: 'center' }
           } as unknown as string,
-          fee.amount ? fee.amount.toFixed(2) : ''  // 如果为0则显示空字符串
+          fee.amount ? fee.amount.toFixed(2) : ''
         ])
       ],
       theme: 'plain',
@@ -228,15 +256,15 @@ export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolea
         valign: 'middle'
       },
       columnStyles: (() => {
-        const styles: Record<string, { halign: 'center'; cellWidth: number | 'auto' }> = {
-          '0': { halign: 'center', cellWidth: 5 },   // No.
-          ...(data.showHsCode ? { '1': { halign: 'center', cellWidth: 10 } } : {}),   // HS Code
-          [data.showHsCode ? '2' : '1']: { halign: 'center', cellWidth: 15 },   // Part Name
-          ...(data.showDescription ? { [data.showHsCode ? '3' : '2']: { halign: 'center', cellWidth: 'auto' } } : {}), // Description
-          [data.showHsCode && data.showDescription ? '4' : (data.showHsCode || data.showDescription ? '3' : '2')]: { halign: 'center', cellWidth: 8 },   // Q'TY
-          [data.showHsCode && data.showDescription ? '5' : (data.showHsCode || data.showDescription ? '4' : '3')]: { halign: 'center', cellWidth: 8 },   // Unit
-          [data.showHsCode && data.showDescription ? '6' : (data.showHsCode || data.showDescription ? '5' : '4')]: { halign: 'center', cellWidth: 12 },   // U/Price
-          [data.showHsCode && data.showDescription ? '7' : (data.showHsCode || data.showDescription ? '6' : '5')]: { halign: 'center', cellWidth: 12 }    // Amount
+        const styles: Record<string, { halign: 'center'; cellWidth: string }> = {
+          '0': { halign: 'center', cellWidth: '7%' },   // No.
+          ...(data.showHsCode ? { '1': { halign: 'center', cellWidth: '10%' } } : {}),   // HS Code
+          [data.showHsCode ? '2' : '1']: { halign: 'center', cellWidth: '20%' },   // Part Name
+          ...(data.showDescription ? { [data.showHsCode ? '3' : '2']: { halign: 'center', cellWidth: '25%' } } : {}), // Description
+          [data.showHsCode && data.showDescription ? '4' : (data.showHsCode || data.showDescription ? '3' : '2')]: { halign: 'center', cellWidth: '8%' },   // Q'TY
+          [data.showHsCode && data.showDescription ? '5' : (data.showHsCode || data.showDescription ? '4' : '3')]: { halign: 'center', cellWidth: '8%' },   // Unit
+          [data.showHsCode && data.showDescription ? '6' : (data.showHsCode || data.showDescription ? '5' : '4')]: { halign: 'center', cellWidth: '12%' },   // U/Price
+          [data.showHsCode && data.showDescription ? '7' : (data.showHsCode || data.showDescription ? '6' : '5')]: { halign: 'center', cellWidth: '10%' }    // Amount
         };
         return styles;
       })(),

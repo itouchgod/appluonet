@@ -337,8 +337,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                 </td>
                 {data.showDescription && (
                   <td className="min-w-[180px] w-fit px-1 py-2">
-                    <input
-                      type="text"
+                    <textarea
                       value={item.description}
                       data-row={index}
                       data-field="description"
@@ -351,8 +350,16 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ data, onChange }) => {
                         hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
                         text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
                         placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
-                        transition-all duration-200 text-center
+                        transition-all duration-200 text-center whitespace-pre-wrap resize-y overflow-hidden
                         ${item.highlight?.description ? highlightClass : ''}`}
+                      style={{ 
+                        height: '28px'
+                      }}
+                      onInput={(e) => {
+                        const target = e.target as HTMLTextAreaElement;
+                        target.style.height = 'auto';
+                        target.style.height = `${target.scrollHeight}px`;
+                      }}
                     />
                   </td>
                 )}

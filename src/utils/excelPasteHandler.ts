@@ -103,8 +103,6 @@ export const convertExcelToLineItems = (rows: string[][], existingItems: ExcelLi
       isNumeric: isNumeric(cell)
     }));
 
-    const numberColumns = numericColumns.filter(col => col.isNumeric);
-
     // 根据列数和数字列位置处理不同格式
     if (row.length === 3) {
       // 如果最后一列是数字，那就是 名称 描述 数量 格式

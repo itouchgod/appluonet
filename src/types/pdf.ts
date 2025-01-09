@@ -14,6 +14,15 @@ export interface PDFGeneratorData {
     unit: string;
     unitPrice: number;
     amount: number;
+    highlight?: {
+      hsCode?: boolean;
+      partname?: boolean;
+      description?: boolean;
+      quantity?: boolean;
+      unit?: boolean;
+      unitPrice?: boolean;
+      amount?: boolean;
+    };
   }[];
   otherFees?: {
     description: string;

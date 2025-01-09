@@ -15,7 +15,6 @@ import { SettingsPanel } from '@/components/quotation/SettingsPanel';
 import { ImportDataButton } from '@/components/quotation/ImportDataButton';
 import type { QuotationData, LineItem } from '@/types/quotation';
 import { Footer } from '@/components/Footer';
-import { handleImportData } from '@/utils/quotationDataHandler';
 import { parseExcelData, convertExcelToLineItems } from '@/utils/excelPasteHandler';
 import { PaymentTermsSection } from '@/components/quotation/PaymentTermsSection';
 
@@ -183,74 +182,24 @@ export default function QuotationPage() {
   }, [activeTab, data]);
 
   // 处理导入数据
-  const handleImportDataLocal = (text: string) => {
-    const rows = parseExcelData(text);
-    return convertExcelToLineItems(rows, data.items);
-  };
-
-  const handleImport = (newItems: LineItem[]) => {
-    setData({
-      ...data,
-      items: newItems
-    });
+  const handleImport = (importedData: LineItem[]) => {
+    if (importedData.length > 0) {
+      setData(prev => ({
+        ...prev,
+        items: importedData
+      }));
+    }
   };
 
   // 处理全局粘贴
-  const handleGlobalPaste = async (text: string) => {
-    const rows = parseExcelData(text);
-    const newItems = convertExcelToLineItems(rows, data.items);
-    handleImport(newItems);
-  };
-
-  // 处理单元格粘贴
-  const handleCellPaste = (e: React.ClipboardEvent<HTMLInputElement | HTMLTextAreaElement>, index: number, field: keyof LineItem) => {
-    const pasteText = e.clipboardData.getData('text');
-    e.preventDefault();
-    
-    // 清理文本，但保留换行符
-    const cleanText = pasteText.replace(/^"|"$/g, '').trim();
-    
-    switch (field) {
-      case 'quantity':
-        if (!/^\d+$/.test(cleanText)) {
-          alert('数量必须是正整数');
-          return;
-        }
-        const quantity = parseInt(cleanText);
-        if (quantity < 0) {
-          alert('数量不能为负数');
-          return;
-        }
-        handleItemChange(index, field, quantity);
-        break;
-        
-      case 'unitPrice':
-        if (!/^\d*\.?\d*$/.test(cleanText)) {
-          alert('单价必须是有效的数字');
-          return;
-        }
-        const unitPrice = parseFloat(cleanText);
-        if (isNaN(unitPrice) || unitPrice < 0) {
-          alert('请输入有效的单价');
-          return;
-        }
-        handleItemChange(index, field, unitPrice);
-        break;
-        
-      case 'unit':
-        // 单位处理，自动处理单复数
-        const baseUnit = cleanText.toLowerCase().replace(/s$/, '');
-        if (defaultUnits.includes(baseUnit)) {
-          const quantity = data.items[index].quantity;
-          handleItemChange(index, field, getUnitDisplay(baseUnit, quantity));
-        } else {
-          handleItemChange(index, field, cleanText);
-        }
-        break;
-        
-      default:
-        // 对于其他字段（partName, description, remarks），直接使用清理后的文本，保留换行符
-        handleItemChange(index, field, cleanText);
+  const handleGlobalPaste = (text: string) => {
+    const parsedData = parseExcelData(text);
+    const newItems = convertExcelToLineItems(parsedData);
+    if (newItems.length > 0) {
+      setData(prev => ({
+        ...prev,
+        items: newItems
+      }));
     }
   };
 
@@ -427,9 +376,7 @@ export default function QuotationPage() {
             <div className="px-0 sm:px-6 py-4">
               <div className="space-y-4">
                 <div className="px-4 sm:px-0">
-                  <ImportDataButton 
-                    onImport={handleImport}
-                  />
+                  <ImportDataButton onImport={handleImport} />
                 </div>
                 <ItemsTable 
                   data={data}

@@ -7,7 +7,6 @@ import { generateInvoicePDF } from '@/utils/pdfGenerator';
 import { InvoiceTemplateConfig } from '@/types/invoice';
 import { format, addMonths } from 'date-fns';
 import { Footer } from '@/components/Footer';
-import { handleImportData } from '@/utils/invoiceDataHandler';
 
 // 基础样式定义
 const inputClassName = `w-full px-4 py-2.5 rounded-2xl
@@ -48,6 +47,15 @@ interface LineItem {
   unit: string;
   unitPrice: number;
   amount: number;
+  highlight?: {
+    hsCode?: boolean;
+    partname?: boolean;
+    description?: boolean;
+    quantity?: boolean;
+    unit?: boolean;
+    unitPrice?: boolean;
+    amount?: boolean;
+  };
 }
 
 interface InvoiceData {
@@ -64,6 +72,15 @@ interface InvoiceData {
     unit: string;
     unitPrice: number;
     amount: number;
+    highlight?: {
+      hsCode?: boolean;
+      partname?: boolean;
+      description?: boolean;
+      quantity?: boolean;
+      unit?: boolean;
+      unitPrice?: boolean;
+      amount?: boolean;
+    };
   }>;
   bankInfo: string;
   paymentDate: string;
@@ -87,6 +104,9 @@ interface InvoiceData {
     amount: number;
   }>;
 }
+
+// 添加高亮样式常量
+const highlightClass = 'text-red-500 font-medium';
 
 export default function InvoicePage() {
   const [invoiceData, setInvoiceData] = useState<InvoiceData>({
@@ -171,7 +191,8 @@ Beneficiary: Luo & Company Co., Limited`,
         quantity: 0,
         unit: 'pc',
         unitPrice: 0,
-        amount: 0
+        amount: 0,
+        highlight: {}
       }]
     }));
   };
@@ -205,7 +226,9 @@ Beneficiary: Luo & Company Co., Limited`,
         item.unit = quantity > 1 ? `${baseUnit}s` : baseUnit;
       }
       
-      (item as { [key: string]: string | number })[field] = value;
+      if (field !== 'highlight') {
+        (item as any)[field] = value;
+      }
       
       if (field === 'quantity' || field === 'unitPrice') {
         item.amount = calculateAmount(
@@ -422,7 +445,8 @@ Beneficiary: Luo & Company Co., Limited`,
               quantity: cleanQuantity,
               unit: defaultUnits.includes(baseUnit) ? getUnitDisplay(baseUnit, cleanQuantity) : baseUnit,
               unitPrice: cleanUnitPrice,
-              amount: cleanQuantity * cleanUnitPrice
+              amount: cleanQuantity * cleanUnitPrice,
+              highlight: {}
             };
           });
 
@@ -445,90 +469,6 @@ Beneficiary: Luo & Company Co., Limited`,
       document.removeEventListener('paste', handlePaste);
     };
   }, [defaultUnits, getUnitDisplay]);
-
-  // 修改单元格粘贴处理函数
-  const handleCellPaste = (e: React.ClipboardEvent<HTMLInputElement | HTMLTextAreaElement>, index: number, field: keyof LineItem) => {
-    const pasteText = e.clipboardData.getData('text');
-    
-    // 如果是数字字段，进行验证
-    if (field === 'quantity') {
-      if (!/^\d*$/.test(pasteText.trim())) {
-        e.preventDefault();
-        alert('数量必须是整数');
-        return;
-      }
-      const value = pasteText.trim() === '' ? 0 : parseInt(pasteText);
-      e.preventDefault();
-      updateLineItem(index, field, value);
-      return;
-    }
-    
-    if (field === 'unitPrice') {
-      if (!/^-?\d*\.?\d*$/.test(pasteText.trim())) {
-        e.preventDefault();
-        alert('单价必须是数字');
-        return;
-      }
-      const value = pasteText.trim() === '' ? 0 : parseFloat(pasteText);
-      e.preventDefault();
-      updateLineItem(index, field, value);
-      return;
-    }
-
-    // 对于文本字段，保持原始格式
-    if (field === 'description' || field === 'hsCode' || field === 'partname') {
-      e.preventDefault();
-      updateLineItem(index, field, pasteText);
-    }
-  };
-
-  // 处理导入的数据
-  const handleImport = (newItems: LineItem[]) => {
-    // 处理每个项目的单位单复数
-    return newItems.map(item => {
-      const baseUnit = item.unit.replace(/s$/, '');
-      return {
-        ...item,
-        unit: defaultUnits.includes(baseUnit) ? getUnitDisplay(baseUnit, item.quantity) : item.unit
-      };
-    });
-  };
-
-  // 处理单个项目的更改
-  const handleItemChange = (index: number, field: keyof LineItem, value: string | number, items: LineItem[]) => {
-    const newItems = [...items];
-    
-    if (field === 'unit') {
-      // 处理单位变更,根据当前数量决定是否需要复数形式
-      const baseUnit = value.toString().replace(/s$/, '');
-      const quantity = newItems[index].quantity;
-      newItems[index] = {
-        ...newItems[index],
-        unit: defaultUnits.includes(baseUnit) ? getUnitDisplay(baseUnit, quantity) : value.toString()
-      };
-    } else if (field === 'quantity') {
-      // 更新数量时,同时更新单位的单复数
-      const quantity = Number(value);
-      const baseUnit = newItems[index].unit.replace(/s$/, '');
-      newItems[index] = {
-        ...newItems[index],
-        quantity,
-        unit: defaultUnits.includes(baseUnit) ? getUnitDisplay(baseUnit, quantity) : newItems[index].unit
-      };
-    } else {
-      newItems[index] = {
-        ...newItems[index],
-        [field]: value
-      };
-    }
-
-    // 如果更改了数量或单价,自动计算金额
-    if (field === 'quantity' || field === 'unitPrice') {
-      newItems[index].amount = newItems[index].quantity * newItems[index].unitPrice;
-    }
-
-    return newItems;
-  };
 
   // 处理键盘导航
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>, rowIndex: number, column: string) => {
@@ -594,6 +534,56 @@ Beneficiary: Luo & Company Co., Limited`,
     }
   }, [focusedCell]);
 
+  useEffect(() => {
+    // 初始化数据
+    if (!invoiceData) {
+      setInvoiceData({
+        date: format(new Date(), 'yyyy-MM-dd'),
+        paymentDate: format(addMonths(new Date(), 1), 'yyyy-MM-dd'),
+        invoiceNo: '',
+        to: '',
+        customerPO: '',
+        items: [],
+        bankInfo: '',
+        showPaymentTerms: false,
+        additionalPaymentTerms: '',
+        amountInWords: { dollars: '', cents: '', hasDecimals: false },
+        showHsCode: false,
+        showDescription: true,
+        showBank: false,
+        showInvoiceReminder: true,
+        currency: 'USD',
+        templateConfig: { headerType: 'none', invoiceType: 'invoice', stampType: 'none' },
+        otherFees: []
+      });
+    }
+  }, [getUnitDisplay]);
+
+  // 处理单元格粘贴
+  const handleCellPaste = (e: React.ClipboardEvent, index: number, field: keyof LineItem) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData('text');
+    if (text) {
+      updateLineItem(index, field, text);
+    }
+  };
+
+  // 添加处理双击事件的函数
+  const handleDoubleClick = (index: number, field: keyof Exclude<LineItem['highlight'], undefined>) => {
+    const newItems = [...invoiceData.items];
+    newItems[index] = {
+      ...newItems[index],
+      highlight: {
+        ...newItems[index].highlight,
+        [field]: !newItems[index].highlight?.[field]
+      }
+    };
+    setInvoiceData(prev => ({
+      ...prev,
+      items: newItems
+    }));
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-black">
     <div className="flex-1">  {/* 添加这个 flex-1 容器 */}
@@ -626,7 +616,7 @@ Beneficiary: Luo & Company Co., Limited`,
                           const pasteEvent = new ClipboardEvent('paste', {
                             clipboardData: new DataTransfer()
                           });
-                          // @ts-ignore - 为了设置剪贴板数据
+                          // @ts-expect-error - 这里的类型错误是预期的
                           pasteEvent.clipboardData.setData('text', text);
                           document.dispatchEvent(pasteEvent);
                         }
@@ -681,7 +671,7 @@ Beneficiary: Luo & Company Co., Limited`,
                             const pasteEvent = new ClipboardEvent('paste', {
                               clipboardData: new DataTransfer()
                             });
-                            // @ts-ignore - 为了设置剪贴板数据
+                            // @ts-expect-error - 这里的类型错误是预期的
                             pasteEvent.clipboardData.setData('text', text);
                             document.dispatchEvent(pasteEvent);
                           }
@@ -1010,9 +1000,10 @@ Beneficiary: Luo & Company Co., Limited`,
                                   onChange={e => updateLineItem(index, 'hsCode', e.target.value)}
                                   onPaste={(e) => handleCellPaste(e, index, 'hsCode')}
                                   onKeyDown={(e) => handleKeyDown(e, index, 'hsCode')}
+                                  onDoubleClick={() => handleDoubleClick(index, 'hsCode')}
                                   data-row={index}
                                   data-column="hsCode"
-                                  className={tableInputClassName}
+                                  className={`${tableInputClassName} ${item.highlight?.hsCode ? highlightClass : ''}`}
                                   placeholder="HS Code"
                                 />
                               </td>
@@ -1022,15 +1013,12 @@ Beneficiary: Luo & Company Co., Limited`,
                                 value={item.partname}
                                 onChange={e => updateLineItem(index, 'partname', e.target.value)}
                                 onPaste={(e) => handleCellPaste(e, index, 'partname')}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Tab') {
-                                    handleKeyDown(e, index, 'partname');
-                                  }
-                                }}
+                                onKeyDown={(e) => handleKeyDown(e, index, 'partname')}
+                                onDoubleClick={() => handleDoubleClick(index, 'partname')}
                                 data-row={index}
                                 data-column="partname"
                                 rows={1}
-                                className={`
+                                className={`${item.highlight?.partname ? highlightClass : ''}
                                   w-full
                                   resize-vertical
                                   text-center
@@ -1046,7 +1034,7 @@ Beneficiary: Luo & Company Co., Limited`,
                                   bg-transparent
                                   placeholder:text-gray-300 dark:placeholder:text-gray-600
                                   overflow-hidden
-                                  text-[10px] leading-[14px]
+                                  text-[11px] leading-[15px]
                                   [&::-webkit-resizer] {
                                     display: none;
                                   }
@@ -1082,15 +1070,12 @@ Beneficiary: Luo & Company Co., Limited`,
                                   value={item.description}
                                   onChange={e => updateLineItem(index, 'description', e.target.value)}
                                   onPaste={(e) => handleCellPaste(e, index, 'description')}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Tab') {
-                                      handleKeyDown(e, index, 'description');
-                                    }
-                                  }}
+                                  onKeyDown={(e) => handleKeyDown(e, index, 'description')}
+                                  onDoubleClick={() => handleDoubleClick(index, 'description')}
                                   data-row={index}
                                   data-column="description"
                                   rows={1}
-                                  className={`
+                                  className={`${item.highlight?.description ? highlightClass : ''}
                                     w-full
                                     resize-vertical
                                     text-center
@@ -1106,7 +1091,7 @@ Beneficiary: Luo & Company Co., Limited`,
                                     bg-transparent
                                     placeholder:text-gray-300 dark:placeholder:text-gray-600
                                     overflow-hidden
-                                    text-[10px] leading-[14px]
+                                    text-[11px] leading-[15px]
                                     [&::-webkit-resizer] {
                                       display: none;
                                     }
@@ -1154,6 +1139,7 @@ Beneficiary: Luo & Company Co., Limited`,
                                 }}
                                 onPaste={(e) => handleCellPaste(e, index, 'quantity')}
                                 onKeyDown={(e) => handleKeyDown(e, index, 'quantity')}
+                                onDoubleClick={() => handleDoubleClick(index, 'quantity')}
                                 data-row={index}
                                 data-column="quantity"
                                 onFocus={(e) => {
@@ -1165,7 +1151,7 @@ Beneficiary: Luo & Company Co., Limited`,
                                   setEditingQuantityIndex(null);
                                   setEditingQuantity('');
                                 }}
-                                className={numberInputClassName}
+                                className={`${numberInputClassName} ${item.highlight?.quantity ? highlightClass : ''}`}
                               />
                             </td>
                             <td className="py-1.5 px-1">
@@ -1177,9 +1163,10 @@ Beneficiary: Luo & Company Co., Limited`,
                                   updateLineItem(index, 'unit', unit);
                                 }}
                                 onKeyDown={(e) => handleKeyDown(e, index, 'unit')}
+                                onDoubleClick={() => handleDoubleClick(index, 'unit')}
                                 data-row={index}
                                 data-column="unit"
-                                className={`${tableInputClassName} appearance-none`}
+                                className={`${tableInputClassName} appearance-none ${item.highlight?.unit ? highlightClass : ''}`}
                               >
                                 <option value="pc">pc{item.quantity > 1 ? 's' : ''}</option>
                                 <option value="set">set{item.quantity > 1 ? 's' : ''}</option>
@@ -1203,6 +1190,7 @@ Beneficiary: Luo & Company Co., Limited`,
                                 }}
                                 onPaste={(e) => handleCellPaste(e, index, 'unitPrice')}
                                 onKeyDown={(e) => handleKeyDown(e, index, 'unitPrice')}
+                                onDoubleClick={() => handleDoubleClick(index, 'unitPrice')}
                                 data-row={index}
                                 data-column="unitPrice"
                                 onFocus={(e) => {
@@ -1214,7 +1202,7 @@ Beneficiary: Luo & Company Co., Limited`,
                                   setEditingUnitPriceIndex(null);
                                   setEditingUnitPrice('');
                                 }}
-                                className={numberInputClassName}
+                                className={`${numberInputClassName} ${item.highlight?.unitPrice ? highlightClass : ''}`}
                               />
                             </td>
                             <td className="py-1 px-1">
@@ -1222,7 +1210,8 @@ Beneficiary: Luo & Company Co., Limited`,
                                 type="text"
                                 value={item.amount.toFixed(2)}
                                 readOnly
-                                className={numberInputClassName}
+                                onDoubleClick={() => handleDoubleClick(index, 'amount')}
+                                className={`${numberInputClassName} ${item.highlight?.amount ? highlightClass : ''}`}
                               />
                             </td>
                           </tr>
@@ -1306,13 +1295,16 @@ Beneficiary: Luo & Company Co., Limited`,
                   <button
                     type="button"
                     onClick={handleAddLine}
-                    className="px-5 py-2.5 rounded-xl
-                              bg-blue-500/10 text-blue-600 dark:text-blue-400
-                              hover:bg-blue-500/15 transition-all duration-300
-                              text-sm font-medium flex items-center gap-2"
+                    className="px-3 h-7 rounded-lg
+                      bg-[#007AFF]/[0.08] dark:bg-[#0A84FF]/[0.08]
+                      hover:bg-[#007AFF]/[0.12] dark:hover:bg-[#0A84FF]/[0.12]
+                      text-[#007AFF] dark:text-[#0A84FF]
+                      text-[13px] font-medium
+                      flex items-center gap-1
+                      transition-all duration-200"
                   >
-                    <span className="text-lg leading-none">+</span>
-                    Add Line
+                    <span className="text-lg leading-none translate-y-[-1px]">+</span>
+                    <span>Add Line</span>
                   </button>
 
                   <button
@@ -1326,13 +1318,16 @@ Beneficiary: Luo & Company Co., Limited`,
                       });
                       setInvoiceData(prev => ({ ...prev, otherFees: newFees }));
                     }}
-                    className="px-5 py-2.5 rounded-xl
-                              bg-blue-500/10 text-blue-600 dark:text-blue-400
-                              hover:bg-blue-500/15 transition-all duration-300
-                              text-sm font-medium flex items-center gap-2"
+                    className="px-3 h-7 rounded-lg
+                      bg-[#007AFF]/[0.08] dark:bg-[#0A84FF]/[0.08]
+                      hover:bg-[#007AFF]/[0.12] dark:hover:bg-[#0A84FF]/[0.12]
+                      text-[#007AFF] dark:text-[#0A84FF]
+                      text-[13px] font-medium
+                      flex items-center gap-1
+                      transition-all duration-200"
                   >
-                    <span className="text-lg leading-none">+</span>
-                    Add Other Fee
+                    <span className="text-lg leading-none translate-y-[-1px]">+</span>
+                    <span>Add Other Fee</span>
                   </button>
                 </div>
                 
@@ -1453,11 +1448,12 @@ Beneficiary: Luo & Company Co., Limited`,
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto">
                 <button
                   type="submit"
-                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl 
-                             bg-blue-500 text-white font-medium
-                             flex items-center justify-center gap-2
-                             hover:bg-blue-600 active:bg-blue-700 
-                             transition-all duration-200 shadow-sm hover:shadow-md"
+                  className="w-full sm:w-auto px-6 py-2.5 rounded-2xl
+                    bg-[#007AFF] dark:bg-[#0A84FF] text-white font-medium
+                    flex items-center justify-center gap-2
+                    hover:bg-[#007AFF]/90 dark:hover:bg-[#0A84FF]/90
+                    active:bg-[#007AFF]/80 dark:active:bg-[#0A84FF]/80
+                    transition-all duration-200"
                 >
                   <Download className="w-4 h-4" />
                   Generate Invoice
@@ -1482,15 +1478,15 @@ Beneficiary: Luo & Company Co., Limited`,
                       console.error('Error previewing PDF:', error);
                     }
                   }}
-                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl font-medium
-                             bg-white dark:bg-gray-800 
-                             text-gray-700 dark:text-gray-200
-                             border border-gray-200 dark:border-gray-700
-                             flex items-center justify-center gap-2
-                             hover:bg-gray-50 dark:hover:bg-gray-700
-                             hover:border-gray-300 dark:hover:border-gray-600
-                             active:bg-gray-100 dark:active:bg-gray-600
-                             transition-all duration-200 shadow-sm hover:shadow-md"
+                  className="w-full sm:w-auto px-6 py-2.5 rounded-2xl font-medium
+                    bg-white dark:bg-[#1C1C1E]
+                    text-[#007AFF] dark:text-[#0A84FF]
+                    border border-[#007AFF]/20 dark:border-[#0A84FF]/20
+                    flex items-center justify-center gap-2
+                    hover:bg-[#007AFF]/[0.05] dark:hover:bg-[#0A84FF]/[0.05]
+                    hover:border-[#007AFF]/30 dark:hover:border-[#0A84FF]/30
+                    active:bg-[#007AFF]/[0.1] dark:active:bg-[#0A84FF]/[0.1]
+                    transition-all duration-200"
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
