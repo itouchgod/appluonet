@@ -1291,11 +1291,11 @@ Beneficiary: Luo & Company Co., Limited`,
 
               {/* 添加行按钮和总金额 */}
               <div className="flex items-center justify-between gap-4 mt-6 mb-8">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                   <button
                     type="button"
                     onClick={handleAddLine}
-                    className="px-3 h-7 rounded-lg
+                    className="px-2 sm:px-3 h-7 rounded-lg whitespace-nowrap
                       bg-[#007AFF]/[0.08] dark:bg-[#0A84FF]/[0.08]
                       hover:bg-[#007AFF]/[0.12] dark:hover:bg-[#0A84FF]/[0.12]
                       text-[#007AFF] dark:text-[#0A84FF]
@@ -1318,7 +1318,7 @@ Beneficiary: Luo & Company Co., Limited`,
                       });
                       setInvoiceData(prev => ({ ...prev, otherFees: newFees }));
                     }}
-                    className="px-3 h-7 rounded-lg
+                    className="px-2 sm:px-3 h-7 rounded-lg whitespace-nowrap
                       bg-[#007AFF]/[0.08] dark:bg-[#0A84FF]/[0.08]
                       hover:bg-[#007AFF]/[0.12] dark:hover:bg-[#0A84FF]/[0.12]
                       text-[#007AFF] dark:text-[#0A84FF]
@@ -1331,10 +1331,10 @@ Beneficiary: Luo & Company Co., Limited`,
                   </button>
                 </div>
                 
-                <div className="flex items-center gap-3" style={{ marginRight: '8.33%' }}>
+                <div className="flex items-center gap-3 flex-shrink-0">
                   <span className="text-sm font-medium text-gray-500 hidden md:inline">Total Amount</span>
-                  <div className="w-[100px] text-right">
-                    <span className="text-xl font-semibold tracking-tight">
+                  <div className="text-right">
+                    <span className="text-xl font-semibold tracking-tight whitespace-nowrap">
                       {invoiceData.currency === 'USD' ? '$' : '¥'}
                       {getTotalAmount().toFixed(2)}
                     </span>
