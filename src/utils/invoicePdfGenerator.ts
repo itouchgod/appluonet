@@ -176,24 +176,35 @@ export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolea
     // 使用 autoTable
     (doc as AutoTableDoc).autoTable({
       startY: currentY,
-      head: [['No.', data.showHsCode ? 'HS Code' : '', 'Description', 'Q\'TY', 'Unit', 'Unit Price', 'Amount']].map(row => 
+      head: [['No.', data.showHsCode ? 'HS Code' : '', 'Part Name', data.showDescription ? 'Description' : '', 'Q\'TY', 'Unit', 'Unit Price', 'Amount']].map(row => 
         row.filter(cell => cell !== '')),
       body: [
         // 常规商品行
         ...data.items.map((item, index) => [
           index + 1,
           data.showHsCode ? item.hsCode : '',
-          item.description,
+          item.partname,
+          data.showDescription ? item.description : '',
           item.quantity || '',  // 数量为 0 时显示空字符串
           item.quantity ? item.unit : '',  // 直接使用页面处理好的单位值
           item.unitPrice ? Number(item.unitPrice).toFixed(2) : '',
           item.amount ? Number(item.amount).toFixed(2) : ''
-        ].filter((_, i) => i === 0 || i === 2 || i === 3 || i === 4 || i === 5 || i === 6 || (data.showHsCode && i === 1))),
+        ].filter((_, i) => {
+          if (i === 0) return true; // No.
+          if (i === 2) return true; // Part Name
+          if (i === 4) return true; // Q'TY
+          if (i === 5) return true; // Unit
+          if (i === 6) return true; // U/Price
+          if (i === 7) return true; // Amount
+          if (data.showHsCode && i === 1) return true; // HS Code
+          if (data.showDescription && i === 3) return true; // Description
+          return false;
+        })),
         // Other Fees 行
         ...(data.otherFees || []).map(fee => [
           {
             content: fee.description,
-            colSpan: data.showHsCode ? 6 : 5,
+            colSpan: (data.showHsCode ? 1 : 0) + (data.showDescription ? 1 : 0) + 5,
             styles: { halign: 'center' }
           } as unknown as string,
           fee.amount ? fee.amount.toFixed(2) : ''  // 如果为0则显示空字符串
@@ -216,22 +227,19 @@ export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolea
         font: 'NotoSansSC',
         valign: 'middle'
       },
-      columnStyles: data.showHsCode ? {
-        0: { halign: 'center', cellWidth: 10 },   // No.
-        1: { halign: 'center', cellWidth: 25 },   // HS Code
-        2: { halign: 'center', cellWidth: 'auto' }, // Description
-        3: { halign: 'center', cellWidth: 15 },   // Q'TY
-        4: { halign: 'center', cellWidth: 20 },   // Unit
-        5: { halign: 'center', cellWidth: 25 },   // U/Price
-        6: { halign: 'center', cellWidth: 25 }    // Amount
-      } : {
-        0: { halign: 'center', cellWidth: 10 },   // No.
-        1: { halign: 'center', cellWidth: 'auto' }, // Description
-        2: { halign: 'center', cellWidth: 15 },   // Q'TY
-        3: { halign: 'center', cellWidth: 20 },   // Unit
-        4: { halign: 'center', cellWidth: 25 },   // U/Price
-        5: { halign: 'center', cellWidth: 25 }    // Amount
-      },
+      columnStyles: (() => {
+        const styles: any = {
+          '0': { halign: 'center', cellWidth: '5%' },   // No.
+          ...(data.showHsCode ? { '1': { halign: 'center', cellWidth: '10%' } } : {}),   // HS Code
+          [data.showHsCode ? '2' : '1']: { halign: 'center', cellWidth: '15%' },   // Part Name
+          ...(data.showDescription ? { [data.showHsCode ? '3' : '2']: { halign: 'center', cellWidth: 'auto' } } : {}), // Description
+          [data.showHsCode && data.showDescription ? '4' : (data.showHsCode || data.showDescription ? '3' : '2')]: { halign: 'center', cellWidth: '8%' },   // Q'TY
+          [data.showHsCode && data.showDescription ? '5' : (data.showHsCode || data.showDescription ? '4' : '3')]: { halign: 'center', cellWidth: '8%' },   // Unit
+          [data.showHsCode && data.showDescription ? '6' : (data.showHsCode || data.showDescription ? '5' : '4')]: { halign: 'center', cellWidth: '12%' },   // U/Price
+          [data.showHsCode && data.showDescription ? '7' : (data.showHsCode || data.showDescription ? '6' : '5')]: { halign: 'center', cellWidth: '12%' }    // Amount
+        };
+        return styles;
+      })(),
       margin: { left: 20, right: 20 },
       tableWidth: 'auto'
     });

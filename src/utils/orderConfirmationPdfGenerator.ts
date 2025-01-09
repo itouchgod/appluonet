@@ -280,6 +280,72 @@ export const generateOrderConfirmationPDF = async (data: QuotationData, preview 
       });
     }
 
+    // 添加付款条款
+    if (data.showPaymentTerms || data.additionalPaymentTerms || data.showInvoiceReminder) {
+      currentY += 5;
+      doc.setFontSize(8);
+      doc.setFont('NotoSansSC', 'bold');
+      doc.text('Payment Terms:', margin, currentY);
+      doc.setFont('NotoSansSC', 'normal');
+      currentY += 5;
+
+      let termIndex = 1;
+
+      if (data.showPaymentTerms) {
+        const term1Text = `${termIndex}. Full paid not later than ${data.paymentDate} by telegraphic transfer.`;
+        const term1Parts = term1Text.split(data.paymentDate);
+        const firstPartWidth = doc.getTextWidth(term1Parts[0]);
+        doc.text(term1Parts[0], margin, currentY);
+        
+        // 日期显示为红色
+        doc.setTextColor(255, 0, 0);
+        doc.text(data.paymentDate, margin + firstPartWidth, currentY);
+        
+        // 恢复黑色并绘制剩余部分
+        doc.setTextColor(0, 0, 0);
+        doc.text(term1Parts[1], margin + firstPartWidth + doc.getTextWidth(data.paymentDate), currentY);
+        currentY += 5;
+        termIndex++;
+      }
+
+      // 显示额外的付款条款
+      if (data.additionalPaymentTerms) {
+        const terms = data.additionalPaymentTerms.split('\n').filter(term => term.trim());
+        terms.forEach(term => {
+          // 计算可用宽度（页面宽度减去左右边距和序号宽度）
+          const numberText = `${termIndex}. `;
+          const numberWidth = doc.getTextWidth(numberText);
+          const maxWidth = pageWidth - (margin * 2) - numberWidth;
+
+          // 添加序号
+          doc.text(numberText, margin, currentY);
+
+          // 处理长文本自动换行
+          const wrappedText = doc.splitTextToSize(term, maxWidth);
+          wrappedText.forEach((line: string, lineIndex: number) => {
+            doc.text(line, margin + numberWidth, currentY + (lineIndex * 5));
+          });
+
+          // 更新Y坐标到最后一行之后
+          currentY += wrappedText.length * 5;
+          termIndex++;
+        });
+      }
+
+      // 显示发票号提醒
+      if (data.showInvoiceReminder) {
+        const reminderText = `${termIndex}. Please state our contract no. "${data.contractNo}" on your payment documents.`;
+        const parts = reminderText.split(`"${data.contractNo}"`);
+        
+        doc.text(parts[0], margin, currentY);
+        doc.setTextColor(255, 0, 0);
+        doc.text(data.contractNo, margin + doc.getTextWidth(parts[0]), currentY);
+        doc.setTextColor(0, 0, 0);
+        doc.text(parts[1], margin + doc.getTextWidth(parts[0]) + doc.getTextWidth(data.contractNo), currentY);
+        currentY += 5;
+      }
+    }
+
     // 添加签名区域
     if (data.showStamp) {
       try {
@@ -295,17 +361,18 @@ export const generateOrderConfirmationPDF = async (data: QuotationData, preview 
         // 计算页面底部边界
         const pageBottom = doc.internal.pageSize.height - margin;
         
-        // 计算印章位置
-        let stampY = currentY + 5;  // 默认跟随左侧内容
-        let stampX = margin;  // 默认靠左
-        
-        // 如果印章放在左边会超出页面底部，就移到金额下方
+        // 印章位置跟随在付款条款下方
+        let stampY = currentY + 5;  // 在付款条款下方留出10mm间距
+        const stampX = pageWidth - stampWidth - margin - 10;  // 靠右对齐，留出10mm右边距
+
+        // 确保印章不会超出页面底部
         if (stampY + stampHeight > pageBottom) {
-          stampY = totalAmountY + 5;  // 移到金额下方
-          stampX = pageWidth - stampWidth - margin;  // 靠右对齐
+          doc.addPage();
+          stampY = margin;
+          currentY = margin;
         }
 
-        // 设置印章透明度为0.9，确保在文字下方
+        // 设置印章透明度为0.9
         doc.saveGraphicsState();
         doc.setGState(new doc.GState({ opacity: 0.9 }));
         
@@ -320,10 +387,15 @@ export const generateOrderConfirmationPDF = async (data: QuotationData, preview 
 
         // 恢复透明度
         doc.restoreGraphicsState();
+
+        // 更新当前Y坐标
+        currentY = stampY + stampHeight + 5;
       } catch (error) {
         console.error('Error loading stamp:', error instanceof Error ? error.message : 'Unknown error');
       }
     }
+
+    
 
     // 根据模式选择保存或返回预览URL
     if (preview) {

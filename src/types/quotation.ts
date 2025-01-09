@@ -38,4 +38,7 @@ export interface QuotationData {
   contractNo: string;
   otherFees?: OtherFee[];
   customUnits?: string[];
+  showPaymentTerms?: boolean;
+  showInvoiceReminder?: boolean;
+  additionalPaymentTerms?: string;
 } 

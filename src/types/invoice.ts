@@ -1,6 +1,7 @@
 export interface LineItem {
   lineNo: number;
   hsCode: string;
+  partname: string;
   description: string;
   quantity: number;
   unit: string;

@@ -28,6 +28,7 @@ export const handleImportData = (text: string) => {
         items.push({
           lineNo: items.length + 1,
           hsCode: '',
+          partname: '',
           description,
           quantity,
           unit: processUnit(unit),

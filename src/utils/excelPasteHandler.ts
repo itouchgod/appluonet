@@ -81,80 +81,78 @@ export interface ExcelLineItem {
 
 export const convertExcelToLineItems = (rows: string[][]): ExcelLineItem[] => {
   const items: ExcelLineItem[] = [];
-  let currentPartName: string[] = [];
-  let currentItem: Partial<ExcelLineItem> | null = null;
   
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    
+  for (const row of rows) {
     // 跳过空行
     if (row.length === 0 || row.every(cell => !cell.trim())) {
       continue;
     }
-    
-    // 检查是否是数据行（包含数量、单位和单价）
-    const quantity = parseNumberCell(row[3]);
-    const unit = row[4]?.trim();
-    const unitPrice = parseNumberCell(row[5]);
-    
-    if (quantity !== null && unit && unitPrice !== null) {
-      // 这是一个有效的数据行，创建新的商品项
-      if (currentItem) {
-        // 如果有未完成的项目，先添加到列表中
-        items.push({
-          ...currentItem,
-          id: items.length + 1,
-          partName: currentPartName.join('\n'),
-          description: '',
-          quantity,
-          unit,
-          unitPrice,
-          amount: quantity * unitPrice
-        } as ExcelLineItem);
-        
-        // 重置当前状态
-        currentPartName = [];
-        currentItem = null;
-      } else {
-        // 直接创建新项目
-        items.push({
-          id: items.length + 1,
-          partName: currentPartName.join('\n'),
-          description: '',
-          quantity,
-          unit,
-          unitPrice,
-          amount: quantity * unitPrice
-        });
-        // 重置当前商品名称
-        currentPartName = [];
+
+    let partName = '';
+    let description = '';
+    let quantity = 0;
+    let unit = 'pc';
+    let unitPrice = 0;
+
+    // 识别数字列的位置
+    const numericColumns = row.map((cell, index) => ({
+      index,
+      value: cell.trim(),
+      isNumeric: isNumeric(cell)
+    }));
+
+    const numberColumns = numericColumns.filter(col => col.isNumeric);
+
+    // 根据列数和数字列位置处理不同格式
+    if (row.length === 3) {
+      // 如果最后一列是数字，那就是 名称 描述 数量 格式
+      if (isNumeric(row[2])) {
+        partName = row[0].trim();
+        description = row[1].trim();
+        quantity = parseInt(row[2]) || 0;
       }
-    } else if (row[0]?.trim()) {
-      // 如果第一列有内容但不是数据行，收集到当前商品名称
-      currentPartName.push(row[0].trim());
-      // 标记有未完成的项目
-      if (!currentItem) {
-        currentItem = {};
+      // 如果中间列是数字，那就是 名称 数量 单价 格式
+      else if (isNumeric(row[1])) {
+        partName = row[0].trim();
+        quantity = parseInt(row[1]) || 0;
+        unitPrice = parseFloat(row[2]) || 0;
       }
+    } else if (row.length === 2) {
+      // 2列格式：名称 数量
+      partName = row[0].trim();
+      quantity = parseInt(row[1]) || 0;
+    } else if (row.length >= 4) {
+      // 4列或更多：名称 描述 数量 单位 [单价]
+      partName = row[0].trim();
+      description = row[1].trim();
+      quantity = parseInt(row[2]) || 0;
+      unit = row[3]?.trim() || 'pc';
+      unitPrice = parseFloat(row[4]) || 0;
+    } else {
+      // 单列：只有名称
+      partName = row[0].trim();
     }
-  }
-  
-  // 处理最后一个未完成的项目（如果有的话）
-  if (currentItem && currentPartName.length > 0) {
+
     items.push({
-      ...currentItem,
       id: items.length + 1,
-      partName: currentPartName.join('\n'),
-      description: '',
-      quantity: 0,
-      unit: 'pc',
-      unitPrice: 0,
-      amount: 0
-    } as ExcelLineItem);
+      partName,
+      description,
+      quantity: Math.floor(quantity), // 确保数量是整数
+      unit,
+      unitPrice,
+      amount: Math.floor(quantity) * unitPrice
+    });
   }
   
   return items;
 };
+
+// 辅助函数：检查是否为数字
+function isNumeric(value: string): boolean {
+  if (!value) return false;
+  const num = value.trim().replace(/,/g, '');
+  return !isNaN(Number(num)) && num.length > 0;
+}
 
 /**
  * 解析单个Excel单元格的内容

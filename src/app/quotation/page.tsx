@@ -17,6 +17,7 @@ import type { QuotationData, LineItem } from '@/types/quotation';
 import { Footer } from '@/components/Footer';
 import { handleImportData } from '@/utils/quotationDataHandler';
 import { parseExcelData, convertExcelToLineItems } from '@/utils/excelPasteHandler';
+import { PaymentTermsSection } from '@/components/quotation/PaymentTermsSection';
 
 // 标题样式
 const titleClassName = `text-xl font-semibold text-gray-800 dark:text-gray-200`;
@@ -24,6 +25,17 @@ const titleClassName = `text-xl font-semibold text-gray-800 dark:text-gray-200`;
 // 按钮基础样式
 const buttonClassName = `px-4 py-2 rounded-xl text-sm font-medium 
   transition-all duration-300`;
+
+// 默认单位列表
+const defaultUnits = ['pc', 'set', 'length'];
+
+// 处理单位的单复数
+const getUnitDisplay = (baseUnit: string, quantity: number) => {
+  if (defaultUnits.includes(baseUnit)) {
+    return quantity > 1 ? `${baseUnit}s` : baseUnit;
+  }
+  return baseUnit;
+};
 
 export default function QuotationPage() {
   const [activeTab, setActiveTab] = useState<'quotation' | 'confirmation'>('quotation');
@@ -60,7 +72,10 @@ export default function QuotationPage() {
     showBank: false,
     showStamp: false,
     contractNo: '',
-    customUnits: []
+    customUnits: [],
+    showPaymentTerms: false,
+    showInvoiceReminder: false,
+    additionalPaymentTerms: ''
   });
 
   // 初始化时根据用户名设置报价人和备注
@@ -159,6 +174,165 @@ export default function QuotationPage() {
     });
   };
 
+  // 处理全局粘贴
+  const handleGlobalPaste = async (text: string) => {
+    const newItems = handleImportDataLocal(text);
+    handleImport(newItems);
+  };
+
+  // 处理单元格粘贴
+  const handleCellPaste = (e: React.ClipboardEvent<HTMLInputElement | HTMLTextAreaElement>, index: number, field: keyof LineItem) => {
+    const pasteText = e.clipboardData.getData('text');
+    e.preventDefault();
+    
+    // 检查是否是全局粘贴（包含换行符或制表符）
+    if (pasteText.includes('\t') || pasteText.includes('\n')) {
+      // 如果是在单个单元格内粘贴多列数据，只取第一列
+      const firstCell = pasteText.split('\t')[0].split('\n')[0];
+      handleItemChange(index, field, firstCell);
+      return;
+    }
+    
+    // 单个单元格的粘贴处理
+    const cleanText = pasteText.replace(/^"|"$/g, '').trim();
+    
+    switch (field) {
+      case 'quantity':
+        if (!/^\d+$/.test(cleanText)) {
+          alert('数量必须是正整数');
+          return;
+        }
+        const quantity = parseInt(cleanText);
+        if (quantity < 0) {
+          alert('数量不能为负数');
+          return;
+        }
+        handleItemChange(index, 'quantity', quantity);
+        break;
+        
+      case 'unitPrice':
+        if (!/^\d*\.?\d*$/.test(cleanText)) {
+          alert('单价必须是有效的数字');
+          return;
+        }
+        const unitPrice = parseFloat(cleanText);
+        if (isNaN(unitPrice) || unitPrice < 0) {
+          alert('请输入有效的单价');
+          return;
+        }
+        handleItemChange(index, 'unitPrice', unitPrice);
+        break;
+        
+      case 'unit':
+        // 单位处理，自动处理单复数
+        const baseUnit = cleanText.toLowerCase().replace(/s$/, '');
+        if (defaultUnits.includes(baseUnit)) {
+          const quantity = data.items[index].quantity;
+          handleItemChange(index, 'unit', getUnitDisplay(baseUnit, quantity));
+        } else {
+          handleItemChange(index, 'unit', cleanText);
+        }
+        break;
+        
+      default:
+        // 对于其他字段（partName, description, remarks），直接使用清理后的文本
+        handleItemChange(index, field, cleanText);
+    }
+  };
+
+  // 处理剪贴板按钮点击
+  const handleClipboardButtonClick = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) {
+        handleGlobalPaste(text);
+      }
+    } catch (err) {
+      console.error('Failed to access clipboard:', err);
+      showPasteDialog();
+    }
+  };
+
+  // 显示粘贴对话框
+  const showPasteDialog = () => {
+    const input = document.createElement('textarea');
+    input.style.position = 'fixed';
+    input.style.top = '50%';
+    input.style.left = '50%';
+    input.style.transform = 'translate(-50%, -50%)';
+    input.style.zIndex = '9999';
+    input.style.width = '80%';
+    input.style.height = '200px';
+    input.style.padding = '12px';
+    input.style.border = '2px solid #007AFF';
+    input.style.borderRadius = '8px';
+    input.placeholder = '请将数据粘贴到这里...';
+    
+    const overlay = document.createElement('div');
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.right = '0';
+    overlay.style.bottom = '0';
+    overlay.style.backgroundColor = 'rgba(0,0,0,0.5)';
+    overlay.style.zIndex = '9998';
+    
+    const confirmBtn = document.createElement('button');
+    confirmBtn.textContent = '确认';
+    confirmBtn.style.position = 'fixed';
+    confirmBtn.style.bottom = '20%';
+    confirmBtn.style.left = '50%';
+    confirmBtn.style.transform = 'translateX(-50%)';
+    confirmBtn.style.zIndex = '9999';
+    confirmBtn.style.padding = '8px 24px';
+    confirmBtn.style.backgroundColor = '#007AFF';
+    confirmBtn.style.color = 'white';
+    confirmBtn.style.border = 'none';
+    confirmBtn.style.borderRadius = '6px';
+    confirmBtn.style.cursor = 'pointer';
+    
+    const cleanup = () => {
+      document.body.removeChild(input);
+      document.body.removeChild(overlay);
+      document.body.removeChild(confirmBtn);
+    };
+    
+    confirmBtn.onclick = () => {
+      const text = input.value;
+      if (text) {
+        handleGlobalPaste(text);
+      }
+      cleanup();
+    };
+    
+    overlay.onclick = cleanup;
+    
+    document.body.appendChild(overlay);
+    document.body.appendChild(input);
+    document.body.appendChild(confirmBtn);
+    
+    input.focus();
+  };
+
+  // 处理单个项目的更改
+  const handleItemChange = (index: number, field: keyof LineItem, value: string | number) => {
+    const newItems = [...data.items];
+    newItems[index] = {
+      ...newItems[index],
+      [field]: value
+    };
+
+    // 如果更改了数量或单价，自动计算金额
+    if (field === 'quantity' || field === 'unitPrice') {
+      newItems[index].amount = newItems[index].quantity * newItems[index].unitPrice;
+    }
+
+    setData({
+      ...data,
+      items: newItems
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
          <div className="flex-1">
@@ -196,76 +370,7 @@ export default function QuotationPage() {
                 </h1>
                 <button
                   type="button"
-                  onClick={async () => {
-                    try {
-                      const text = await navigator.clipboard.readText();
-                      if (text) {
-                        const importDataEvent = new CustomEvent('import-data', { detail: text });
-                        window.dispatchEvent(importDataEvent);
-                      }
-                    } catch (err) {
-                      console.error('Failed to access clipboard:', err);
-                      // 如果剪贴板访问失败，显示手动输入框
-                      const input = document.createElement('textarea');
-                      input.style.position = 'fixed';
-                      input.style.top = '50%';
-                      input.style.left = '50%';
-                      input.style.transform = 'translate(-50%, -50%)';
-                      input.style.zIndex = '9999';
-                      input.style.width = '80%';
-                      input.style.height = '200px';
-                      input.style.padding = '12px';
-                      input.style.border = '2px solid #007AFF';
-                      input.style.borderRadius = '8px';
-                      input.placeholder = '请将数据粘贴到这里...';
-                      
-                      const overlay = document.createElement('div');
-                      overlay.style.position = 'fixed';
-                      overlay.style.top = '0';
-                      overlay.style.left = '0';
-                      overlay.style.right = '0';
-                      overlay.style.bottom = '0';
-                      overlay.style.backgroundColor = 'rgba(0,0,0,0.5)';
-                      overlay.style.zIndex = '9998';
-                      
-                      const confirmBtn = document.createElement('button');
-                      confirmBtn.textContent = '确认';
-                      confirmBtn.style.position = 'fixed';
-                      confirmBtn.style.bottom = '20%';
-                      confirmBtn.style.left = '50%';
-                      confirmBtn.style.transform = 'translateX(-50%)';
-                      confirmBtn.style.zIndex = '9999';
-                      confirmBtn.style.padding = '8px 24px';
-                      confirmBtn.style.backgroundColor = '#007AFF';
-                      confirmBtn.style.color = 'white';
-                      confirmBtn.style.border = 'none';
-                      confirmBtn.style.borderRadius = '6px';
-                      confirmBtn.style.cursor = 'pointer';
-                      
-                      const cleanup = () => {
-                        document.body.removeChild(input);
-                        document.body.removeChild(overlay);
-                        document.body.removeChild(confirmBtn);
-                      };
-                      
-                      confirmBtn.onclick = () => {
-                        const text = input.value;
-                        if (text) {
-                          const importDataEvent = new CustomEvent('import-data', { detail: text });
-                          window.dispatchEvent(importDataEvent);
-                        }
-                        cleanup();
-                      };
-                      
-                      overlay.onclick = cleanup;
-                      
-                      document.body.appendChild(overlay);
-                      document.body.appendChild(input);
-                      document.body.appendChild(confirmBtn);
-                      
-                      input.focus();
-                    }
-                  }}
+                  onClick={handleClipboardButtonClick}
                   className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex-shrink-0"
                   title="Paste from clipboard"
                 >
@@ -408,10 +513,19 @@ export default function QuotationPage() {
                 </div>
               )}
 
-              <NotesSection 
-                data={data}
-                onChange={setData}
-              />
+              <div className="space-y-6">
+                <NotesSection 
+                  data={data}
+                  onChange={setData}
+                />
+
+                {activeTab === 'confirmation' && (
+                  <PaymentTermsSection
+                    data={data}
+                    onChange={setData}
+                  />
+                )}
+              </div>
             </div>
 
             {/* 生成按钮和预览按钮 */}

@@ -1,45 +1,22 @@
-import type { QuotationData } from '@/types/quotation';
+import { QuotationData } from '@/types/quotation';
 
 interface NotesSectionProps {
   data: QuotationData;
   onChange: (data: QuotationData) => void;
 }
 
-const inputClassName = `w-full px-3 py-1.5 rounded-lg
-  bg-white/60 dark:bg-[#1c1c1e]/60
-  border border-transparent
-  focus:outline-none focus:ring-1 focus:ring-[#007AFF]/30 dark:focus:ring-[#0A84FF]/30
-  text-sm text-gray-700 dark:text-gray-300
-  placeholder:text-gray-400/70 dark:placeholder:text-gray-500/70
-  transition-all duration-200`;
-
 export function NotesSection({ data, onChange }: NotesSectionProps) {
-  const updateNote = (index: number, value: string) => {
-    const newNotes = [...data.notes];
-    newNotes[index] = value;
-    onChange({ ...data, notes: newNotes });
-  };
-
-  const removeNote = (index: number) => {
-    onChange({
-      ...data,
-      notes: data.notes.filter((_, i) => i !== index)
-    });
-  };
-
   return (
-    <div className="space-y-2.5 
-      bg-gray-50/50 dark:bg-[#1c1c1e]/50
-      rounded-xl p-4 
-      border border-gray-200/30 dark:border-[#2c2c2e]/50">
-      <div className="flex items-center justify-between mb-4">
-        <div className="text-[15px] font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Notes:</div>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">Notes:</h3>
         <button
           type="button"
           onClick={() => {
-            const newNotes = [...data.notes];
-            newNotes.push('');
-            onChange({ ...data, notes: newNotes });
+            onChange({
+              ...data,
+              notes: [...data.notes, '']
+            });
           }}
           className="px-3 h-7 rounded-lg
             bg-[#007AFF]/[0.08] dark:bg-[#0A84FF]/[0.08]
@@ -53,25 +30,57 @@ export function NotesSection({ data, onChange }: NotesSectionProps) {
           <span>Add Note</span>
         </button>
       </div>
+
       <div className="space-y-2">
         {data.notes.map((note, index) => (
-          <div key={index} className="flex items-center gap-2">
-            <span 
-              className="flex items-center justify-center w-6 h-6 rounded-full 
-                text-xs text-gray-400
-                hover:bg-red-100 hover:text-red-600 
-                cursor-pointer transition-colors"
-              onClick={() => removeNote(index)}
+          <div key={index} className="flex items-start gap-2">
+            <div 
+              className="mt-2 text-sm text-gray-400 dark:text-gray-500 w-6 flex-shrink-0 text-center
+                hover:text-red-500 dark:hover:text-red-400 cursor-pointer transition-colors"
+              onClick={() => {
+                const newNotes = [...data.notes];
+                newNotes.splice(index, 1);
+                onChange({
+                  ...data,
+                  notes: newNotes
+                });
+              }}
               title="Click to delete"
             >
-              {index + 1}
-            </span>
-            <input
-              type="text"
-              value={note}
-              onChange={e => updateNote(index, e.target.value)}
-              className={inputClassName}
-            />
+              {index + 1}.
+            </div>
+            <div className="flex-1">
+              <textarea
+                value={note}
+                onChange={(e) => {
+                  const newNotes = [...data.notes];
+                  newNotes[index] = e.target.value;
+                  onChange({
+                    ...data,
+                    notes: newNotes
+                  });
+                }}
+                className="w-full px-3 py-2 rounded-xl
+                  bg-transparent backdrop-blur-sm
+                  border border-transparent
+                  focus:outline-none focus:ring-2 focus:ring-[#007AFF]/20 dark:focus:ring-[#0A84FF]/20
+                  text-[14px] leading-relaxed text-gray-800 dark:text-gray-100
+                  placeholder:text-gray-400/60 dark:placeholder:text-gray-500/60
+                  transition-all duration-300 ease-out
+                  hover:bg-[#007AFF]/5 dark:hover:bg-[#0A84FF]/5
+                  resize-none overflow-hidden"
+                rows={1}
+                style={{
+                  height: 'auto',
+                  minHeight: '32px'
+                }}
+                onInput={(e) => {
+                  const target = e.target as HTMLTextAreaElement;
+                  target.style.height = 'auto';
+                  target.style.height = target.scrollHeight + 'px';
+                }}
+              />
+            </div>
           </div>
         ))}
       </div>

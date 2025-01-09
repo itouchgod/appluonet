@@ -8,6 +8,7 @@ export interface PDFGeneratorData {
   };
   items: {
     hsCode?: string;
+    partname: string;
     description: string;
     quantity: number;
     unit: string;
@@ -24,6 +25,7 @@ export interface PDFGeneratorData {
   date: string;
   currency: string;
   showHsCode: boolean;
+  showDescription: boolean;
   amountInWords: {
     dollars: string;
     cents: string;

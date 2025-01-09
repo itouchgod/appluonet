@@ -39,6 +39,7 @@ const numberInputClassName = `${tableInputClassName}
 interface LineItem {
   lineNo: number;
   hsCode: string;
+  partname: string;
   description: string;
   quantity: number;
   unit: string;
@@ -54,6 +55,7 @@ interface InvoiceData {
   items: Array<{
     lineNo: number;
     hsCode: string;
+    partname: string;
     description: string;
     quantity: number;
     unit: string;
@@ -71,6 +73,7 @@ interface InvoiceData {
   };
   remarks?: string;
   showHsCode: boolean;
+  showDescription: boolean;
   showBank: boolean;
   showInvoiceReminder: boolean;
   currency: 'USD' | 'CNY';
@@ -91,6 +94,7 @@ export default function InvoicePage() {
     items: [{
       lineNo: 1,
       hsCode: '',
+      partname: '',
       description: '',
       quantity: 0,
       unit: 'pc',
@@ -112,6 +116,7 @@ Beneficiary: Luo & Company Co., Limited`,
     },
     remarks: '',
     showHsCode: false,
+    showDescription: true,
     showBank: false,
     showInvoiceReminder: true,
     currency: 'USD',
@@ -146,6 +151,7 @@ Beneficiary: Luo & Company Co., Limited`,
       items: [...prev.items, {
         lineNo: prev.items.length + 1,
         hsCode: '',
+        partname: '',
         description: '',
         quantity: 0,
         unit: 'pc',
@@ -310,7 +316,10 @@ Beneficiary: Luo & Company Co., Limited`,
       if (Array.isArray(parsedRows)) {
         setInvoiceData(prev => ({
           ...prev,
-          items: parsedRows
+          items: parsedRows.map(row => ({
+            ...row,
+            partname: row.partname || ''  // 确保有 partname 字段
+          }))
         }));
       }
     } catch (error) {
@@ -401,7 +410,7 @@ Beneficiary: Luo & Company Co., Limited`,
     }
 
     // 对于文本字段，保持原始格式
-    if (field === 'description') {
+    if (field === 'description' || field === 'hsCode' || field === 'partname') {
       // 检查是否包含 tab，如果包含说明是从 Excel 复制的多个单元格
       if (pasteText.includes('\t')) {
         e.preventDefault();
@@ -664,6 +673,15 @@ Beneficiary: Luo & Company Co., Limited`,
                           <label className="flex items-center gap-2">
                             <input
                               type="checkbox"
+                              checked={invoiceData.showDescription}
+                              onChange={e => setInvoiceData(prev => ({ ...prev, showDescription: e.target.checked }))}
+                              className="rounded border-gray-300 text-[#007AFF] dark:text-[#0A84FF] focus:ring-[#007AFF]/20 dark:focus:ring-[#0A84FF]/20"
+                            />
+                            <span className="text-sm text-gray-600 dark:text-gray-400">Description</span>
+                          </label>
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
                               checked={invoiceData.showBank}
                               onChange={e => setInvoiceData(prev => ({ ...prev, showBank: e.target.checked }))}
                               className="rounded border-gray-300 text-[#007AFF] dark:text-[#0A84FF] focus:ring-[#007AFF]/20 dark:focus:ring-[#0A84FF]/20"
@@ -832,7 +850,10 @@ Beneficiary: Luo & Company Co., Limited`,
                               HS Code
                             </th>
                           )}
-                          <th className="py-2 px-4 text-center text-xs font-bold opacity-90 flex-1">Description</th>
+                          <th className="py-2 px-4 text-center text-xs font-bold opacity-90 w-[150px]">Part Name</th>
+                          {invoiceData.showDescription && (
+                            <th className="py-2 px-4 text-center text-xs font-bold opacity-90 flex-1">Description</th>
+                          )}
                           <th className="py-2 px-4 text-center text-xs font-bold opacity-90 w-[100px]">Q&apos;TY</th>
                           <th className="py-2 px-4 text-center text-xs font-bold opacity-90 w-[100px]">Unit</th>
                           <th className="py-2 px-4 text-center text-xs font-bold opacity-90 w-[130px]">U/Price</th>
@@ -874,51 +895,63 @@ Beneficiary: Luo & Company Co., Limited`,
                                 />
                               </td>
                             )}
-                            <td className="py-1 px-1">
-                              <textarea
-                                value={item.description}
-                                onChange={e => updateLineItem(index, 'description', e.target.value)}
-                                onPaste={(e) => handleCellPaste(e, index, 'description')}
-                                rows={1}
-                                className={`
-                                  w-full
-                                  resize-vertical
-                                  text-center
-                                  py-2 px-3
-                                  border border-transparent
-                                  rounded-lg
-                                  transition-colors
-                                  hover:bg-gray-50 dark:hover:bg-gray-800
-                                  hover:border-[#007AFF]/50 dark:hover:border-[#0A84FF]/50
-                                  focus:bg-gray-50 dark:focus:bg-gray-800
-                                  focus:border-[#007AFF]/50 dark:focus:border-[#0A84FF]/50
-                                  focus:ring-0 focus:outline-none
-                                  bg-transparent
-                                  placeholder:text-gray-300 dark:placeholder:text-gray-600
-                                  overflow-hidden
-                                  [&::-webkit-resizer] {
-                                    display: none;
-                                  }
-                                  hover:[&::-webkit-resizer] {
-                                    display: block;
-                                    width: 4px;
-                                    height: 4px;
-                                    background: linear-gradient(135deg, transparent 0.5px, #007AFF 0.5px);
-                                  }
-                                  dark:hover:[&::-webkit-resizer] {
-                                    background: linear-gradient(135deg, transparent 0.5px, #0A84FF 0.5px);
-                                  }
-                                  [&::-webkit-scrollbar] {
-                                    display: none;
-                                  }
-                                `}
-                                placeholder="Enter description"
-                                style={{ 
-                                  height: '41px',
-                                  minHeight: '41px'
-                                }}
+                            <td className="py-1.5 px-1">
+                              <input
+                                type="text"
+                                value={item.partname}
+                                onChange={e => updateLineItem(index, 'partname', e.target.value)}
+                                onPaste={(e) => handleCellPaste(e, index, 'partname')}
+                                className={tableInputClassName}
+                                placeholder="Part Name"
                               />
                             </td>
+                            {invoiceData.showDescription && (
+                              <td className="py-1 px-1">
+                                <textarea
+                                  value={item.description}
+                                  onChange={e => updateLineItem(index, 'description', e.target.value)}
+                                  onPaste={(e) => handleCellPaste(e, index, 'description')}
+                                  rows={1}
+                                  className={`
+                                    w-full
+                                    resize-vertical
+                                    text-center
+                                    py-2 px-3
+                                    border border-transparent
+                                    rounded-lg
+                                    transition-colors
+                                    hover:bg-gray-50 dark:hover:bg-gray-800
+                                    hover:border-[#007AFF]/50 dark:hover:border-[#0A84FF]/50
+                                    focus:bg-gray-50 dark:focus:bg-gray-800
+                                    focus:border-[#007AFF]/50 dark:focus:border-[#0A84FF]/50
+                                    focus:ring-0 focus:outline-none
+                                    bg-transparent
+                                    placeholder:text-gray-300 dark:placeholder:text-gray-600
+                                    overflow-hidden
+                                    [&::-webkit-resizer] {
+                                      display: none;
+                                    }
+                                    hover:[&::-webkit-resizer] {
+                                      display: block;
+                                      width: 4px;
+                                      height: 4px;
+                                      background: linear-gradient(135deg, transparent 0.5px, #007AFF 0.5px);
+                                    }
+                                    dark:hover:[&::-webkit-resizer] {
+                                      background: linear-gradient(135deg, transparent 0.5px, #0A84FF 0.5px);
+                                    }
+                                    [&::-webkit-scrollbar] {
+                                      display: none;
+                                    }
+                                  `}
+                                  placeholder="Enter description"
+                                  style={{ 
+                                    height: '41px',
+                                    minHeight: '41px'
+                                  }}
+                                />
+                              </td>
+                            )}
                             <td className="py-1.5 px-1">
                               <input
                                 type="text"
