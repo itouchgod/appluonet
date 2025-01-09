@@ -435,7 +435,12 @@ export const generateOrderConfirmationPDF = async (data: QuotationData, preview 
       return doc.output('blob');
     }
     
-    doc.save(`Order-${data.quotationNo}.pdf`);
+    // 获取当前日期并格式化
+    const currentDate = new Date();
+    const formattedDate = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}-${currentDate.getDate().toString().padStart(2, '0')}`;
+
+    // 保存文件，文件名中包含日期
+    doc.save(`Sales Confirmation ${data.quotationNo}-${formattedDate}.pdf`);
     return new Blob();
   } catch (error) {
     console.error('Error generating PDF:', error);

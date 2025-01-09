@@ -304,8 +304,12 @@ export const generateQuotationPDF = async (data: QuotationData, preview = false)
       return doc.output('blob');
     }
     
+    // 获取当前日期并格式化
+    const currentDate = new Date();
+    const formattedDate = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}-${currentDate.getDate().toString().padStart(2, '0')}`;
+
     // 如果不是预览模式，下载文件
-    doc.save(`Quotation-${data.quotationNo}.pdf`);
+    doc.save(`Quotation-${data.quotationNo}-${formattedDate}.pdf`);
     return new Blob(); // 返回空 Blob 以满足类型要求
   } catch (error) {
     console.error('Error generating PDF:', error);
