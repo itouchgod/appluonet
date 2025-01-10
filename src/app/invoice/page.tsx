@@ -7,6 +7,7 @@ import { generateInvoicePDF } from '@/utils/pdfGenerator';
 import { InvoiceTemplateConfig } from '@/types/invoice';
 import { format, addMonths } from 'date-fns';
 import { Footer } from '@/components/Footer';
+import { CustomerSection } from '@/components/invoice/CustomerSection';
 
 // 基础样式定义
 const inputClassName = `w-full px-4 py-2.5 rounded-2xl
@@ -954,29 +955,15 @@ Beneficiary: Luo & Company Co., Limited`,
                 />
               </div>
               {/* 客户信息区域 */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div>
-                  <textarea
-                    value={invoiceData.to}
-                    onChange={e => setInvoiceData(prev => ({ ...prev, to: e.target.value }))}
-                    placeholder="Enter customer name and address"
-                    rows={3}
-                    className={inputClassName}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                    Customer P/O No.
-                  </label>
-                  <input
-                    type="text"
-                    value={invoiceData.customerPO}
-                    onChange={e => setInvoiceData(prev => ({ ...prev, customerPO: e.target.value }))}
-                    placeholder="Enter customer P/O number"
-                    className={inputClassName}
-                  />
-                </div>
-              </div>
+              <CustomerSection
+                to={invoiceData.to}
+                customerPO={invoiceData.customerPO}
+                onChange={({ to, customerPO }) => setInvoiceData(prev => ({
+                  ...prev,
+                  to,
+                  customerPO
+                }))}
+              />
 
               {/* 商品表格 */}
               <div className="space-y-2">

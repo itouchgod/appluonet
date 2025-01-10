@@ -200,7 +200,7 @@ export function CustomerInfoSection({ data, onChange, type }: CustomerInfoSectio
               rows={3}
               className={inputClassName}
             />
-            <div className="absolute right-2 top-2 flex gap-2">
+            <div className="absolute right-2 bottom-2 flex gap-2">
               <button
                 type="button"
                 onClick={() => setShowImportExport(true)}
