@@ -1,5 +1,6 @@
 import type { QuotationData } from '@/types/quotation';
 import { getDefaultNotes } from '@/utils/getDefaultNotes';
+import { useState, useEffect } from 'react';
 
 interface CustomerInfoSectionProps {
   data: QuotationData;
@@ -20,7 +21,115 @@ const inputClassName = `w-full px-4 py-2.5 rounded-xl
 
 const labelClassName = `block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1.5`;
 
+interface SavedCustomer {
+  name: string;
+  to: string;
+  inquiryNo: string;
+}
+
 export function CustomerInfoSection({ data, onChange, type }: CustomerInfoSectionProps) {
+  const [savedCustomers, setSavedCustomers] = useState<SavedCustomer[]>([]);
+  const [showSavedCustomers, setShowSavedCustomers] = useState(false);
+  const [showImportExport, setShowImportExport] = useState(false);
+
+  // 加载保存的客户信息
+  useEffect(() => {
+    const saved = localStorage.getItem('savedCustomers');
+    if (saved) {
+      setSavedCustomers(JSON.parse(saved));
+    }
+  }, []);
+
+  // 保存客户信息
+  const handleSave = () => {
+    if (!data.to.trim()) return;
+
+    const customerName = data.to.split('\n')[0].trim(); // 使用第一行作为客户名称
+    const newCustomer: SavedCustomer = {
+      name: customerName,
+      to: data.to,
+      inquiryNo: data.inquiryNo
+    };
+
+    const newSavedCustomers = [...savedCustomers];
+    const existingIndex = newSavedCustomers.findIndex(c => c.name === customerName);
+    
+    if (existingIndex >= 0) {
+      newSavedCustomers[existingIndex] = newCustomer;
+    } else {
+      newSavedCustomers.push(newCustomer);
+    }
+
+    setSavedCustomers(newSavedCustomers);
+    localStorage.setItem('savedCustomers', JSON.stringify(newSavedCustomers));
+    setShowSavedCustomers(false);
+  };
+
+  // 删除保存的客户信息
+  const handleDelete = (customerName: string) => {
+    const newSavedCustomers = savedCustomers.filter(c => c.name !== customerName);
+    setSavedCustomers(newSavedCustomers);
+    localStorage.setItem('savedCustomers', JSON.stringify(newSavedCustomers));
+  };
+
+  // 加载客户信息
+  const handleLoad = (customer: SavedCustomer) => {
+    onChange({
+      ...data,
+      to: customer.to,
+      inquiryNo: customer.inquiryNo
+    });
+    setShowSavedCustomers(false);
+  };
+
+  // 导出客户数据
+  const handleExport = () => {
+    const dataStr = JSON.stringify(savedCustomers, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'customer_data.json';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    setShowImportExport(false);
+  };
+
+  // 导入客户数据
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const importedData = JSON.parse(e.target?.result as string);
+        if (Array.isArray(importedData)) {
+          // 合并现有数据和导入的数据
+          const mergedData = [...savedCustomers];
+          importedData.forEach(customer => {
+            const existingIndex = mergedData.findIndex(c => c.name === customer.name);
+            if (existingIndex >= 0) {
+              mergedData[existingIndex] = customer;
+            } else {
+              mergedData.push(customer);
+            }
+          });
+          setSavedCustomers(mergedData);
+          localStorage.setItem('savedCustomers', JSON.stringify(mergedData));
+        }
+      } catch (error) {
+        console.error('Error importing data:', error);
+        alert('Invalid file format');
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = ''; // Reset input
+    setShowImportExport(false);
+  };
+
   return (
     <div className="space-y-4">
       {/* 第一行：报价单号和报价人 */}
@@ -83,13 +192,120 @@ export function CustomerInfoSection({ data, onChange, type }: CustomerInfoSectio
       {/* 第二行：客户信息 */}
       <div className="flex gap-4">
         <div className="flex-1">
-          <textarea
-            value={data.to}
-            onChange={e => onChange({ ...data, to: e.target.value })}
-            placeholder="Enter customer name and address"
-            rows={3}
-            className={inputClassName}
-          />
+          <div className="relative">
+            <textarea
+              value={data.to}
+              onChange={e => onChange({ ...data, to: e.target.value })}
+              placeholder="Enter customer name and address"
+              rows={3}
+              className={inputClassName}
+            />
+            <div className="absolute right-2 top-2 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowImportExport(true)}
+                className="px-3 py-1 rounded-lg text-xs font-medium
+                  bg-[#007AFF]/[0.08] dark:bg-[#0A84FF]/[0.08]
+                  hover:bg-[#007AFF]/[0.12] dark:hover:bg-[#0A84FF]/[0.12]
+                  text-[#007AFF] dark:text-[#0A84FF]
+                  transition-all duration-200"
+              >
+                Import/Export
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowSavedCustomers(true)}
+                className="px-3 py-1 rounded-lg text-xs font-medium
+                  bg-[#007AFF]/[0.08] dark:bg-[#0A84FF]/[0.08]
+                  hover:bg-[#007AFF]/[0.12] dark:hover:bg-[#0A84FF]/[0.12]
+                  text-[#007AFF] dark:text-[#0A84FF]
+                  transition-all duration-200"
+              >
+                Load
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                className="px-3 py-1 rounded-lg text-xs font-medium
+                  bg-[#007AFF]/[0.08] dark:bg-[#0A84FF]/[0.08]
+                  hover:bg-[#007AFF]/[0.12] dark:hover:bg-[#0A84FF]/[0.12]
+                  text-[#007AFF] dark:text-[#0A84FF]
+                  transition-all duration-200"
+              >
+                Save
+              </button>
+            </div>
+
+            {/* 导入/导出弹窗 */}
+            {showImportExport && (
+              <div className="absolute z-10 right-0 top-full mt-1 w-[200px]
+                bg-white dark:bg-[#2C2C2E] rounded-xl shadow-lg
+                border border-gray-200/50 dark:border-gray-700/50
+                p-2"
+              >
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={handleExport}
+                    className="w-full px-3 py-2 text-left text-sm
+                      hover:bg-gray-50 dark:hover:bg-[#3A3A3C] rounded-lg
+                      text-gray-700 dark:text-gray-300"
+                  >
+                    Export Customers
+                  </button>
+                  <label className="block">
+                    <span className="w-full px-3 py-2 text-left text-sm
+                      hover:bg-gray-50 dark:hover:bg-[#3A3A3C] rounded-lg
+                      text-gray-700 dark:text-gray-300
+                      cursor-pointer block"
+                    >
+                      Import Customers
+                    </span>
+                    <input
+                      type="file"
+                      accept=".json"
+                      onChange={handleImport}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {/* 保存的客户列表弹窗 */}
+            {showSavedCustomers && savedCustomers.length > 0 && (
+              <div className="absolute z-10 right-0 top-full mt-1 w-full max-w-md
+                bg-white dark:bg-[#2C2C2E] rounded-xl shadow-lg
+                border border-gray-200/50 dark:border-gray-700/50
+                p-2"
+              >
+                <div className="max-h-[200px] overflow-y-auto">
+                  {savedCustomers.map((customer, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-2 hover:bg-gray-50 dark:hover:bg-[#3A3A3C] rounded-lg"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => handleLoad(customer)}
+                        className="flex-1 text-left px-2 py-1 text-sm text-gray-700 dark:text-gray-300"
+                      >
+                        {customer.name}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(customer.name)}
+                        className="px-2 py-1 text-xs text-red-500 hover:text-red-600
+                          hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
