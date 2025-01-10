@@ -64,12 +64,12 @@ export const getInvoiceTitle: InvoiceTitleGetter = (data) => {
   const invoiceType = data.templateConfig.invoiceType || 'invoice';
   switch (invoiceType) {
     case 'commercial':
-      return data.currency === 'USD' ? 'COMMERCIAL INVOICE' : '商业发票';
+      return data.currency === 'USD' ? 'COMMERCIAL INVOICE' : 'COMMERCIAL INVOICE';
     case 'proforma':
-      return data.currency === 'USD' ? 'PROFORMA INVOICE' : '形式发票';
+      return data.currency === 'USD' ? 'PROFORMA INVOICE' : 'PROFORMA INVOICE';
     case 'invoice':
     default:
-      return data.currency === 'USD' ? 'INVOICE' : '发票';
+      return data.currency === 'USD' ? 'INVOICE' : 'INVOICE';
   }
 };
 
