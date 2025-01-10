@@ -233,9 +233,17 @@ export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolea
           {
             content: fee.description,
             colSpan: (data.showHsCode ? 1 : 0) + (data.showDescription ? 1 : 0) + 5,
-            styles: { halign: 'center' }
-          } as unknown as string,
-          fee.amount ? fee.amount.toFixed(2) : ''
+            styles: { 
+              halign: 'center',
+              ...(fee.highlight?.description ? { textColor: [255, 0, 0] } : {})
+            }
+          },
+          {
+            content: fee.amount.toFixed(2),
+            styles: {
+              ...(fee.highlight?.amount ? { textColor: [255, 0, 0] } : {})
+            }
+          }
         ])
       ],
       theme: 'plain',

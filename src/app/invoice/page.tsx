@@ -1011,11 +1011,31 @@ Beneficiary: Luo & Company Co., Limited`,
               <CustomerSection
                 to={invoiceData.to}
                 customerPO={invoiceData.customerPO}
-                onChange={({ to, customerPO }) => setInvoiceData(prev => ({
-                  ...prev,
-                  to,
-                  customerPO
-                }))}
+                onChange={({ to, customerPO }) => {
+                  setInvoiceData(prev => {
+                    // 检查是否是Nordic Chemtanker，并且之前没有添加过这个费用
+                    const isNordicChemtanker = to.includes('Ernst Jacob');
+                    const hasNordicFee = prev.otherFees?.some(fee => 
+                      fee.description === 'Additional fee' && fee.amount === 27.5
+                    );
+
+                    // 如果是Nordic Chemtanker且没有添加过费用，则添加
+                    const newOtherFees = isNordicChemtanker && !hasNordicFee
+                      ? [...(prev.otherFees || []), {
+                          id: Date.now(),
+                          description: 'Additional fee',
+                          amount: 27.5
+                        }]
+                      : prev.otherFees;
+
+                    return {
+                      ...prev,
+                      to,
+                      customerPO,
+                      otherFees: newOtherFees
+                    };
+                  });
+                }}
               />
 
               {/* 商品表格 */}
