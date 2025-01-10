@@ -862,9 +862,7 @@ Beneficiary: Luo & Company Co., Limited`,
                               >
                                 Add
                               </button>
-                            </div>
-                            {customUnits.length > 0 && (
-                              <div className="flex flex-wrap gap-2 mt-1">
+                              <div className="flex flex-wrap gap-2 mt-1 flex-nowrap">
                                 {customUnits.map((unit, index) => (
                                   <div
                                     key={unit}
@@ -886,7 +884,7 @@ Beneficiary: Luo & Company Co., Limited`,
                                   </div>
                                 ))}
                               </div>
-                            )}
+                            </div>
                           </div>
                         </div>
                       </div>
