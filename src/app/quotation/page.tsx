@@ -324,8 +324,8 @@ export default function QuotationPage() {
               </div>
 
               {/* 设置面板 */}
-              <div className={`overflow-hidden transition-all duration-300 ease-in-out px-4 sm:px-6 
-                ${showSettings ? 'opacity-100 py-6' : 'opacity-0 py-0'}`}>
+              <div className={`overflow-hidden transition-all duration-300 ease-in-out
+                ${showSettings ? 'opacity-100 px-4 sm:px-6 py-6 h-auto' : 'opacity-0 px-0 py-0 h-0'}`}>
                 <SettingsPanel 
                   data={data}
                   onChange={setData}
