@@ -766,7 +766,7 @@ Beneficiary: Luo & Company Co., Limited`,
               </div>
 
               {/* 设置面板 */}
-              <div className={`overflow-hidden transition-all duration-300 ease-in-out ${showSettings ? 'max-h-[200px] opacity-100 mb-8' : 'max-h-0 opacity-0'}`}>
+              <div className={`overflow-hidden transition-all duration-300 ease-in-out ${showSettings ? 'max-h-none opacity-100 mb-8' : 'max-h-0 opacity-0'}`}>
                 <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-200/30 dark:border-gray-700/30">
                   <div className="space-y-4">
                     <div className="flex flex-wrap gap-4">
@@ -784,7 +784,6 @@ Beneficiary: Luo & Company Co., Limited`,
                           flexGrow: 0
                         }}
                       />
-                      <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
@@ -809,6 +808,17 @@ Beneficiary: Luo & Company Co., Limited`,
                             ¥
                           </button>
                         </div>
+                        <label className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={invoiceData.showBank}
+                              onChange={e => setInvoiceData(prev => ({ ...prev, showBank: e.target.checked }))}
+                              className="rounded border-gray-300 text-[#007AFF] dark:text-[#0A84FF] focus:ring-[#007AFF]/20 dark:focus:ring-[#0A84FF]/20"
+                            />
+                            <span className="text-sm text-gray-600 dark:text-gray-400">Bank</span>
+                          </label>
+                      <div className="flex items-center gap-4">
+                        
                         <div className="flex items-center gap-4">
                           <label className="flex items-center gap-2">
                             <input
@@ -828,24 +838,19 @@ Beneficiary: Luo & Company Co., Limited`,
                             />
                             <span className="text-sm text-gray-600 dark:text-gray-400">Description</span>
                           </label>
-                          <label className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              checked={invoiceData.showBank}
-                              onChange={e => setInvoiceData(prev => ({ ...prev, showBank: e.target.checked }))}
-                              className="rounded border-gray-300 text-[#007AFF] dark:text-[#0A84FF] focus:ring-[#007AFF]/20 dark:focus:ring-[#0A84FF]/20"
-                            />
-                            <span className="text-sm text-gray-600 dark:text-gray-400">Bank</span>
-                          </label>
-                          <div className="flex flex-col gap-2 mt-2">
+                         
+                         
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-2 mt-2">
                             <div className="flex items-center gap-2">
                               <input
                                 type="text"
                                 value={newUnit}
                                 onChange={(e) => setNewUnit(e.target.value)}
-                                placeholder="Add custom unit"
+                                placeholder="Add unit"
                                 className={`${inputClassName} !py-1.5 !text-sm`}
-                                style={{ width: '150px' }}
+                                style={{ width: '100px' }}
                               />
                               <button
                                 type="button"
@@ -886,8 +891,6 @@ Beneficiary: Luo & Company Co., Limited`,
                               </div>
                             </div>
                           </div>
-                        </div>
-                      </div>
 
                       {/* 模板设置选项 */}
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
