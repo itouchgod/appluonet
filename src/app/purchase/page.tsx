@@ -367,13 +367,13 @@ export default function PurchaseOrderPage() {
               {/* 2. 付款条件 */}
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <label className={subheadingClass}>2. 付款条件</label>
-                  <input
+                <label className={subheadingClass}>2. 付款条件</label>
+                <input
                     className={`${inputClass} flex-1`}
-                    value={data.paymentTerms}
-                    onChange={e => setData({ ...data, paymentTerms: e.target.value })}
-                    placeholder="交货后30天"
-                  />
+                  value={data.paymentTerms}
+                  onChange={e => setData({ ...data, paymentTerms: e.target.value })}
+                  placeholder="交货后30天"
+                />
                 </div>
               </div>
 
@@ -413,11 +413,11 @@ export default function PurchaseOrderPage() {
                       </>
                     )}
                   </button>
-                  <input
+                <input
                     className={`${inputClass} flex-1`}
-                    value={data.invoiceRequirements}
-                    onChange={e => setData({ ...data, invoiceRequirements: e.target.value })}
-                  />
+                  value={data.invoiceRequirements}
+                  onChange={e => setData({ ...data, invoiceRequirements: e.target.value })}
+                />
                 </div>
                 <BankInfoSection showBank={data.showBank} />
               </div>

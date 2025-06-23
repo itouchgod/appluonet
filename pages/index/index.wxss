@@ -1,0 +1,342 @@
+/* pages/index/index.wxss */
+
+/* 头部欢迎区域 */
+.header-section {
+  margin-bottom: 30rpx;
+}
+
+.welcome-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 20rpx;
+  padding: 40rpx 30rpx;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.welcome-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 200%;
+  height: 200%;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  transform: rotate(45deg);
+}
+
+.welcome-text {
+  position: relative;
+  z-index: 1;
+}
+
+.greeting {
+  display: block;
+  font-size: 28rpx;
+  opacity: 0.9;
+  margin-bottom: 10rpx;
+}
+
+.app-name {
+  display: block;
+  font-size: 36rpx;
+  font-weight: bold;
+  margin-bottom: 20rpx;
+}
+
+.user-info {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.username {
+  font-size: 30rpx;
+  font-weight: 500;
+}
+
+.role {
+  font-size: 24rpx;
+  opacity: 0.8;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 8rpx 16rpx;
+  border-radius: 20rpx;
+}
+
+/* 快速操作区域 */
+.quick-actions {
+  margin-bottom: 30rpx;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20rpx;
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20rpx;
+}
+
+.action-item {
+  background: white;
+  border-radius: 16rpx;
+  padding: 30rpx;
+  text-align: center;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.action-item:active {
+  transform: scale(0.95);
+  box-shadow: 0 1rpx 4rpx rgba(0, 0, 0, 0.15);
+}
+
+.action-icon {
+  font-size: 48rpx;
+  margin-bottom: 15rpx;
+}
+
+.action-text {
+  font-size: 28rpx;
+  color: #333;
+  font-weight: 500;
+}
+
+/* 统计信息区域 */
+.stats-section {
+  margin-bottom: 30rpx;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20rpx;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 16rpx;
+  padding: 30rpx;
+  text-align: center;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+}
+
+.stat-number {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #3cc51f;
+  margin-bottom: 10rpx;
+}
+
+.stat-label {
+  font-size: 26rpx;
+  color: #666;
+}
+
+/* 最近记录区域 */
+.recent-section {
+  margin-bottom: 30rpx;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.view-all {
+  font-size: 26rpx;
+  color: #3cc51f;
+}
+
+.recent-list {
+  background: white;
+  border-radius: 16rpx;
+  overflow: hidden;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+}
+
+.recent-item {
+  display: flex;
+  align-items: center;
+  padding: 30rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+  transition: background-color 0.3s ease;
+}
+
+.recent-item:last-child {
+  border-bottom: none;
+}
+
+.recent-item:active {
+  background-color: #f8f8f8;
+}
+
+.recent-item-content {
+  flex: 1;
+}
+
+.recent-item-title {
+  font-size: 30rpx;
+  color: #333;
+  margin-bottom: 8rpx;
+  font-weight: 500;
+}
+
+.recent-item-info {
+  display: flex;
+  gap: 20rpx;
+}
+
+.recent-item-type {
+  font-size: 24rpx;
+  color: #3cc51f;
+  background: #e8f5e8;
+  padding: 4rpx 12rpx;
+  border-radius: 12rpx;
+}
+
+.recent-item-date {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.recent-item-arrow {
+  color: #ccc;
+  font-size: 24rpx;
+}
+
+/* 功能模块区域 */
+.modules-section {
+  margin-bottom: 30rpx;
+}
+
+.module-list {
+  background: white;
+  border-radius: 16rpx;
+  overflow: hidden;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+}
+
+.module-item {
+  display: flex;
+  align-items: center;
+  padding: 30rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+  transition: background-color 0.3s ease;
+}
+
+.module-item:last-child {
+  border-bottom: none;
+}
+
+.module-item:active {
+  background-color: #f8f8f8;
+}
+
+.module-icon {
+  font-size: 40rpx;
+  margin-right: 20rpx;
+  width: 60rpx;
+  text-align: center;
+}
+
+.module-content {
+  flex: 1;
+}
+
+.module-title {
+  font-size: 30rpx;
+  color: #333;
+  margin-bottom: 8rpx;
+  font-weight: 500;
+}
+
+.module-desc {
+  font-size: 26rpx;
+  color: #666;
+}
+
+.module-arrow {
+  color: #ccc;
+  font-size: 24rpx;
+}
+
+/* 空状态样式 */
+.empty-state {
+  text-align: center;
+  padding: 80rpx 40rpx;
+  color: #999;
+}
+
+.empty-state-icon {
+  font-size: 80rpx;
+  margin-bottom: 20rpx;
+  opacity: 0.5;
+}
+
+.empty-state-text {
+  font-size: 28rpx;
+}
+
+/* 响应式设计 */
+@media (max-width: 750rpx) {
+  .action-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .welcome-card {
+    padding: 30rpx 20rpx;
+  }
+  
+  .app-name {
+    font-size: 32rpx;
+  }
+}
+
+/* 深色主题适配 */
+@media (prefers-color-scheme: dark) {
+  .welcome-card {
+    background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+  }
+  
+  .action-item,
+  .stat-card,
+  .recent-list,
+  .module-list {
+    background: #2a2a2a;
+    color: #fff;
+  }
+  
+  .action-text,
+  .module-title {
+    color: #fff;
+  }
+  
+  .stat-label,
+  .module-desc {
+    color: #aaa;
+  }
+  
+  .recent-item,
+  .module-item {
+    border-bottom-color: #444;
+  }
+  
+  .recent-item:active,
+  .module-item:active {
+    background-color: #333;
+  }
+} 

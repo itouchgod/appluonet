@@ -1,0 +1,196 @@
+<!--pages/quotation/index.wxml-->
+<view class="container">
+  <!-- 页面标题 -->
+  <view class="page-header">
+    <text class="page-title">新建报价单</text>
+  </view>
+
+  <!-- 表单内容 -->
+  <form bindsubmit="handleSubmit">
+    <!-- 客户信息 -->
+    <view class="form-section">
+      <view class="section-title">客户信息</view>
+      <view class="form-group">
+        <text class="form-label">客户名称 *</text>
+        <input class="form-input" name="customerName" value="{{formData.customerName}}" placeholder="请输入客户名称" bindinput="handleInputChange" data-field="customerName" />
+      </view>
+      <view class="form-group">
+        <text class="form-label">联系人</text>
+        <input class="form-input" name="contactPerson" value="{{formData.contactPerson}}" placeholder="请输入联系人姓名" bindinput="handleInputChange" data-field="contactPerson" />
+      </view>
+      <view class="form-group">
+        <text class="form-label">联系电话</text>
+        <input class="form-input" name="phone" value="{{formData.phone}}" placeholder="请输入联系电话" bindinput="handleInputChange" data-field="phone" />
+      </view>
+      <view class="form-group">
+        <text class="form-label">邮箱地址</text>
+        <input class="form-input" name="email" value="{{formData.email}}" placeholder="请输入邮箱地址" bindinput="handleInputChange" data-field="email" />
+      </view>
+      <view class="form-group">
+        <text class="form-label">公司地址</text>
+        <textarea class="form-textarea" name="address" value="{{formData.address}}" placeholder="请输入公司地址" bindinput="handleInputChange" data-field="address"></textarea>
+      </view>
+    </view>
+
+    <!-- 报价信息 -->
+    <view class="form-section">
+      <view class="section-title">报价信息</view>
+      <view class="form-group">
+        <text class="form-label">报价单号</text>
+        <input class="form-input" name="quotationNo" value="{{formData.quotationNo}}" placeholder="系统自动生成" disabled />
+      </view>
+      <view class="form-group">
+        <text class="form-label">报价日期</text>
+        <picker mode="date" value="{{formData.quotationDate}}" bindchange="handleDateChange">
+          <view class="picker-input">{{formData.quotationDate || '请选择日期'}}</view>
+        </picker>
+      </view>
+      <view class="form-group">
+        <text class="form-label">有效期至</text>
+        <picker mode="date" value="{{formData.validUntil}}" bindchange="handleValidDateChange">
+          <view class="picker-input">{{formData.validUntil || '请选择日期'}}</view>
+        </picker>
+      </view>
+      <view class="form-group">
+        <text class="form-label">币种</text>
+        <picker range="{{currencies}}" value="{{currencyIndex}}" bindchange="handleCurrencyChange">
+          <view class="picker-input">{{currencies[currencyIndex]}}</view>
+        </picker>
+      </view>
+    </view>
+
+    <!-- 商品明细 -->
+    <view class="form-section">
+      <view class="section-header">
+        <text class="section-title">商品明细</text>
+        <button class="btn btn-primary btn-small" bindtap="addItem">添加商品</button>
+      </view>
+      
+      <view class="items-list" wx:if="{{formData.items.length > 0}}">
+        <view class="item-card" wx:for="{{formData.items}}" wx:key="index">
+          <view class="item-header">
+            <text class="item-title">商品 {{index + 1}}</text>
+            <button class="btn btn-danger btn-small" bindtap="removeItem" data-index="{{index}}">删除</button>
+          </view>
+          
+          <view class="item-content">
+            <view class="form-group">
+              <text class="form-label">商品名称 *</text>
+              <input class="form-input" value="{{item.name}}" placeholder="请输入商品名称" bindinput="handleItemChange" data-index="{{index}}" data-field="name" />
+            </view>
+            
+            <view class="form-row">
+              <view class="form-group flex-1">
+                <text class="form-label">规格型号</text>
+                <input class="form-input" value="{{item.specification}}" placeholder="规格型号" bindinput="handleItemChange" data-index="{{index}}" data-field="specification" />
+              </view>
+              <view class="form-group flex-1">
+                <text class="form-label">单位</text>
+                <input class="form-input" value="{{item.unit}}" placeholder="个/件/套" bindinput="handleItemChange" data-index="{{index}}" data-field="unit" />
+              </view>
+            </view>
+            
+            <view class="form-row">
+              <view class="form-group flex-1">
+                <text class="form-label">数量 *</text>
+                <input class="form-input" type="number" value="{{item.quantity}}" placeholder="数量" bindinput="handleItemChange" data-index="{{index}}" data-field="quantity" />
+              </view>
+              <view class="form-group flex-1">
+                <text class="form-label">单价 *</text>
+                <input class="form-input" type="digit" value="{{item.unitPrice}}" placeholder="单价" bindinput="handleItemChange" data-index="{{index}}" data-field="unitPrice" />
+              </view>
+            </view>
+            
+            <view class="form-group">
+              <text class="form-label">小计</text>
+              <input class="form-input" value="{{item.subtotal}}" placeholder="自动计算" disabled />
+            </view>
+            
+            <view class="form-group">
+              <text class="form-label">备注</text>
+              <textarea class="form-textarea" value="{{item.remarks}}" placeholder="商品备注信息" bindinput="handleItemChange" data-index="{{index}}" data-field="remarks"></textarea>
+            </view>
+          </view>
+        </view>
+      </view>
+      
+      <view class="empty-state" wx:else>
+        <view class="empty-state-icon">📦</view>
+        <view class="empty-state-text">暂无商品，请添加商品明细</view>
+      </view>
+    </view>
+
+    <!-- 其他费用 -->
+    <view class="form-section">
+      <view class="section-header">
+        <text class="section-title">其他费用</text>
+        <button class="btn btn-primary btn-small" bindtap="addOtherFee">添加费用</button>
+      </view>
+      
+      <view class="other-fees-list" wx:if="{{formData.otherFees.length > 0}}">
+        <view class="fee-item" wx:for="{{formData.otherFees}}" wx:key="index">
+          <view class="fee-content">
+            <input class="form-input" value="{{item.description}}" placeholder="费用描述" bindinput="handleFeeChange" data-index="{{index}}" data-field="description" />
+            <input class="form-input" type="digit" value="{{item.amount}}" placeholder="金额" bindinput="handleFeeChange" data-index="{{index}}" data-field="amount" />
+          </view>
+          <button class="btn btn-danger btn-small" bindtap="removeOtherFee" data-index="{{index}}">删除</button>
+        </view>
+      </view>
+    </view>
+
+    <!-- 合计信息 -->
+    <view class="form-section">
+      <view class="section-title">合计信息</view>
+      <view class="summary-item">
+        <text class="summary-label">商品小计：</text>
+        <text class="summary-value">{{summary.subtotal}}</text>
+      </view>
+      <view class="summary-item">
+        <text class="summary-label">其他费用：</text>
+        <text class="summary-value">{{summary.otherFees}}</text>
+      </view>
+      <view class="summary-item total">
+        <text class="summary-label">总计：</text>
+        <text class="summary-value">{{summary.total}}</text>
+      </view>
+    </view>
+
+    <!-- 备注信息 -->
+    <view class="form-section">
+      <view class="section-title">备注信息</view>
+      <view class="form-group">
+        <textarea class="form-textarea" name="notes" value="{{formData.notes}}" placeholder="请输入备注信息" bindinput="handleInputChange" data-field="notes"></textarea>
+      </view>
+    </view>
+
+    <!-- 付款条件 -->
+    <view class="form-section">
+      <view class="section-title">付款条件</view>
+      <view class="form-group">
+        <textarea class="form-textarea" name="paymentTerms" value="{{formData.paymentTerms}}" placeholder="请输入付款条件" bindinput="handleInputChange" data-field="paymentTerms"></textarea>
+      </view>
+    </view>
+
+    <!-- 交货信息 -->
+    <view class="form-section">
+      <view class="section-title">交货信息</view>
+      <view class="form-group">
+        <text class="form-label">交货地点</text>
+        <input class="form-input" name="deliveryLocation" value="{{formData.deliveryLocation}}" placeholder="请输入交货地点" bindinput="handleInputChange" data-field="deliveryLocation" />
+      </view>
+      <view class="form-group">
+        <text class="form-label">交货时间</text>
+        <input class="form-input" name="deliveryTime" value="{{formData.deliveryTime}}" placeholder="请输入交货时间" bindinput="handleInputChange" data-field="deliveryTime" />
+      </view>
+      <view class="form-group">
+        <textarea class="form-textarea" name="deliveryInfo" value="{{formData.deliveryInfo}}" placeholder="请输入交货说明" bindinput="handleInputChange" data-field="deliveryInfo"></textarea>
+      </view>
+    </view>
+
+    <!-- 操作按钮 -->
+    <view class="action-buttons">
+      <button class="btn btn-secondary" bindtap="handlePreview">预览</button>
+      <button class="btn btn-primary" form-type="submit">生成报价单</button>
+    </view>
+  </form>
+</view> 

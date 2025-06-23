@@ -381,172 +381,172 @@ export default function InvoiceHistoryPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#1C1C1E] flex flex-col">
       <main className="flex-grow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
-          {/* 返回按钮 */}
-          <Link href="/invoice" className="inline-flex items-center text-gray-600 dark:text-[#98989D] hover:text-gray-900 dark:hover:text-[#F5F5F7]">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Invoice
-          </Link>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
+        {/* 返回按钮 */}
+        <Link href="/invoice" className="inline-flex items-center text-gray-600 dark:text-[#98989D] hover:text-gray-900 dark:hover:text-[#F5F5F7]">
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Invoice
+        </Link>
 
-          {/* 标题和搜索栏 */}
-          <div className="flex flex-col gap-4 mb-6">
-            <div className="flex flex-row justify-between items-center">
-              <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-[#F5F5F7] whitespace-nowrap">
-                Invoice History
-              </h1>
-              <div className="flex flex-row gap-2">
-                {selectedIds.size > 0 && (
-                  <button
-                    onClick={() => setShowBatchDeleteConfirm(true)}
-                    className="h-10 px-4 rounded-xl text-sm font-medium
-                      bg-red-600 hover:bg-red-700
-                      text-white
-                      flex items-center gap-2 whitespace-nowrap"
-                    >
-                      <Trash2 className="w-4 h-4 flex-shrink-0" />
-                      <span className="hidden sm:inline">Delete</span>
-                      <span className="inline-flex">({selectedIds.size})</span>
-                    </button>
-                )}
+        {/* 标题和搜索栏 */}
+        <div className="flex flex-col gap-4 mb-6">
+          <div className="flex flex-row justify-between items-center">
+            <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-[#F5F5F7] whitespace-nowrap">
+              Invoice History
+            </h1>
+            <div className="flex flex-row gap-2">
+              {selectedIds.size > 0 && (
                 <button
-                  onClick={handleExport}
+                  onClick={() => setShowBatchDeleteConfirm(true)}
                   className="h-10 px-4 rounded-xl text-sm font-medium
-                    bg-[#007AFF] hover:bg-[#0066CC]
+                    bg-red-600 hover:bg-red-700
                     text-white
-                    flex items-center gap-2 whitespace-nowrap"
-                >
-                  <Upload className="w-4 h-4 flex-shrink-0" />
-                  <span className="hidden sm:inline">Export</span>
-                  {selectedIds.size > 0 && <span className="inline-flex">({selectedIds.size})</span>}
-                </button>
-                <button
-                  onClick={handleImport}
-                  className="h-10 px-4 rounded-xl text-sm font-medium
-                    bg-emerald-600 hover:bg-emerald-700
-                    text-white
-                    hover:shadow-md
                     flex items-center gap-2 whitespace-nowrap"
                   >
-                    <Download className="w-4 h-4 flex-shrink-0" />
-                    <span className="hidden sm:inline">Import</span>
+                    <Trash2 className="w-4 h-4 flex-shrink-0" />
+                    <span className="hidden sm:inline">Delete</span>
+                    <span className="inline-flex">({selectedIds.size})</span>
                   </button>
-              </div>
-            </div>
-            <div className="relative w-full">
-              <input
-                type="text"
-                placeholder="Search by customer/invoice number/amount..."
-                value={filters.search}
-                onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                className="w-full h-10 pl-10 pr-4 rounded-xl
-                  bg-white dark:bg-[#2C2C2E]
-                  border border-gray-200 dark:border-[#3A3A3C]
-                  text-gray-900 dark:text-[#F5F5F7]
-                  placeholder-gray-500 dark:placeholder-[#98989D]
-                  focus:outline-none focus:ring-2 focus:ring-[#007AFF]/50"
-              />
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              {filters.search && (
-                <button
-                  onClick={() => setFilters(prev => ({ ...prev, search: '' }))}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1
-                    text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                >
-                  <span className="sr-only">Clear search</span>
-                  ×
-                </button>
               )}
+              <button
+                onClick={handleExport}
+                className="h-10 px-4 rounded-xl text-sm font-medium
+                  bg-[#007AFF] hover:bg-[#0066CC]
+                  text-white
+                  flex items-center gap-2 whitespace-nowrap"
+              >
+                <Upload className="w-4 h-4 flex-shrink-0" />
+                <span className="hidden sm:inline">Export</span>
+                {selectedIds.size > 0 && <span className="inline-flex">({selectedIds.size})</span>}
+              </button>
+              <button
+                onClick={handleImport}
+                className="h-10 px-4 rounded-xl text-sm font-medium
+                  bg-emerald-600 hover:bg-emerald-700
+                  text-white
+                  hover:shadow-md
+                  flex items-center gap-2 whitespace-nowrap"
+              >
+                <Download className="w-4 h-4 flex-shrink-0" />
+                <span className="hidden sm:inline">Import</span>
+              </button>
             </div>
           </div>
+          <div className="relative w-full">
+            <input
+              type="text"
+              placeholder="Search by customer/invoice number/amount..."
+              value={filters.search}
+              onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+              className="w-full h-10 pl-10 pr-4 rounded-xl
+                bg-white dark:bg-[#2C2C2E]
+                border border-gray-200 dark:border-[#3A3A3C]
+                text-gray-900 dark:text-[#F5F5F7]
+                placeholder-gray-500 dark:placeholder-[#98989D]
+                focus:outline-none focus:ring-2 focus:ring-[#007AFF]/50"
+            />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            {filters.search && (
+              <button
+                onClick={() => setFilters(prev => ({ ...prev, search: '' }))}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1
+                  text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <span className="sr-only">Clear search</span>
+                ×
+              </button>
+            )}
+          </div>
+        </div>
 
-          {/* 历史记录列表 */}
-          <div className="bg-white dark:bg-[#2C2C2E] rounded-2xl shadow-lg overflow-hidden">
-            <div className="overflow-x-auto">
-              {isLoading ? (
-                <div className="py-8 text-center text-gray-500 dark:text-[#98989D]">
-                  Loading...
-                </div>
-              ) : (
-                <>
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-gray-200 dark:border-[#3A3A3C]">
-                        <th className="w-10 px-2 sm:px-4 py-3 text-left">
+        {/* 历史记录列表 */}
+        <div className="bg-white dark:bg-[#2C2C2E] rounded-2xl shadow-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            {isLoading ? (
+              <div className="py-8 text-center text-gray-500 dark:text-[#98989D]">
+                Loading...
+              </div>
+            ) : (
+              <>
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200 dark:border-[#3A3A3C]">
+                      <th className="w-10 px-2 sm:px-4 py-3 text-left">
+                        <input
+                          type="checkbox"
+                          checked={history.length > 0 && selectedIds.size === history.length}
+                          onChange={handleSelectAll}
+                          className="rounded border-gray-300 dark:border-[#3A3A3C]
+                            text-[#007AFF] 
+                            focus:ring-[#007AFF]
+                            bg-white dark:bg-[#3A3A3C]"
+                        />
+                      </th>
+                      <th 
+                        className="w-1/4 px-2 sm:px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-500 dark:text-[#98989D] hidden lg:table-cell cursor-pointer group"
+                        onClick={() => handleSort('customerName')}
+                      >
+                        <div className="flex items-center gap-1">
+                          Customer Name
+                          {renderSortIcon('customerName')}
+                        </div>
+                      </th>
+                      <th 
+                        className="w-[45%] sm:w-2/3 lg:w-1/3 px-2 sm:px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-500 dark:text-[#98989D] cursor-pointer group"
+                        onClick={() => handleSort('invoiceNo')}
+                      >
+                        <div className="flex items-center gap-1">
+                          Invoice No.
+                          {renderSortIcon('invoiceNo')}
+                        </div>
+                      </th>
+                      <th 
+                        className="w-1/6 px-2 sm:px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-500 dark:text-[#98989D] hidden lg:table-cell cursor-pointer group"
+                        onClick={() => handleSort('totalAmount')}
+                      >
+                        <div className="flex items-center gap-1">
+                          Amount
+                          {renderSortIcon('totalAmount')}
+                        </div>
+                      </th>
+                      <th 
+                        className="w-[35%] sm:w-1/4 lg:w-1/6 px-2 sm:px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-500 dark:text-[#98989D] cursor-pointer group"
+                        onClick={() => handleSort('createdAt')}
+                      >
+                        <div className="flex items-center gap-1">
+                          Created At
+                          {renderSortIcon('createdAt')}
+                        </div>
+                      </th>
+                      <th className="w-[20%] sm:w-[100px] px-2 sm:px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-500 dark:text-[#98989D]">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {history.map((item) => (
+                      <tr key={item.id} className="border-b border-gray-200 dark:border-[#3A3A3C] last:border-0 hover:bg-gray-50 dark:hover:bg-[#3A3A3C]">
+                        <td className="w-10 px-2 sm:px-4 py-2.5">
                           <input
                             type="checkbox"
-                            checked={history.length > 0 && selectedIds.size === history.length}
-                            onChange={handleSelectAll}
+                            checked={selectedIds.has(item.id)}
+                            onChange={() => handleSelect(item.id)}
                             className="rounded border-gray-300 dark:border-[#3A3A3C]
-                              text-[#007AFF] 
+                              text-[#007AFF]
                               focus:ring-[#007AFF]
                               bg-white dark:bg-[#3A3A3C]"
                           />
-                        </th>
-                        <th 
-                          className="w-1/4 px-2 sm:px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-500 dark:text-[#98989D] hidden lg:table-cell cursor-pointer group"
-                          onClick={() => handleSort('customerName')}
-                        >
-                          <div className="flex items-center gap-1">
-                            Customer Name
-                            {renderSortIcon('customerName')}
+                        </td>
+                        <td className="w-1/4 px-2 sm:px-4 py-2.5 text-xs sm:text-sm text-gray-900 dark:text-[#F5F5F7] hidden lg:table-cell">
+                          <div className="max-w-[200px] xl:max-w-[300px] whitespace-nowrap overflow-hidden text-ellipsis" title={item.customerName}>
+                            {item.customerName}
                           </div>
-                        </th>
-                        <th 
-                          className="w-[45%] sm:w-2/3 lg:w-1/3 px-2 sm:px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-500 dark:text-[#98989D] cursor-pointer group"
-                          onClick={() => handleSort('invoiceNo')}
-                        >
-                          <div className="flex items-center gap-1">
-                            Invoice No.
-                            {renderSortIcon('invoiceNo')}
-                          </div>
-                        </th>
-                        <th 
-                          className="w-1/6 px-2 sm:px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-500 dark:text-[#98989D] hidden lg:table-cell cursor-pointer group"
-                          onClick={() => handleSort('totalAmount')}
-                        >
-                          <div className="flex items-center gap-1">
-                            Amount
-                            {renderSortIcon('totalAmount')}
-                          </div>
-                        </th>
-                        <th 
-                          className="w-[35%] sm:w-1/4 lg:w-1/6 px-2 sm:px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-500 dark:text-[#98989D] cursor-pointer group"
-                          onClick={() => handleSort('createdAt')}
-                        >
-                          <div className="flex items-center gap-1">
-                            Created At
-                            {renderSortIcon('createdAt')}
-                          </div>
-                        </th>
-                        <th className="w-[20%] sm:w-[100px] px-2 sm:px-4 py-3 text-left text-xs sm:text-sm font-medium text-gray-500 dark:text-[#98989D]">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {history.map((item) => (
-                        <tr key={item.id} className="border-b border-gray-200 dark:border-[#3A3A3C] last:border-0 hover:bg-gray-50 dark:hover:bg-[#3A3A3C]">
-                          <td className="w-10 px-2 sm:px-4 py-2.5">
-                            <input
-                              type="checkbox"
-                              checked={selectedIds.has(item.id)}
-                              onChange={() => handleSelect(item.id)}
-                              className="rounded border-gray-300 dark:border-[#3A3A3C]
-                                text-[#007AFF]
-                                focus:ring-[#007AFF]
-                                bg-white dark:bg-[#3A3A3C]"
-                            />
-                          </td>
-                          <td className="w-1/4 px-2 sm:px-4 py-2.5 text-xs sm:text-sm text-gray-900 dark:text-[#F5F5F7] hidden lg:table-cell">
-                            <div className="max-w-[200px] xl:max-w-[300px] whitespace-nowrap overflow-hidden text-ellipsis" title={item.customerName}>
-                              {item.customerName}
-                            </div>
-                          </td>
-                          <td className="w-[45%] sm:w-2/3 lg:w-1/3 px-2 sm:px-4 py-2.5 text-xs sm:text-sm text-gray-900 dark:text-[#F5F5F7] whitespace-nowrap overflow-hidden text-ellipsis">{item.invoiceNo}</td>
-                          <td className="w-1/6 px-2 sm:px-4 py-2.5 text-xs sm:text-sm text-gray-900 dark:text-[#F5F5F7] hidden lg:table-cell">{item.currency === 'USD' ? '$' : '¥'}{item.totalAmount.toFixed(2)}</td>
-                          <td className="w-[35%] sm:w-1/4 lg:w-1/6 px-2 sm:px-4 py-2.5 text-xs sm:text-sm text-gray-900 dark:text-[#F5F5F7] whitespace-nowrap overflow-hidden text-ellipsis">
-                            {format(new Date(item.createdAt), 'yyyy-MM-dd HH:mm')}
-                          </td>
-                          <td className="w-[20%] sm:w-[100px] px-2 sm:px-4 py-2.5">
-                            <div className="flex items-center gap-0.5 sm:gap-2">
+                        </td>
+                        <td className="w-[45%] sm:w-2/3 lg:w-1/3 px-2 sm:px-4 py-2.5 text-xs sm:text-sm text-gray-900 dark:text-[#F5F5F7] whitespace-nowrap overflow-hidden text-ellipsis">{item.invoiceNo}</td>
+                        <td className="w-1/6 px-2 sm:px-4 py-2.5 text-xs sm:text-sm text-gray-900 dark:text-[#F5F5F7] hidden lg:table-cell">{item.currency === 'USD' ? '$' : '¥'}{item.totalAmount.toFixed(2)}</td>
+                        <td className="w-[35%] sm:w-1/4 lg:w-1/6 px-2 sm:px-4 py-2.5 text-xs sm:text-sm text-gray-900 dark:text-[#F5F5F7] whitespace-nowrap overflow-hidden text-ellipsis">
+                          {format(new Date(item.createdAt), 'yyyy-MM-dd HH:mm')}
+                        </td>
+                        <td className="w-[20%] sm:w-[100px] px-2 sm:px-4 py-2.5">
+                          <div className="flex items-center gap-0.5 sm:gap-2">
                               <button
                                 onClick={() => handlePreview(item.id)}
                                 disabled={isPreviewing === item.id}
@@ -562,46 +562,46 @@ export default function InvoiceHistoryPage() {
                                   <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                                 )}
                               </button>
-                              <button
-                                onClick={() => handleEdit(item.id)}
-                                className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-[#48484A]
-                                  text-gray-600 dark:text-[#98989D] hover:text-gray-900 dark:hover:text-[#F5F5F7]"
-                                title="Edit"
-                              >
-                                <Edit2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                              </button>
-                              <button
-                                onClick={() => handleCopy(item.id)}
-                                className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-[#48484A]
-                                  text-gray-600 dark:text-[#98989D] hover:text-gray-900 dark:hover:text-[#F5F5F7]"
-                                title="Copy"
-                              >
-                                <Copy className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                              </button>
-                              <button
-                                onClick={() => setShowDeleteConfirm(item.id)}
-                                className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-[#48484A]
-                                  text-red-600 hover:text-red-700"
-                                title="Delete"
-                              >
-                                <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {history.length === 0 && (
-                    <div className="py-8 text-center text-gray-500 dark:text-[#98989D]">
-                      No records found
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
+                            <button
+                              onClick={() => handleEdit(item.id)}
+                              className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-[#48484A]
+                                text-gray-600 dark:text-[#98989D] hover:text-gray-900 dark:hover:text-[#F5F5F7]"
+                              title="Edit"
+                            >
+                              <Edit2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleCopy(item.id)}
+                              className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-[#48484A]
+                                text-gray-600 dark:text-[#98989D] hover:text-gray-900 dark:hover:text-[#F5F5F7]"
+                              title="Copy"
+                            >
+                              <Copy className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                            </button>
+                            <button
+                              onClick={() => setShowDeleteConfirm(item.id)}
+                              className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-[#48484A]
+                                text-red-600 hover:text-red-700"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {history.length === 0 && (
+                  <div className="py-8 text-center text-gray-500 dark:text-[#98989D]">
+                    No records found
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
+      </div>
       </main>
 
       {/* 预览弹窗 */}

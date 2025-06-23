@@ -33,7 +33,7 @@ export default function PurchaseHistoryPage() {
   const handleDelete = async (id: string) => {
     setShowDeleteConfirm(id);
   };
-
+    
   const confirmDelete = async () => {
     if (!showDeleteConfirm) return;
     setIsDeleting(showDeleteConfirm);
@@ -119,18 +119,18 @@ export default function PurchaseHistoryPage() {
 
       const jsonData = JSON.stringify(dataToExport, null, 2);
       const blob = new Blob([jsonData], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
       
       const date = new Date().toISOString().split('T')[0];
       const prefix = selectedIds.size > 0 ? `selected-${selectedIds.size}` : 'all';
       a.download = `purchase_history_${prefix}_${date}.json`;
       
       document.body.appendChild(a);
-      a.click();
+    a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+    URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error exporting purchase history:', error);
       alert('导出失败');

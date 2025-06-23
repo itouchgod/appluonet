@@ -60,17 +60,17 @@ export const generateOrderConfirmationPDF = async (data: QuotationData, preview 
     try {
       const headerImage = `data:image/png;base64,${embeddedResources.headerImage}`;
       const imgProperties = doc.getImageProperties(headerImage);
-      const imgWidth = pageWidth - 30;
+        const imgWidth = pageWidth - 30;
       const imgHeight = (imgProperties.height * imgWidth) / imgProperties.width;
-      doc.addImage(headerImage, 'PNG', 15, 15, imgWidth, imgHeight);
-      
-      doc.setFontSize(14);
-      doc.setFont('NotoSansSC', 'bold');
-      const title = 'SALES CONFIRMATION';
-      const titleWidth = doc.getTextWidth(title);
-      const titleY = margin + imgHeight + 5;
-      doc.text(title, (pageWidth - titleWidth) / 2, titleY);
-      startY = titleY + 10;
+        doc.addImage(headerImage, 'PNG', 15, 15, imgWidth, imgHeight);
+        
+        doc.setFontSize(14);
+        doc.setFont('NotoSansSC', 'bold');
+        const title = 'SALES CONFIRMATION';
+        const titleWidth = doc.getTextWidth(title);
+        const titleY = margin + imgHeight + 5;
+        doc.text(title, (pageWidth - titleWidth) / 2, titleY);
+        startY = titleY + 10;
     } catch (error) {
       console.error('Error processing header:', error);
       doc.setFontSize(14);

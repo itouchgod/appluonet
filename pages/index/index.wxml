@@ -1,0 +1,146 @@
+<!--pages/index/index.wxml-->
+<view class="container">
+  <!-- 头部欢迎区域 -->
+  <view class="header-section">
+    <view class="welcome-card">
+      <view class="welcome-text">
+        <text class="greeting">欢迎使用</text>
+        <text class="app-name">LC商业文档管理</text>
+      </view>
+      <view class="user-info" wx:if="{{userInfo}}">
+        <text class="username">{{userInfo.name}}</text>
+        <text class="role">{{userInfo.role}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 快速功能入口 -->
+  <view class="quick-actions">
+    <view class="section-title">快速操作</view>
+    <view class="action-grid">
+      <view class="action-item" bindtap="navigateToQuotation">
+        <view class="action-icon">📋</view>
+        <text class="action-text">新建报价单</text>
+      </view>
+      <view class="action-item" bindtap="navigateToInvoice">
+        <view class="action-icon">🧾</view>
+        <text class="action-text">新建发票</text>
+      </view>
+      <view class="action-item" bindtap="navigateToPurchase">
+        <view class="action-icon">🛒</view>
+        <text class="action-text">新建采购单</text>
+      </view>
+      <view class="action-item" bindtap="navigateToMail">
+        <view class="action-icon">✉️</view>
+        <text class="action-text">AI邮件助手</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 统计信息 -->
+  <view class="stats-section">
+    <view class="section-title">数据统计</view>
+    <view class="stats-grid">
+      <view class="stat-card">
+        <view class="stat-number">{{stats.quotationCount}}</view>
+        <view class="stat-label">报价单</view>
+      </view>
+      <view class="stat-card">
+        <view class="stat-number">{{stats.invoiceCount}}</view>
+        <view class="stat-label">发票</view>
+      </view>
+      <view class="stat-card">
+        <view class="stat-number">{{stats.purchaseCount}}</view>
+        <view class="stat-label">采购单</view>
+      </view>
+      <view class="stat-card">
+        <view class="stat-number">{{stats.totalAmount}}</view>
+        <view class="stat-label">总金额</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 最近记录 -->
+  <view class="recent-section">
+    <view class="section-header">
+      <text class="section-title">最近记录</text>
+      <text class="view-all" bindtap="viewAllHistory">查看全部</text>
+    </view>
+    <view class="recent-list" wx:if="{{recentItems.length > 0}}">
+      <view class="recent-item" wx:for="{{recentItems}}" wx:key="id" bindtap="viewItem" data-item="{{item}}">
+        <view class="recent-item-content">
+          <view class="recent-item-title">{{item.title}}</view>
+          <view class="recent-item-info">
+            <text class="recent-item-type">{{item.type}}</text>
+            <text class="recent-item-date">{{item.date}}</text>
+          </view>
+        </view>
+        <view class="recent-item-arrow">></view>
+      </view>
+    </view>
+    <view class="empty-state" wx:else>
+      <view class="empty-state-icon">📄</view>
+      <view class="empty-state-text">暂无记录</view>
+    </view>
+  </view>
+
+  <!-- 功能模块 -->
+  <view class="modules-section">
+    <view class="section-title">功能模块</view>
+    <view class="module-list">
+      <view class="module-item" bindtap="navigateToQuotation">
+        <view class="module-icon">📋</view>
+        <view class="module-content">
+          <view class="module-title">报价单管理</view>
+          <view class="module-desc">创建和管理客户报价单</view>
+        </view>
+        <view class="module-arrow">></view>
+      </view>
+      
+      <view class="module-item" bindtap="navigateToInvoice">
+        <view class="module-icon">🧾</view>
+        <view class="module-content">
+          <view class="module-title">发票管理</view>
+          <view class="module-desc">生成和管理销售发票</view>
+        </view>
+        <view class="module-arrow">></view>
+      </view>
+      
+      <view class="module-item" bindtap="navigateToPurchase">
+        <view class="module-icon">🛒</view>
+        <view class="module-content">
+          <view class="module-title">采购管理</view>
+          <view class="module-desc">创建和管理采购订单</view>
+        </view>
+        <view class="module-arrow">></view>
+      </view>
+      
+      <view class="module-item" bindtap="navigateToMail">
+        <view class="module-icon">✉️</view>
+        <view class="module-content">
+          <view class="module-title">AI邮件助手</view>
+          <view class="module-desc">智能生成商务邮件</view>
+        </view>
+        <view class="module-arrow">></view>
+      </view>
+      
+      <view class="module-item" bindtap="navigateToTools">
+        <view class="module-icon">🛠️</view>
+        <view class="module-content">
+          <view class="module-title">实用工具</view>
+          <view class="module-desc">日期计算、格式转换等</view>
+        </view>
+        <view class="module-arrow">></view>
+      </view>
+      
+      <view class="module-item" wx:if="{{userInfo.isAdmin}}" bindtap="navigateToAdmin">
+        <view class="module-icon">⚙️</view>
+        <view class="module-content">
+          <view class="module-title">系统管理</view>
+          <view class="module-desc">用户管理和系统设置</view>
+        </view>
+        <view class="module-arrow">></view>
+      </view>
+    </view>
+  </view>
+</view> 

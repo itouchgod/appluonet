@@ -124,25 +124,25 @@ export async function generateInvoicePDF(data: PDFGeneratorData, preview: boolea
       try {
         const headerImage = `data:image/png;base64,${embeddedResources.headerImage}`;
         const imgProperties = doc.getImageProperties(headerImage);
-        const imgWidth = pageWidth - 30;  // 左右各留15mm
+          const imgWidth = pageWidth - 30;  // 左右各留15mm
         const imgHeight = (imgProperties.height * imgWidth) / imgProperties.width;
-        doc.addImage(
-          headerImage,
-          'PNG',
-          15,  // 左边距15mm
-          15,  // 上边距15mm
-          imgWidth,
-          imgHeight,
-          undefined,
-          'FAST'  // 使用快速压缩
-        );
-        doc.setFontSize(14);
-        doc.setFont('NotoSansSC', 'bold');
-        const title = getInvoiceTitle(data);
-        const titleWidth = doc.getTextWidth(title);
-        const titleY = margin + imgHeight + 5;  // 标题Y坐标
-        doc.text(String(title), (pageWidth - titleWidth) / 2, titleY);
-        startY = titleY + 10;
+          doc.addImage(
+            headerImage,
+            'PNG',
+            15,  // 左边距15mm
+            15,  // 上边距15mm
+            imgWidth,
+            imgHeight,
+            undefined,
+            'FAST'  // 使用快速压缩
+          );
+          doc.setFontSize(14);
+          doc.setFont('NotoSansSC', 'bold');
+          const title = getInvoiceTitle(data);
+          const titleWidth = doc.getTextWidth(title);
+          const titleY = margin + imgHeight + 5;  // 标题Y坐标
+          doc.text(String(title), (pageWidth - titleWidth) / 2, titleY);
+          startY = titleY + 10;
       } catch (error) {
         console.error('Error processing header:', error);
         startY = handleHeaderError(doc, data, margin);
@@ -531,7 +531,7 @@ async function renderStamp(doc: ExtendedJsPDF, data: PDFGeneratorData, startY: n
         const stampImage = `data:image/png;base64,${stampImageBase64}`;
         if (data.templateConfig.stampType === 'shanghai') {
           doc.addImage(stampImage, 'PNG', margin, startY, 40, 40);
-        } else {
+      } else {
           doc.addImage(stampImage, 'PNG', margin, startY, 73, 34);
         }
       }
