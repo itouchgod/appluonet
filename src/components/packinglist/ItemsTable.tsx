@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { ChevronDown, ChevronRight, Plus, Trash2, FolderPlus } from 'lucide-react';
 
 // 表格输入框基础样式
 const baseInputClassName = `w-full px-2 py-1.5 rounded-lg
@@ -44,10 +45,22 @@ interface PackingItem {
   packageQty: number;
   dimensions: string;
   unit: string;
+  groupId?: string;
+}
+
+interface PackingGroup {
+  id: string;
+  name: string;
+  items: PackingItem[];
+  totalNetWeight: number;
+  totalGrossWeight: number;
+  totalPackageQty: number;
+  isCollapsed?: boolean;
 }
 
 interface PackingData {
   items: PackingItem[];
+  groups?: PackingGroup[];
   showHsCode: boolean;
   showDimensions: boolean;
   showWeightAndPackage: boolean;
@@ -62,6 +75,14 @@ interface ItemsTableProps {
   onItemChange: (index: number, field: keyof PackingItem, value: string | number) => void;
   onAddLine: () => void;
   onDeleteLine: (index: number) => void;
+  onCreateGroup?: () => void;
+  onFinishGroup?: () => void;
+  isCreatingGroup?: boolean;
+  onAddLineToGroup?: (groupId: string) => void;
+  onDeleteGroup?: (groupId: string) => void;
+  onToggleGroupCollapse?: (groupId: string) => void;
+  onUpdateGroupName?: (groupId: string, name: string) => void;
+  onMoveItemToGroup?: (itemIndex: number, groupId: string | undefined) => void;
   totals: {
     totalPrice: number;
     netWeight: number;
@@ -75,6 +96,14 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
   onItemChange,
   onAddLine,
   onDeleteLine,
+  onCreateGroup,
+  onFinishGroup,
+  isCreatingGroup = false,
+  onAddLineToGroup,
+  onDeleteGroup,
+  onToggleGroupCollapse,
+  onUpdateGroupName,
+  onMoveItemToGroup,
   totals
 }) => {
   // 可用单位列表
@@ -197,6 +226,283 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
     if (data.items.length > 1) {
       onDeleteLine(index);
     }
+  };
+
+  // 获取表格列数
+  const getColumnCount = () => {
+    let count = 4; // 基础列：No, Description, Q'TY, Unit
+    if (data.showHsCode) count++;
+    if (data.showPrice) count += 2;
+    if (data.showWeightAndPackage) count += 3;
+    if (data.showDimensions) count++;
+    return count;
+  };
+
+  // 渲染分组表格头部
+  const renderGroupHeader = (group: PackingGroup) => {
+    return (
+      <tr key={`group-${group.id}`} className="bg-[#F0F0F0] dark:bg-[#2A2A2C] border-t-2 border-[#007AFF] dark:border-[#0A84FF]">
+        <td className="px-2 py-3" colSpan={getColumnCount()}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => onToggleGroupCollapse?.(group.id)}
+                className="flex items-center justify-center w-6 h-6 rounded-full 
+                  bg-[#007AFF] dark:bg-[#0A84FF] text-white hover:bg-[#0056CC] dark:hover:bg-[#0070F3]
+                  transition-colors duration-200"
+              >
+                {group.isCollapsed ? (
+                  <ChevronRight className="w-3 h-3" />
+                ) : (
+                  <ChevronDown className="w-3 h-3" />
+                )}
+              </button>
+              
+              <input
+                type="text"
+                value={group.name}
+                onChange={(e) => onUpdateGroupName?.(group.id, e.target.value)}
+                className="font-medium text-[#1D1D1F] dark:text-[#F5F5F7] bg-transparent 
+                  border-none outline-none focus:bg-white/50 dark:focus:bg-[#1C1C1E]/50 
+                  px-2 py-1 rounded"
+                placeholder="组名称"
+              />
+              
+              <span className="text-sm text-[#86868B] dark:text-[#86868B]">
+                ({group.items.length} 项)
+              </span>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              {data.showWeightAndPackage && (
+                <div className="flex items-center space-x-4 text-sm text-[#86868B] dark:text-[#86868B]">
+                  <span>净重: {group.totalNetWeight.toFixed(2)} kg</span>
+                  <span>毛重: {group.totalGrossWeight.toFixed(2)} kg</span>
+                  <span>包装: {group.totalPackageQty}</span>
+                </div>
+              )}
+              
+              <button
+                onClick={() => onAddLineToGroup?.(group.id)}
+                className="flex items-center justify-center w-8 h-8 rounded-full 
+                  bg-[#34C759] dark:bg-[#32D74B] text-white hover:bg-[#28A745] dark:hover:bg-[#30D158]
+                  transition-colors duration-200"
+                title="在组内添加行"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+              
+              <button
+                onClick={() => onDeleteGroup?.(group.id)}
+                className="flex items-center justify-center w-8 h-8 rounded-full 
+                  bg-[#FF3B30] dark:bg-[#FF453A] text-white hover:bg-[#D70015] dark:hover:bg-[#FF6961]
+                  transition-colors duration-200"
+                title="删除组"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </td>
+      </tr>
+    );
+  };
+
+  // 渲染分组内的行，重量等列合并显示
+  const renderGroupItems = (group: PackingGroup) => {
+    return group.items.map((item, itemIndex) => {
+      const globalIndex = data.items.findIndex(globalItem => globalItem.id === item.id);
+      const isFirstInGroup = itemIndex === 0;
+      const rowSpan = group.items.length;
+      
+      return (
+        <tr key={item.id} className="border-t border-[#E5E5EA] dark:border-[#2C2C2E]">
+          <td className="w-12 px-2 py-2 text-center text-sm bg-white/90 dark:bg-[#1C1C1E]/90">
+            <span 
+              className="flex items-center justify-center w-5 h-5 rounded-full 
+                text-xs text-gray-400
+                hover:bg-red-100 hover:text-red-600 
+                cursor-pointer transition-colors"
+              onClick={() => handleSoftDelete(globalIndex)}
+              title="点击删除"
+            >
+              {globalIndex + 1}
+            </span>
+          </td>
+          
+          {/* 描述列 */}
+          <td className="px-2 py-2 bg-white/90 dark:bg-[#1C1C1E]/90">
+            <textarea
+              value={item.description}
+              onChange={(e) => {
+                onItemChange(globalIndex, 'description', e.target.value);
+                e.target.style.height = '28px';
+                e.target.style.height = `${e.target.scrollHeight}px`;
+              }}
+              className="w-full px-3 py-1.5 bg-transparent border border-transparent
+                focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
+                hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
+                text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
+                placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
+                transition-all duration-200 text-center whitespace-pre-wrap resize-y overflow-hidden
+                ios-optimized-input"
+              style={{ height: '28px' }}
+              placeholder="Enter product description..."
+            />
+          </td>
+          
+          {/* HS Code */}
+          {data.showHsCode && (
+            <td className="w-24 px-2 py-2">
+              <input
+                type="text"
+                value={item.hsCode}
+                onChange={(e) => onItemChange(globalIndex, 'hsCode', e.target.value)}
+                className="w-full px-3 py-1.5 bg-transparent border border-transparent
+                  focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
+                  hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
+                  text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
+                  placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
+                  transition-all duration-200 text-center
+                  ios-optimized-input"
+                placeholder="HS Code"
+              />
+            </td>
+          )}
+          
+          {/* 数量 */}
+          <td className="w-16 px-2 py-2">
+            <input
+              type="text"
+              inputMode="numeric"
+              value={item.quantity > 0 ? item.quantity.toString() : ''}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (/^\d*$/.test(value)) {
+                  handleQuantityChange(globalIndex, value === '' ? 0 : parseInt(value));
+                }
+              }}
+              className="w-full px-3 py-1.5 bg-transparent border border-transparent
+                focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
+                hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
+                text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
+                placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
+                transition-all duration-200 text-center
+                [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none
+                ios-optimized-input"
+              placeholder="0"
+            />
+          </td>
+          
+          {/* 单位 */}
+          <td className="w-16 px-2 py-2">
+            <select
+              value={item.unit}
+              onChange={(e) => handleUnitChange(globalIndex, e.target.value)}
+              className="w-full px-3 py-1.5 bg-transparent border border-transparent
+                focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
+                hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
+                text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
+                placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
+                transition-all duration-200 text-center cursor-pointer
+                appearance-none ios-optimized-input"
+            >
+              {availableUnits.map(unit => {
+                const displayUnit = defaultUnits.includes(unit as typeof defaultUnits[number]) 
+                  ? getUnitDisplay(unit, item.quantity) 
+                  : unit;
+                return (
+                  <option key={unit} value={displayUnit}>
+                    {displayUnit}
+                  </option>
+                );
+              })}
+            </select>
+          </td>
+          
+          {/* 价格列 */}
+          {data.showPrice && (
+            <>
+              <td className="w-24 px-2 py-2">
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={item.unitPrice.toFixed(2)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (/^\d*\.?\d*$/.test(value)) {
+                      onItemChange(globalIndex, 'unitPrice', value === '' ? 0 : parseFloat(value));
+                    }
+                  }}
+                  className="w-full px-3 py-1.5 bg-transparent border border-transparent
+                    focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
+                    hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
+                    text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
+                    placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
+                    transition-all duration-200 text-center
+                    ios-optimized-input"
+                  placeholder="0.00"
+                />
+              </td>
+              <td className="w-28 px-2 py-2">
+                <input
+                  type="text"
+                  value={`${data.currency === 'USD' ? '$' : data.currency === 'EUR' ? '€' : '¥'}${item.totalPrice.toFixed(2)}`}
+                  readOnly
+                  className="w-full px-3 py-1.5 bg-transparent
+                    text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
+                    transition-all duration-200 text-center cursor-default"
+                />
+              </td>
+            </>
+          )}
+          
+          {/* 重量和包装列 - 合并显示 */}
+          {data.showWeightAndPackage && (
+            <>
+              {isFirstInGroup ? (
+                <>
+                  <td className="w-24 px-2 py-2 text-center border-r-2 border-dashed border-[#007AFF]/30 dark:border-[#0A84FF]/30 bg-[#007AFF]/5 dark:bg-[#0A84FF]/5" rowSpan={rowSpan}>
+                    <div className="font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">
+                      {group.totalNetWeight.toFixed(2)} kg
+                    </div>
+                  </td>
+                  <td className="w-24 px-2 py-2 text-center border-r-2 border-dashed border-[#007AFF]/30 dark:border-[#0A84FF]/30 bg-[#007AFF]/5 dark:bg-[#0A84FF]/5" rowSpan={rowSpan}>
+                    <div className="font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">
+                      {group.totalGrossWeight.toFixed(2)} kg
+                    </div>
+                  </td>
+                  <td className="w-16 px-2 py-2 text-center border-r-2 border-dashed border-[#007AFF]/30 dark:border-[#0A84FF]/30 bg-[#007AFF]/5 dark:bg-[#0A84FF]/5" rowSpan={rowSpan}>
+                    <div className="font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">
+                      {group.totalPackageQty}
+                    </div>
+                  </td>
+                </>
+              ) : null}
+            </>
+          )}
+          
+          {/* 尺寸列 */}
+          {data.showDimensions && (
+            <td className="w-32 px-2 py-2">
+              <input
+                type="text"
+                value={item.dimensions}
+                onChange={(e) => onItemChange(globalIndex, 'dimensions', e.target.value)}
+                className="w-full px-3 py-1.5 bg-transparent border border-transparent
+                  focus:outline-none focus:ring-[3px] focus:ring-[#0066CC]/30 dark:focus:ring-[#0A84FF]/30
+                  hover:bg-[#F5F5F7]/50 dark:hover:bg-[#2C2C2E]/50
+                  text-[13px] text-[#1D1D1F] dark:text-[#F5F5F7]
+                  placeholder:text-[#86868B] dark:placeholder:text-[#86868B]
+                  transition-all duration-200 text-center
+                  ios-optimized-input"
+                placeholder="L×W×H"
+              />
+            </td>
+          )}
+        </tr>
+      );
+    });
   };
 
   return (
@@ -594,8 +900,39 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                   )}
                 </tr>
               </thead>
-              <tbody className="bg-white/90 dark:bg-[#1C1C1E]/90">
-                {data.items.map((item, index) => (
+                             <tbody className="bg-white/90 dark:bg-[#1C1C1E]/90">
+                 {data.groups && data.groups.length > 0 ? (
+                   <>
+                     {data.groups.map((group) => (
+                       <React.Fragment key={group.id}>
+                         {renderGroupHeader(group)}
+                         {!group.isCollapsed && renderGroupItems(group)}
+                       </React.Fragment>
+                     ))}
+                     {/* 渲染未分组的项目 */}
+                     {data.items.filter(item => !item.groupId).map((item, index) => {
+                       const globalIndex = data.items.findIndex(globalItem => globalItem.id === item.id);
+                       return (
+                         <tr key={item.id} className="border-t border-[#E5E5EA] dark:border-[#2C2C2E]">
+                           <td className="w-12 px-2 py-2 text-center text-sm bg-white/90 dark:bg-[#1C1C1E]/90">
+                             <span 
+                               className="flex items-center justify-center w-5 h-5 rounded-full 
+                                 text-xs text-gray-400
+                                 hover:bg-red-100 hover:text-red-600 
+                                 cursor-pointer transition-colors"
+                               onClick={() => handleSoftDelete(globalIndex)}
+                               title="点击删除"
+                             >
+                               {globalIndex + 1}
+                             </span>
+                           </td>
+                           {/* 其他列的渲染 */}
+                         </tr>
+                       );
+                     })}
+                   </>
+                 ) : (
+                   data.items.map((item, index) => (
                   <tr key={item.id} className="border-t border-[#E5E5EA] dark:border-[#2C2C2E]">
                     <td className="w-12 px-2 py-2 text-center text-sm bg-white/90 dark:bg-[#1C1C1E]/90">
                       <span 
@@ -905,7 +1242,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                       </td>
                     )}
                   </tr>
-                ))}
+                )))}
               </tbody>
             </table>
                      </div>
@@ -913,16 +1250,57 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
             {/* 桌面端添加按钮和总计信息 */}
            <div className="mt-4 bg-[#F5F5F7] dark:bg-[#3A3A3C] rounded-2xl p-4 border border-[#E5E5EA] dark:border-[#48484A]">
              <div className="flex flex-wrap gap-6 justify-between items-center">
-               {/* 添加行按钮 */}
-               <button
-                 type="button"
-                 onClick={onAddLine}
-                 className="px-4 py-2 bg-[#007AFF] dark:bg-[#0A84FF] text-white rounded-lg
-                   hover:bg-[#0063CC] dark:hover:bg-[#0070E0] transition-colors
-                   text-sm font-medium"
-               >
-                 + Add Line
-               </button>
+               {/* 添加行按钮和分组按钮 */}
+               <div className="flex gap-3 items-center">
+                 <button
+                   type="button"
+                   onClick={onAddLine}
+                   className="px-4 py-2 bg-[#007AFF] dark:bg-[#0A84FF] text-white rounded-lg
+                     hover:bg-[#0063CC] dark:hover:bg-[#0070E0] transition-colors
+                     text-sm font-medium"
+                 >
+                   + {isCreatingGroup ? '添加行到组' : 'Add Line'}
+                 </button>
+                 
+                 {data.showWeightAndPackage && (
+                   <>
+                     {isCreatingGroup ? (
+                       onFinishGroup && (
+                         <button
+                           type="button"
+                           onClick={onFinishGroup}
+                           className="flex items-center px-4 py-2 bg-[#FF9500] dark:bg-[#FF9F0A] text-white rounded-lg
+                             hover:bg-[#FF8C00] dark:hover:bg-[#FF9500] transition-colors
+                             text-sm font-medium"
+                         >
+                           <FolderPlus className="w-4 h-4 mr-2" />
+                           完成分组
+                         </button>
+                       )
+                     ) : (
+                       onCreateGroup && (
+                         <button
+                           type="button"
+                           onClick={onCreateGroup}
+                           className="flex items-center px-4 py-2 bg-[#34C759] dark:bg-[#32D74B] text-white rounded-lg
+                             hover:bg-[#28A745] dark:hover:bg-[#30D158] transition-colors
+                             text-sm font-medium"
+                         >
+                           <FolderPlus className="w-4 h-4 mr-2" />
+                           添加组
+                         </button>
+                       )
+                     )}
+                   </>
+                 )}
+                 
+                 {/* 分组状态指示 */}
+                 {isCreatingGroup && (
+                   <div className="text-sm text-[#FF9500] dark:text-[#FF9F0A] font-medium">
+                     正在创建分组 - 添加的行将自动加入当前分组
+                   </div>
+                 )}
+               </div>
                
                {/* 总计信息 */}
                {(data.showPrice || data.showWeightAndPackage) ? (

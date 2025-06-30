@@ -13,6 +13,18 @@ interface PackingItem {
   packageQty: number;
   dimensions: string;
   unit: string;
+  groupId?: string; // 分组ID
+}
+
+// 分组接口
+export interface PackingGroup {
+  id: string;
+  name: string;
+  items: PackingItem[];
+  totalNetWeight: number;
+  totalGrossWeight: number;
+  totalPackageQty: number;
+  isCollapsed?: boolean;
 }
 
 export interface PackingData {
@@ -24,6 +36,8 @@ export interface PackingData {
   };
   markingNo: string;
   items: PackingItem[];
+  groups?: PackingGroup[]; // 分组列表
+  useGrouping?: boolean; // 是否启用分组模式
   currency: string;
   remarks: string;
   remarkOptions: {

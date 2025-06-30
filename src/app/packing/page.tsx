@@ -59,6 +59,17 @@ interface PackingItem {
   packageQty: number;
   dimensions: string;
   unit: string;
+  groupId?: string;
+}
+
+interface PackingGroup {
+  id: string;
+  name: string;
+  items: PackingItem[];
+  totalNetWeight: number;
+  totalGrossWeight: number;
+  totalPackageQty: number;
+  isCollapsed?: boolean;
 }
 
 interface PackingData {
@@ -75,6 +86,7 @@ interface PackingData {
   markingNo: string;
   
   items: PackingItem[];
+  groups?: PackingGroup[];
   currency: string;
   remarks: string;
   remarkOptions: {
@@ -213,6 +225,8 @@ export default function PackingPage() {
   const [showShippingMarksModal, setShowShippingMarksModal] = useState(false);
   const [editId, setEditId] = useState<string | undefined>(initialEditId || undefined);
   const [previewItem, setPreviewItem] = useState<any>(null);
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
+  const [currentGroupId, setCurrentGroupId] = useState<string | null>(null);
 
   const [packingData, setPackingData] = useState<PackingData>(_initialData || {
     orderNo: '',
@@ -240,6 +254,7 @@ export default function PackingPage() {
       unit: 'pc'
     }],
     
+    groups: [],
     currency: 'USD',
     remarks: '',
     remarkOptions: {
@@ -361,7 +376,9 @@ export default function PackingPage() {
         grossWeight: 0,
         packageQty: 0,
         dimensions: '',
-        unit: 'pc'
+        unit: 'pc',
+        // 如果正在创建分组，新行自动加入当前分组
+        groupId: isCreatingGroup ? currentGroupId || undefined : undefined
       }]
     }));
   };
@@ -375,6 +392,136 @@ export default function PackingPage() {
       }));
     }
   };
+
+  // 开始创建分组
+  const handleStartCreateGroup = () => {
+    const groupId = Date.now().toString();
+    const newGroup: PackingGroup = {
+      id: groupId,
+      name: `Group ${(packingData.groups?.length || 0) + 1}`,
+      items: [],
+      totalNetWeight: 0,
+      totalGrossWeight: 0,
+      totalPackageQty: 0,
+      isCollapsed: false,
+    };
+    
+    setPackingData(prev => ({
+      ...prev,
+      groups: [...(prev.groups || []), newGroup]
+    }));
+    
+    setIsCreatingGroup(true);
+    setCurrentGroupId(groupId);
+  };
+
+  // 完成分组创建
+  const handleFinishGroup = () => {
+    setIsCreatingGroup(false);
+    setCurrentGroupId(null);
+  };
+
+  const handleAddLineToGroup = (groupId: string) => {
+    const newItem: PackingItem = {
+      id: packingData.items.length + 1,
+      serialNo: (packingData.items.length + 1).toString(),
+      description: '',
+      hsCode: '',
+      quantity: 0,
+      unitPrice: 0,
+      totalPrice: 0,
+      netWeight: 0,
+      grossWeight: 0,
+      packageQty: 0,
+      dimensions: '',
+      unit: 'pc',
+      groupId: groupId
+    };
+
+    const updatedItems = [...packingData.items, newItem];
+    
+    setPackingData(prev => ({
+      ...prev,
+      items: updatedItems
+    }));
+  };
+
+  const handleDeleteGroup = (groupId: string) => {
+    // 移除分组中的项目的groupId
+    const updatedItems = packingData.items.map(item => 
+      item.groupId === groupId ? { ...item, groupId: undefined } : item
+    );
+    
+    // 移除分组
+    const updatedGroups = packingData.groups?.filter(group => group.id !== groupId);
+    
+    setPackingData(prev => ({
+      ...prev,
+      items: updatedItems,
+      groups: updatedGroups
+    }));
+  };
+
+  const handleToggleGroupCollapse = (groupId: string) => {
+    const updatedGroups = packingData.groups?.map(group => 
+      group.id === groupId ? { ...group, isCollapsed: !group.isCollapsed } : group
+    );
+    
+    setPackingData(prev => ({
+      ...prev,
+      groups: updatedGroups
+    }));
+  };
+
+  const handleUpdateGroupName = (groupId: string, name: string) => {
+    const updatedGroups = packingData.groups?.map(group => 
+      group.id === groupId ? { ...group, name } : group
+    );
+    
+    setPackingData(prev => ({
+      ...prev,
+      groups: updatedGroups
+    }));
+  };
+
+  const handleMoveItemToGroup = (itemIndex: number, groupId: string | undefined) => {
+    const updatedItems = packingData.items.map((item, index) => 
+      index === itemIndex ? { ...item, groupId } : item
+    );
+    
+    setPackingData(prev => ({
+      ...prev,
+      items: updatedItems
+    }));
+  };
+
+  // 计算分组合计
+  const calculateGroupTotals = useCallback(() => {
+    if (!packingData.groups) return;
+    
+    const updatedGroups = packingData.groups.map(group => {
+      const groupItems = packingData.items.filter(item => item.groupId === group.id);
+      return {
+        ...group,
+        items: groupItems,
+        totalNetWeight: groupItems.reduce((sum, item) => sum + item.netWeight, 0),
+        totalGrossWeight: groupItems.reduce((sum, item) => sum + item.grossWeight, 0),
+        totalPackageQty: groupItems.reduce((sum, item) => sum + item.packageQty, 0),
+      };
+    });
+    
+    setPackingData(prev => ({
+      ...prev,
+      groups: updatedGroups
+    }));
+  }, [packingData.items, packingData.groups]);
+
+  // 监听数据变化，自动计算分组合计
+  useEffect(() => {
+    if (packingData.groups) {
+      calculateGroupTotals();
+    }
+  }, [packingData.items, calculateGroupTotals]);
 
   // 设置面板回调函数
   const handleDocumentTypeChange = (type: 'proforma' | 'packing' | 'both') => {
@@ -870,6 +1017,7 @@ export default function PackingPage() {
                 <ItemsTable
                   data={{
                     items: packingData.items,
+                    groups: packingData.groups,
                     showHsCode: packingData.showHsCode,
                     showDimensions: packingData.showDimensions,
                     showWeightAndPackage: packingData.showWeightAndPackage,
@@ -881,6 +1029,14 @@ export default function PackingPage() {
                   onItemChange={updateLineItem}
                   onAddLine={handleAddLine}
                   onDeleteLine={handleDeleteLine}
+                  onCreateGroup={handleStartCreateGroup}
+                  onFinishGroup={handleFinishGroup}
+                  isCreatingGroup={isCreatingGroup}
+                  onAddLineToGroup={handleAddLineToGroup}
+                  onDeleteGroup={handleDeleteGroup}
+                  onToggleGroupCollapse={handleToggleGroupCollapse}
+                  onUpdateGroupName={handleUpdateGroupName}
+                  onMoveItemToGroup={handleMoveItemToGroup}
                   totals={totals}
                 />
               </div>
