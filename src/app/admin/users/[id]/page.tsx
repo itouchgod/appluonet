@@ -9,12 +9,10 @@ import {
   Mail, 
   Calendar, 
   Shield, 
-  ShieldCheck, 
   Settings, 
   Trash2, 
   Save, 
   Clock,
-  CheckCircle,
   XCircle,
   FileText,
   Archive,
@@ -103,9 +101,9 @@ const MODULES = [
     bgColor: 'bg-purple-100 dark:bg-purple-900/20'
   },
   { 
-    id: 'feature4', 
-    name: '客户管理', 
-    description: '客户信息管理系统',
+    id: 'rfqoss', 
+    name: '询价订单状态', 
+    description: '询价订单状态管理系统',
     icon: Users,
     color: 'text-violet-600 dark:text-violet-400',
     bgColor: 'bg-violet-100 dark:bg-violet-900/20'
