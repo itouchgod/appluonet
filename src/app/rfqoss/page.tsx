@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, ChangeEvent, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -17,7 +17,8 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Upload as UploadIcon
 } from 'lucide-react';
 
 // 使用dynamic导入避免hydration问题
@@ -36,24 +37,29 @@ const DynamicHeader = dynamic(() => import('@/components/Header').then(mod => mo
   )
 });
 
+// RFQOrder 字段类型调整，兼容样式
+interface RFQOrderCell {
+  text: string;
+  color?: string;
+  backgroundColor?: string;
+}
+
 // 询价订单状态类型
 interface RFQOrder {
   id: string;
-  orderNumber: string;
-  customerName: string;
-  productName: string;
-  quantity: number;
-  unit: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
-  priority: 'low' | 'medium' | 'high';
-  createdAt: string;
-  updatedAt: string;
-  expectedDelivery: string;
-  notes?: string;
+  date: RFQOrderCell;
+  rfqNumber: RFQOrderCell;
+  customer: RFQOrderCell;
+  customerNumber: RFQOrderCell;
+  description: RFQOrderCell;
+  rfqUnit: RFQOrderCell;
+  status: RFQOrderCell;
+  priority: RFQOrderCell;
+  notes?: string; // 备注
 }
 
 // 状态配置
-const STATUS_CONFIG = {
+const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
   pending: {
     label: '待处理',
     color: 'text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-900/20',
@@ -77,7 +83,7 @@ const STATUS_CONFIG = {
 };
 
 // 优先级配置
-const PRIORITY_CONFIG = {
+const PRIORITY_CONFIG: Record<string, { label: string; color: string }> = {
   low: {
     label: '低',
     color: 'text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-800/20'
@@ -101,6 +107,7 @@ export default function RFQOSSPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -125,45 +132,36 @@ export default function RFQOSSPage() {
         const mockOrders: RFQOrder[] = [
           {
             id: '1',
-            orderNumber: 'RFQ-2024-001',
-            customerName: '上海贸易公司',
-            productName: '不锈钢螺丝',
-            quantity: 1000,
-            unit: '个',
-            status: 'pending',
-            priority: 'high',
-            createdAt: '2024-01-15',
-            updatedAt: '2024-01-15',
-            expectedDelivery: '2024-02-15',
-            notes: '需要快速报价'
+            date: { text: '1.2' },
+            rfqNumber: { text: 'C230102F' },
+            customer: { text: 'Palmarine' },
+            customerNumber: { text: 'SP/0008/23' },
+            description: { text: 'SOLO 备件6项' },
+            rfqUnit: { text: '飞罗' },
+            status: { text: 'pending' },
+            priority: { text: 'high' }
           },
           {
             id: '2',
-            orderNumber: 'RFQ-2024-002',
-            customerName: '北京机械厂',
-            productName: '轴承',
-            quantity: 500,
-            unit: '套',
-            status: 'in_progress',
-            priority: 'medium',
-            createdAt: '2024-01-14',
-            updatedAt: '2024-01-16',
-            expectedDelivery: '2024-02-20',
-            notes: '标准规格'
+            date: { text: '1.3' },
+            rfqNumber: { text: 'C230103F' },
+            customer: { text: 'Bluereact' },
+            customerNumber: { text: 'BRS002884（MV SFL Weser）' },
+            description: { text: '物料备件6项' },
+            rfqUnit: { text: '飞罗' },
+            status: { text: 'in_progress' },
+            priority: { text: 'medium' }
           },
           {
             id: '3',
-            orderNumber: 'RFQ-2024-003',
-            customerName: '广州电子厂',
-            productName: '电路板',
-            quantity: 200,
-            unit: '块',
-            status: 'completed',
-            priority: 'low',
-            createdAt: '2024-01-10',
-            updatedAt: '2024-01-12',
-            expectedDelivery: '2024-01-25',
-            notes: '已完成报价'
+            date: { text: '1.4' },
+            rfqNumber: { text: 'C230104K' },
+            customer: { text: 'Thome·Kay' },
+            customerNumber: { text: 'Barbro G / EG safety system malfunction' },
+            description: { text: '电源监控' },
+            rfqUnit: { text: '飞罗' },
+            status: { text: 'completed' },
+            priority: { text: 'low' }
           }
         ];
         
@@ -181,12 +179,12 @@ export default function RFQOSSPage() {
   // 过滤订单
   const filteredOrders = orders.filter(order => {
     const matchesSearch = 
-      order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.productName.toLowerCase().includes(searchTerm.toLowerCase());
+      order.rfqNumber.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.customer.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.description.text.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-    const matchesPriority = priorityFilter === 'all' || order.priority === priorityFilter;
+    const matchesStatus = statusFilter === 'all' || order.status.text === statusFilter;
+    const matchesPriority = priorityFilter === 'all' || order.priority.text === priorityFilter;
     
     return matchesSearch && matchesStatus && matchesPriority;
   });
@@ -195,6 +193,40 @@ export default function RFQOSSPage() {
     localStorage.removeItem('username');
     // 这里需要导入signOut
     // await signOut({ redirect: true, callbackUrl: '/' });
+  };
+
+  // 处理文件上传
+  const handleImportWord = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.name.endsWith('.docx')) {
+      alert('只支持.docx格式的Word文档');
+      return;
+    }
+    const formData = new FormData();
+    formData.append('file', file);
+    setLoading(true);
+    try {
+      const res = await fetch('/api/rfqoss/import-word', {
+        method: 'POST',
+        body: formData
+      });
+      if (!res.ok) throw new Error('导入失败');
+      const imported: RFQOrder[] = await res.json();
+      // 以rfqNumber为唯一标识，覆盖本地数据
+      setOrders(prev => {
+        const map = new Map(prev.map(item => [item.rfqNumber.text, item]));
+        imported.forEach(item => {
+          map.set(item.rfqNumber.text, item);
+        });
+        return Array.from(map.values());
+      });
+    } catch (err) {
+      alert('导入失败，请检查文件格式和内容');
+    } finally {
+      setLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   // 避免闪烁，在客户端渲染前返回空内容
@@ -247,7 +279,7 @@ export default function RFQOSSPage() {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <input
                     type="text"
-                    placeholder="搜索订单号、客户名称或产品名称..."
+                    placeholder="搜索询价号码、客户名称或描述..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
@@ -304,6 +336,20 @@ export default function RFQOSSPage() {
                   <RefreshCw className="w-4 h-4" />
                   刷新
                 </button>
+                <button
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 flex items-center gap-2"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <UploadIcon className="w-4 h-4" />
+                  导入Word
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".docx"
+                  className="hidden"
+                  onChange={handleImportWord}
+                />
               </div>
             </div>
           </div>
@@ -321,64 +367,70 @@ export default function RFQOSSPage() {
                 <table className="w-full">
                   <thead className="bg-gray-50 dark:bg-gray-800">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        订单号
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        客户名称
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        产品名称
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        数量
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        状态
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        优先级
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        创建时间
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        操作
-                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">日期</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">询价号码</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">客户</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">客户号码</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">备件描述</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">询价单位</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">状态</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">优先级</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">操作</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-[#1c1c1e] divide-y divide-gray-200 dark:divide-gray-800">
                     {filteredOrders.map((order) => {
-                      const StatusIcon = STATUS_CONFIG[order.status].icon;
+                      const StatusIcon = STATUS_CONFIG[order.status.text].icon;
                       return (
                         <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                            {order.orderNumber}
+                          <td
+                            className="px-4 py-3 whitespace-nowrap text-sm"
+                            style={{ color: order.date.color || undefined, backgroundColor: order.date.backgroundColor || undefined }}
+                          >
+                            {order.date.text}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            {order.customerName}
+                          <td
+                            className="px-4 py-3 whitespace-nowrap text-sm underline cursor-pointer"
+                            style={{ color: order.rfqNumber.color || undefined, backgroundColor: order.rfqNumber.backgroundColor || undefined }}
+                          >
+                            {order.rfqNumber.text}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            {order.productName}
+                          <td
+                            className="px-4 py-3 whitespace-nowrap text-sm"
+                            style={{ color: order.customer.color || undefined, backgroundColor: order.customer.backgroundColor || undefined }}
+                          >
+                            {order.customer.text}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            {order.quantity} {order.unit}
+                          <td
+                            className="px-4 py-3 whitespace-nowrap text-sm"
+                            style={{ color: order.customerNumber.color || undefined, backgroundColor: order.customerNumber.backgroundColor || undefined }}
+                          >
+                            {order.customerNumber.text}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_CONFIG[order.status].color}`}>
+                          <td
+                            className="px-4 py-3 whitespace-nowrap text-sm"
+                            style={{ color: order.description.color || undefined, backgroundColor: order.description.backgroundColor || undefined }}
+                          >
+                            {order.description.text}
+                          </td>
+                          <td
+                            className="px-4 py-3 whitespace-nowrap text-sm"
+                            style={{ color: order.rfqUnit.color || undefined, backgroundColor: order.rfqUnit.backgroundColor || undefined }}
+                          >
+                            {order.rfqUnit.text}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_CONFIG[order.status.text].color}`}>
                               <StatusIcon className="w-3 h-3 mr-1" />
-                              {STATUS_CONFIG[order.status].label}
+                              {STATUS_CONFIG[order.status.text].label}
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${PRIORITY_CONFIG[order.priority].color}`}>
-                              {PRIORITY_CONFIG[order.priority].label}
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${PRIORITY_CONFIG[order.priority.text].color}`}>
+                              {PRIORITY_CONFIG[order.priority.text].label}
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                            {order.createdAt}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
                             <div className="flex items-center space-x-2">
                               <button className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
                                 <Eye className="w-4 h-4" />
